@@ -1,0 +1,75 @@
+/* ============================================================
+   editor.css — Rich Text Editor Layout & Formatting Styles
+   ============================================================ */
+
+.editor-wrapper {
+  flex: 1;
+  width: 100%;
+  height: calc(100vh - var(--top-bar-height));
+  position: relative;
+  overflow: auto;
+  background: transparent;
+}
+
+/* Rich Text Editable Area */
+.editor-content {
+  width: 100%;
+  min-height: 100%;
+  padding: 12px 16px;
+  outline: none;
+  border: none;
+  font-family: var(--font-family);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--col-text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  user-select: text;
+  transform-origin: top left;
+}
+
+/* Dynamic Word Wrap Mode: Disabled (> 3MB files) */
+.editor-content.no-wrap {
+  white-space: pre;
+  word-wrap: normal;
+}
+
+/* Formatted elements */
+.editor-content b, .editor-content strong {
+  font-weight: bold;
+}
+
+.editor-content i, .editor-content em {
+  font-style: italic;
+}
+
+.editor-content u {
+  text-decoration: underline;
+}
+
+.editor-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 6px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Custom Scrollbars */
+.editor-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.editor-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.editor-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

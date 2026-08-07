@@ -1,0 +1,76 @@
+/* ============================================================
+   topbar.css — Custom Top Bar, Progress Bar, & Drag Area
+   ============================================================ */
+
+.topbar {
+  height: var(--top-bar-height);
+  width: 100%;
+  background-color: var(--col-bg-bar);
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-bottom: 1px solid var(--col-border);
+  cursor: default;
+}
+
+/* Drag Region for moving frameless window */
+.topbar-drag-area {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  font-size: 12px;
+  color: var(--col-text-muted);
+  user-select: none;
+}
+
+/* Dot Menu Button (●) */
+.dot-btn {
+  width: var(--file-btn-width);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--col-text);
+  font-size: 14px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.dot-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--col-accent);
+}
+
+/* Top bar progress line indicator for file loading */
+.progress-bar-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background-color: var(--col-accent);
+  width: 0%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.progress-bar-line.loading {
+  opacity: 1;
+  animation: progress-slide 1.2s infinite ease-in-out;
+}
+
+@keyframes progress-slide {
+  0% {
+    left: 0%;
+    width: 0%;
+  }
+  50% {
+    left: 25%;
+    width: 50%;
+  }
+  100% {
+    left: 100%;
+    width: 0%;
+  }
+}

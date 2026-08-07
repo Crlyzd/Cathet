@@ -1,0 +1,71 @@
+/* ============================================================
+   popup.css — Glassmorphism Custom Context Menu
+   ============================================================ */
+
+.popup-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999;
+}
+
+.popup-menu {
+  position: absolute;
+  width: 160px;
+  background: var(--col-menu-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--col-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 4px 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInMenu 0.1s ease-out;
+}
+
+@keyframes fadeInMenu {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popup-menu-item {
+  height: 30px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--col-text);
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.popup-menu-item:hover {
+  background-color: var(--col-menu-sel);
+  color: #ffffff;
+}
+
+.popup-menu-item .shortcut-hint {
+  font-size: 11px;
+  color: var(--col-text-muted);
+}
+
+.popup-menu-item:hover .shortcut-hint {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.popup-divider {
+  height: 1px;
+  background-color: var(--col-border);
+  margin: 4px 0;
+}
