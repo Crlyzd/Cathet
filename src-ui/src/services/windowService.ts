@@ -18,7 +18,7 @@ export class WindowService {
   }
 
   /**
-   * Starts native window drag (for middle click or left click drag on top bar).
+   * Starts native window drag.
    */
   startDragging(): void {
     try {
@@ -50,3 +50,5 @@ export class WindowService {
     }
   }
 }
+
+

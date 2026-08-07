@@ -2,6 +2,7 @@
    topbar.css — Custom Top Bar, Progress Bar, & Drag Area
    ============================================================ */
 
+#topbar-container,
 .topbar {
   height: var(--top-bar-height);
   width: 100%;
@@ -11,6 +12,7 @@
   position: relative;
   border-bottom: 1px solid var(--col-border);
   cursor: default;
+  -webkit-app-region: drag;
 }
 
 /* Drag Region for moving frameless window */
@@ -23,6 +25,7 @@
   font-size: 12px;
   color: var(--col-text-muted);
   user-select: none;
+  -webkit-app-region: drag;
 }
 
 /* Dot Menu Button (●) */
@@ -36,6 +39,7 @@
   color: var(--col-text);
   font-size: 14px;
   transition: color 0.15s ease, background-color 0.15s ease;
+  -webkit-app-region: no-drag;
 }
 
 .dot-btn:hover {

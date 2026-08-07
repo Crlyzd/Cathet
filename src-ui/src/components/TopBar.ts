@@ -31,23 +31,22 @@ export class TopBarComponent {
     const dotBtn = document.getElementById("topbar-dot-btn")!;
     const dragArea = document.getElementById("topbar-drag-area")!;
 
-    // Dot button toggle popup menu
+    // Dot button toggle popup menu on click
     dotBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       const rect = dotBtn.getBoundingClientRect();
       globalEventBus.emit("topbar:toggleMenu", { x: rect.left, y: rect.bottom });
     });
 
-    // Middle-click (button === 1) and Left-click (button === 0) drag topbar window movement
-    const handleDrag = (e: MouseEvent) => {
-      if (e.button === 1 || e.button === 0) {
-        e.preventDefault();
+    // Explicit pointerdown and mousedown listener for window dragging on left click
+    const handleDragStart = (e: MouseEvent | PointerEvent) => {
+      if (e.button === 0) {
         this.windowService.startDragging();
       }
     };
 
-    dragArea.addEventListener("mousedown", handleDrag);
-    dragArea.addEventListener("auxclick", handleDrag);
+    dragArea.addEventListener("pointerdown", handleDragStart as EventListener);
+    dragArea.addEventListener("mousedown", handleDragStart as EventListener);
   }
 
   /**
