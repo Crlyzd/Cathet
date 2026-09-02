@@ -1,5 +1,4 @@
 pub mod commands;
-pub mod placeholders;
 pub mod state;
 
 use commands::file::{read_text_file, show_open_dialog, show_save_dialog, write_text_file};

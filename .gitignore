@@ -1,15 +1,16 @@
 # ================================================================
 #  CleanPad — .gitignore
-#  Rust + Tauri v2 / Node.js / Vite / C++ MSVC
+#  Rust + Tauri v2 / Node.js / Vite
 # ================================================================
 
 # ── Dependencies ────────────────────────────────────────────────
 node_modules/
 
-# ── Build Output ────────────────────────────────────────────────
+# ── Frontend Build Output ───────────────────────────────────────
 dist/
 dist-isolation/
-CleanPad/output/
+
+# ── Rust & Tauri Build Output ───────────────────────────────────
 src-tauri/target/
 target/
 
@@ -19,14 +20,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
-# ── MSVC compiler intermediates ──────────────────────────────────
-*.obj
-*.res
-*.pdb
-*.ilk
-*.exp
-*.lib
 
 # ── Editor & IDE folders ─────────────────────────────────────────
 .vs/
