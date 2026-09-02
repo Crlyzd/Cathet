@@ -2,22 +2,36 @@
    main.css — Design Tokens, Reset, & Frosted Glass Backdrop
    ============================================================ */
 
-:root {
-  /* Color Palette matching original CleanPad C++ dark theme */
-  --col-bg-main: rgba(22, 22, 22, 0.45);
-  --col-bg-bar: rgba(35, 35, 35, 0.5);
-  --col-text: #e0e0e0;
-  --col-text-muted: #8a8a8a;
-  --col-menu-bg: rgba(30, 30, 32, 0.88);
-  --col-menu-sel: #007acc;
-  --col-accent: #007acc;
+:root,
+[data-theme="dark"] {
+  --col-bg-main: rgba(18, 18, 22, 0.45);
+  --col-bg-bar: rgba(28, 28, 34, 0.55);
+  --col-text: #f1f5f9;
+  --col-text-muted: #94a3b8;
+  --col-menu-bg: rgba(24, 24, 28, 0.9);
+  --col-menu-sel: #2563eb;
+  --col-accent: #38bdf8;
   --col-border: rgba(255, 255, 255, 0.12);
-
-  /* Heights & Sizes */
-  --top-bar-height: 30px;
-  --file-btn-width: 30px;
+  --col-code-bg: rgba(0, 0, 0, 0.35);
+  --col-quote-border: #38bdf8;
+  
+  --top-bar-height: 32px;
+  --file-btn-width: 32px;
   --font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'Consolas', 'Cascadia Code', monospace;
+  --font-mono: 'Cascadia Code', 'Consolas', monospace;
+}
+
+[data-theme="light"] {
+  --col-bg-main: rgba(248, 250, 252, 0.65);
+  --col-bg-bar: rgba(241, 245, 249, 0.75);
+  --col-text: #0f172a;
+  --col-text-muted: #64748b;
+  --col-menu-bg: rgba(255, 255, 255, 0.94);
+  --col-menu-sel: #2563eb;
+  --col-accent: #0284c7;
+  --col-border: rgba(0, 0, 0, 0.12);
+  --col-code-bg: rgba(0, 0, 0, 0.06);
+  --col-quote-border: #0284c7;
 }
 
 * {
@@ -34,18 +48,18 @@ html, body {
   font-family: var(--font-family);
   background-color: transparent;
   color: var(--col-text);
+  transition: color 0.15s ease;
 }
 
 /* Frosted Glass Root Container */
-.cleanpad-root {
+.cathet-root {
   display: flex;
   flex-direction: column;
   width: 100vw;
   height: 100vh;
   background-color: var(--col-bg-main);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--col-border);
   overflow: hidden;
   position: relative;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }

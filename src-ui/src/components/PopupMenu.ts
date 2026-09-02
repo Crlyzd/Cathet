@@ -2,7 +2,10 @@ export interface MenuItem {
   id: string;
   label: string;
   shortcut?: string;
-  action: () => void;
+  badge?: string;
+  isGlowing?: boolean;
+  isDivider?: boolean;
+  action?: () => void;
 }
 
 export class PopupMenuComponent {
@@ -19,18 +22,24 @@ export class PopupMenuComponent {
     const EQUAL_GAP = 10;
     const gapX = EQUAL_GAP;
     const gapY = y + EQUAL_GAP;
+
     this.container.innerHTML = `
       <div class="popup-menu-overlay" id="popup-overlay">
         <div class="popup-menu" style="top: ${gapY}px; left: ${gapX}px;">
           ${items
-            .map(
-              (item) => `
-            <div class="popup-menu-item" data-id="${item.id}">
-              <span>${item.label}</span>
-              ${item.shortcut ? `<span class="shortcut-hint">${item.shortcut}</span>` : ""}
-            </div>
-          `
-            )
+            .map((item) => {
+              if (item.isDivider) {
+                return '<div class="popup-divider"></div>';
+              }
+              const glowClass = item.isGlowing ? " glow-update" : "";
+              return `
+                <div class="popup-menu-item${glowClass}" data-id="${item.id}">
+                  <span class="item-label">${item.label}</span>
+                  ${item.badge ? `<span class="badge-tag">${item.badge}</span>` : ""}
+                  ${item.shortcut ? `<span class="shortcut-hint">${item.shortcut}</span>` : ""}
+                </div>
+              `;
+            })
             .join("")}
         </div>
       </div>
@@ -47,7 +56,7 @@ export class PopupMenuComponent {
         e.stopPropagation();
         const id = (el as HTMLElement).dataset.id;
         const matched = items.find((i) => i.id === id);
-        if (matched) {
+        if (matched?.action) {
           matched.action();
         }
         this.hide();
@@ -67,5 +76,9 @@ export class PopupMenuComponent {
     } else {
       this.show(x, y, items);
     }
+  }
+
+  getIsOpen(): boolean {
+    return this.isVisible;
   }
 }

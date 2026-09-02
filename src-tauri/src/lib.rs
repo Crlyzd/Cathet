@@ -2,7 +2,9 @@ pub mod commands;
 pub mod state;
 
 use commands::file::{read_text_file, show_open_dialog, show_save_dialog, write_text_file};
-use commands::window::{apply_frosted_glass, open_new_instance, toggle_always_on_top};
+use commands::updater::{check_for_updates, download_and_install_update};
+use commands::vibrancy::apply_frosted_glass;
+use commands::window::{open_new_instance, toggle_always_on_top};
 use state::AppState;
 use tauri::Manager;
 
@@ -26,8 +28,10 @@ pub fn run() {
             show_open_dialog,
             show_save_dialog,
             toggle_always_on_top,
-            open_new_instance
+            open_new_instance,
+            check_for_updates,
+            download_and_install_update
         ])
         .run(tauri::generate_context!())
-        .expect("error while running cleanpad application");
+        .expect("error while running cathet application");
 }

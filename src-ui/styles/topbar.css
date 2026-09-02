@@ -1,5 +1,5 @@
 /* ============================================================
-   topbar.css — Custom Top Bar, Progress Bar, & Drag Area
+   topbar.css — Custom Top Bar, File Name Display, & Update Glow
    ============================================================ */
 
 #topbar-container,
@@ -12,10 +12,10 @@
   position: relative;
   border-bottom: 1px solid var(--col-border);
   cursor: default;
-  -webkit-app-region: drag;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-/* Drag Region for moving frameless window */
+/* Drag Region displaying File Name */
 .topbar-drag-area {
   flex: 1;
   height: 100%;
@@ -23,9 +23,10 @@
   align-items: center;
   padding-left: 10px;
   font-size: 12px;
+  font-weight: 500;
   color: var(--col-text-muted);
   user-select: none;
-  -webkit-app-region: drag;
+  letter-spacing: 0.2px;
 }
 
 /* Dot Menu Button (●) */
@@ -39,7 +40,7 @@
   color: var(--col-text);
   font-size: 14px;
   transition: color 0.15s ease, background-color 0.15s ease;
-  -webkit-app-region: no-drag;
+  position: relative;
 }
 
 .dot-btn:hover {
@@ -47,7 +48,28 @@
   color: var(--col-accent);
 }
 
-/* Top bar progress line indicator for file loading */
+/* Glowing Pulse when an update is available */
+.dot-btn.glow-update {
+  color: #38bdf8;
+  animation: pulse-glow 1.8s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0% {
+    text-shadow: 0 0 4px #0284c7, 0 0 8px #38bdf8;
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 0 0 12px #38bdf8, 0 0 20px #0284c7;
+    transform: scale(1.15);
+  }
+  100% {
+    text-shadow: 0 0 4px #0284c7, 0 0 8px #38bdf8;
+    transform: scale(1);
+  }
+}
+
+/* File Loading Progress Line */
 .progress-bar-line {
   position: absolute;
   bottom: 0;
@@ -65,16 +87,7 @@
 }
 
 @keyframes progress-slide {
-  0% {
-    left: 0%;
-    width: 0%;
-  }
-  50% {
-    left: 25%;
-    width: 50%;
-  }
-  100% {
-    left: 100%;
-    width: 0%;
-  }
+  0% { left: 0%; width: 0%; }
+  50% { left: 25%; width: 50%; }
+  100% { left: 100%; width: 0%; }
 }

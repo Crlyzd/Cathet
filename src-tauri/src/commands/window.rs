@@ -1,7 +1,6 @@
 use std::process::Command;
 use std::sync::atomic::Ordering;
 use tauri::{AppHandle, State, WebviewWindow};
-use window_vibrancy::{apply_acrylic, apply_blur, apply_mica};
 
 use crate::state::AppState;
 
@@ -28,15 +27,4 @@ pub async fn open_new_instance(_app_handle: AppHandle) -> Result<(), String> {
         .spawn()
         .map_err(|e| e.to_string())?;
     Ok(())
-}
-
-pub fn apply_frosted_glass(window: &WebviewWindow) {
-    #[cfg(target_os = "windows")]
-    {
-        if let Err(_) = apply_acrylic(window, Some((20, 20, 20, 120))) {
-            if let Err(_) = apply_mica(window, Some(true)) {
-                let _ = apply_blur(window, Some((20, 20, 20, 120)));
-            }
-        }
-    }
 }

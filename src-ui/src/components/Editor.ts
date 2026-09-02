@@ -1,7 +1,11 @@
+import { parseMarkdown } from "../utils/markdown";
+
 export class EditorComponent {
   private container: HTMLElement;
   private editorEl!: HTMLElement;
   private zoomLevel: number = 100;
+  private isMarkdownPreview: boolean = false;
+  private rawContent: string = "";
 
   constructor(containerId: string) {
     const el = document.getElementById(containerId);
@@ -12,18 +16,26 @@ export class EditorComponent {
 
   private render(): void {
     this.container.innerHTML = `
-      <div class="editor-wrapper">
-        <div class="editor-content" id="cleanpad-editor" contenteditable="true" spellcheck="false"></div>
+      <div class="editor-wrapper" id="editor-wrapper">
+        <div class="editor-content" id="cathet-editor" contenteditable="true" spellcheck="false"></div>
       </div>
     `;
 
-    this.editorEl = document.getElementById("cleanpad-editor")!;
+    this.editorEl = document.getElementById("cathet-editor")!;
     this.bindEvents();
   }
 
   private bindEvents(): void {
-    // Handle paste for image items (pasting images into cleanpad)
+    // Sync raw content on input
+    this.editorEl.addEventListener("input", () => {
+      if (!this.isMarkdownPreview) {
+        this.rawContent = this.editorEl.innerText;
+      }
+    });
+
+    // Handle paste for image items
     this.editorEl.addEventListener("paste", (e: ClipboardEvent) => {
+      if (this.isMarkdownPreview) return;
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -43,7 +55,7 @@ export class EditorComponent {
       }
     });
 
-    // Handle Ctrl + MouseWheel Zooming matching C++ WM_MOUSEWHEEL
+    // Ctrl + MouseWheel Zooming
     window.addEventListener("wheel", (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
@@ -53,58 +65,63 @@ export class EditorComponent {
     }, { passive: false });
   }
 
-  /**
-   * Adjusts text zoom percentage.
-   */
   adjustZoom(deltaPercent: number): void {
     this.zoomLevel = Math.max(50, Math.min(300, this.zoomLevel + deltaPercent));
     this.editorEl.style.fontSize = `${14 * (this.zoomLevel / 100)}px`;
   }
 
-  /**
-   * Sets editor raw text or HTML content.
-   */
   setContent(content: string): void {
-    // Escape HTML tags for raw text or load formatted HTML
-    if (content.includes("<") && content.includes(">")) {
-      this.editorEl.innerHTML = content;
+    this.rawContent = content;
+    if (this.isMarkdownPreview) {
+      this.editorEl.innerHTML = parseMarkdown(this.rawContent);
     } else {
-      this.editorEl.innerText = content;
+      if (content.includes("<") && content.includes(">")) {
+        this.editorEl.innerHTML = content;
+      } else {
+        this.editorEl.innerText = content;
+      }
     }
   }
 
-  /**
-   * Gets editor text content.
-   */
   getText(): string {
-    return this.editorEl.innerText;
+    return this.isMarkdownPreview ? this.rawContent : this.editorEl.innerText;
   }
 
-  /**
-   * Gets editor HTML content.
-   */
-  getHtml(): string {
-    return this.editorEl.innerHTML;
+  toggleMarkdownPreview(): boolean {
+    if (!this.isMarkdownPreview) {
+      // Switch from Edit to Markdown Preview
+      this.rawContent = this.editorEl.innerText;
+      this.editorEl.innerHTML = parseMarkdown(this.rawContent);
+      this.editorEl.setAttribute("contenteditable", "false");
+      this.editorEl.classList.add("markdown-preview");
+      this.isMarkdownPreview = true;
+    } else {
+      // Switch from Preview to Edit
+      this.editorEl.innerText = this.rawContent;
+      this.editorEl.setAttribute("contenteditable", "true");
+      this.editorEl.classList.remove("markdown-preview");
+      this.isMarkdownPreview = false;
+      this.editorEl.focus();
+    }
+    return this.isMarkdownPreview;
   }
 
-  /**
-   * Toggle rich text formatting (Bold, Italic, Underline).
-   */
+  getIsMarkdownPreview(): boolean {
+    return this.isMarkdownPreview;
+  }
+
   toggleBold(): void {
-    document.execCommand("bold", false);
+    if (!this.isMarkdownPreview) document.execCommand("bold", false);
   }
 
   toggleItalic(): void {
-    document.execCommand("italic", false);
+    if (!this.isMarkdownPreview) document.execCommand("italic", false);
   }
 
   toggleUnderline(): void {
-    document.execCommand("underline", false);
+    if (!this.isMarkdownPreview) document.execCommand("underline", false);
   }
 
-  /**
-   * Clean Select All excluding trailing newline matching C++ Shortcuts::Process 'A'
-   */
   selectAllClean(): void {
     const range = document.createRange();
     range.selectNodeContents(this.editorEl);
@@ -115,9 +132,6 @@ export class EditorComponent {
     }
   }
 
-  /**
-   * Sets word wrap state (off if file > 3MB).
-   */
   setWordWrap(enabled: boolean): void {
     if (enabled) {
       this.editorEl.classList.remove("no-wrap");

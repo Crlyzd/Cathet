@@ -2,5 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    cleanpad::run();
+    if cathet::commands::migration::handle_migration_if_present() {
+        return;
+    }
+
+    cathet::run();
 }

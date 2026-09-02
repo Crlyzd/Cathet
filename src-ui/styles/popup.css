@@ -1,5 +1,5 @@
 /* ============================================================
-   popup.css — Glassmorphism Custom Context Menu
+   popup.css — Glassmorphism Custom Menu & Settings Dropdown
    ============================================================ */
 
 .popup-menu-overlay {
@@ -13,28 +13,28 @@
 
 .popup-menu {
   position: absolute;
-  width: 160px;
+  min-width: 180px;
   background: var(--col-menu-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--col-border);
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  padding: 4px 0;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  padding: 6px 0;
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  animation: fadeInMenu 0.1s ease-out;
+  animation: fadeInMenu 0.12s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes fadeInMenu {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-6px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -47,7 +47,8 @@
   font-size: 13px;
   color: var(--col-text);
   cursor: pointer;
-  transition: background-color 0.12s ease;
+  transition: background-color 0.12s ease, color 0.12s ease;
+  user-select: none;
 }
 
 .popup-menu-item:hover {
@@ -58,14 +59,38 @@
 .popup-menu-item .shortcut-hint {
   font-size: 11px;
   color: var(--col-text-muted);
+  margin-left: 12px;
 }
 
 .popup-menu-item:hover .shortcut-hint {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.badge-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--col-accent);
+  color: #ffffff;
+  margin-left: auto;
+  margin-right: 6px;
+}
+
+/* Glowing update item in dropdown */
+.popup-menu-item.glow-update {
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.popup-menu-item.glow-update:hover {
+  background: #0284c7;
+  color: #ffffff;
 }
 
 .popup-divider {
   height: 1px;
   background-color: var(--col-border);
-  margin: 4px 0;
+  margin: 5px 0;
 }

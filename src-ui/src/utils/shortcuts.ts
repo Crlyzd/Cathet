@@ -7,13 +7,14 @@ export interface ShortcutHandlers {
   onToggleBold: () => void;
   onToggleItalic: () => void;
   onToggleUnderline: () => void;
+  onToggleMarkdown: () => void;
   onSelectAll: () => void;
   onQuit: () => void;
 }
 
 export function registerShortcuts(handlers: ShortcutHandlers): () => void {
   const keyHandler = (e: KeyboardEvent) => {
-    // ESC -> Quit (matching C++ VK_ESCAPE)
+    // ESC -> Quit
     if (e.key === "Escape") {
       e.preventDefault();
       handlers.onQuit();
@@ -46,6 +47,10 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
       case "T":
         e.preventDefault();
         handlers.onToggleAlwaysOnTop();
+        break;
+      case "M":
+        e.preventDefault();
+        handlers.onToggleMarkdown();
         break;
       case "A":
         e.preventDefault();

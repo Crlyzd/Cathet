@@ -4,6 +4,8 @@ import { globalEventBus } from "../utils/eventBus";
 export class TopBarComponent {
   private container: HTMLElement;
   private progressLine!: HTMLElement;
+  private dotBtn!: HTMLElement;
+  private titleArea!: HTMLElement;
   private windowService: WindowService;
 
   constructor(containerId: string, windowService: WindowService) {
@@ -17,41 +19,33 @@ export class TopBarComponent {
   private render(): void {
     this.container.innerHTML = `
       <div class="topbar" data-tauri-drag-region>
-        <div class="dot-btn" id="topbar-dot-btn" title="Menu">●</div>
-        <div class="topbar-drag-area" id="topbar-drag-area" data-tauri-drag-region>CleanPad</div>
+        <div class="dot-btn" id="topbar-dot-btn" title="Menu & Settings">●</div>
+        <div class="topbar-drag-area" id="topbar-drag-area" data-tauri-drag-region>Untitled</div>
         <div class="progress-bar-line" id="topbar-progress-line"></div>
       </div>
     `;
 
     this.progressLine = document.getElementById("topbar-progress-line")!;
+    this.dotBtn = document.getElementById("topbar-dot-btn")!;
+    this.titleArea = document.getElementById("topbar-drag-area")!;
+
     this.bindEvents();
   }
 
   private bindEvents(): void {
-    const dotBtn = document.getElementById("topbar-dot-btn")!;
-    const dragArea = document.getElementById("topbar-drag-area")!;
-
-    // Dot button toggle popup menu on click
-    dotBtn.addEventListener("click", (e) => {
+    this.dotBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const rect = dotBtn.getBoundingClientRect();
+      const rect = this.dotBtn.getBoundingClientRect();
       globalEventBus.emit("topbar:toggleMenu", { x: rect.left, y: rect.bottom });
     });
 
-    // Explicit pointerdown and mousedown listener for window dragging on left click
-    const handleDragStart = (e: MouseEvent | PointerEvent) => {
+    this.titleArea.addEventListener("mousedown", (e: MouseEvent) => {
       if (e.button === 0) {
         this.windowService.startDragging();
       }
-    };
-
-    dragArea.addEventListener("pointerdown", handleDragStart as EventListener);
-    dragArea.addEventListener("mousedown", handleDragStart as EventListener);
+    });
   }
 
-  /**
-   * Shows or hides file loading progress animation line.
-   */
   setLoading(isLoading: boolean): void {
     if (isLoading) {
       this.progressLine.classList.add("loading");
@@ -61,12 +55,23 @@ export class TopBarComponent {
   }
 
   /**
-   * Sets top bar title.
+   * Sets top bar title strictly to document file name (e.g. Untitled or notes.md)
    */
-  setTitle(title: string): void {
-    const dragArea = document.getElementById("topbar-drag-area");
-    if (dragArea) {
-      dragArea.textContent = title ? `CleanPad — ${title}` : "CleanPad";
+  setTitle(fileName: string): void {
+    const cleanName = fileName ? fileName.trim() : "Untitled";
+    this.titleArea.textContent = cleanName;
+  }
+
+  /**
+   * Lights up the top bar dot button with glowing notification animation.
+   */
+  setUpdateAvailable(isAvailable: boolean): void {
+    if (isAvailable) {
+      this.dotBtn.classList.add("glow-update");
+      this.dotBtn.title = "Update Available! Click to open settings.";
+    } else {
+      this.dotBtn.classList.remove("glow-update");
+      this.dotBtn.title = "Menu & Settings";
     }
   }
 }

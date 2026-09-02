@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0.0.json",
-  "productName": "CleanPad",
+  "productName": "Cathet",
   "version": "1.0.0",
-  "identifier": "com.cleanpad.app",
+  "identifier": "com.cathet.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,10 +12,10 @@
   "app": {
     "windows": [
       {
-        "title": "CleanPad",
-        "width": 300,
-        "height": 376,
-        "minWidth": 200,
+        "title": "Cathet",
+        "width": 320,
+        "height": 400,
+        "minWidth": 220,
         "minHeight": 200,
         "resizable": true,
         "decorations": false,

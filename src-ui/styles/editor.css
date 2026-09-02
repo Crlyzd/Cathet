@@ -1,5 +1,5 @@
 /* ============================================================
-   editor.css — Rich Text Editor Layout & Formatting Styles
+   editor.css — Editor Layout, Markdown Preview, & Typography
    ============================================================ */
 
 .editor-wrapper {
@@ -11,16 +11,16 @@
   background: transparent;
 }
 
-/* Rich Text Editable Area */
+/* Editable Text Area & Rendered Preview */
 .editor-content {
   width: 100%;
   min-height: 100%;
-  padding: 12px 16px;
+  padding: 14px 18px;
   outline: none;
   border: none;
   font-family: var(--font-family);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--col-text);
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -34,35 +34,97 @@
   word-wrap: normal;
 }
 
-/* Formatted elements */
-.editor-content b, .editor-content strong {
-  font-weight: bold;
+/* Markdown Rendered Preview Elements */
+.editor-content.markdown-preview {
+  white-space: normal;
 }
 
-.editor-content i, .editor-content em {
-  font-style: italic;
+.editor-content h1, .editor-content h2, .editor-content h3,
+.editor-content h4, .editor-content h5, .editor-content h6 {
+  margin-top: 1em;
+  margin-bottom: 0.4em;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--col-text);
 }
 
-.editor-content u {
+.editor-content h1 { font-size: 1.6em; border-bottom: 1px solid var(--col-border); padding-bottom: 0.2em; }
+.editor-content h2 { font-size: 1.35em; }
+.editor-content h3 { font-size: 1.15em; }
+
+.editor-content p {
+  margin-bottom: 0.7em;
+}
+
+.editor-content .md-spacer {
+  height: 0.6em;
+}
+
+.editor-content code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--col-code-bg);
+}
+
+.editor-content pre {
+  margin: 0.8em 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--col-code-bg);
+  border: 1px solid var(--col-border);
+  overflow-x: auto;
+}
+
+.editor-content pre code {
+  padding: 0;
+  background: transparent;
+  display: block;
+}
+
+.editor-content blockquote {
+  border-left: 3px solid var(--col-quote-border);
+  margin: 0.8em 0;
+  padding: 4px 12px;
+  color: var(--col-text-muted);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.editor-content ul {
+  padding-left: 20px;
+  margin-bottom: 0.8em;
+}
+
+.editor-content li {
+  margin-bottom: 0.3em;
+}
+
+.editor-content a {
+  color: var(--col-accent);
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.editor-content hr {
+  border: none;
+  height: 1px;
+  background: var(--col-border);
+  margin: 1.2em 0;
 }
 
 .editor-content img {
   max-width: 100%;
   height: auto;
-  border-radius: 4px;
-  margin: 6px 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  margin: 8px 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 /* Custom Scrollbars */
 .editor-wrapper::-webkit-scrollbar {
   width: 8px;
   height: 8px;
-}
-
-.editor-wrapper::-webkit-scrollbar-track {
-  background: transparent;
 }
 
 .editor-wrapper::-webkit-scrollbar-thumb {
