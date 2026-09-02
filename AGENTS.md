@@ -32,6 +32,15 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
    - Preserves shortcuts by downloading to temporary staging, launching `--replace-old "<target>"`, exiting current process, and cleanly replacing the binary at the original path.
 8. **Frosted Glass Dropdowns & Menus Standard**:
    - All dropdowns, context menus, and select popups (both the Main window top bar dropdown and the Settings font selector) must strictly use custom frosted glassmorphism components (`backdrop-filter: blur(28px)`, translucent backdrop `rgba(...)`, smooth rounded corners, and hairline borders). Native OS `<select>` elements that spawn opaque, rectangular Windows popups are strictly prohibited.
+9. **Unified Single-Script Automation & Dedicated Output**:
+   - `build.ps1` in the project root is the single, authoritative automation pipeline for live development (`-Live`/`-Dev`), verification (`-Check`), SemVer bumping (`-Patch`/`-Minor`/`-Major`/`-TargetVersion`), and release compilation.
+   - Proliferating auxiliary `.ps1` or `.bat` runner scripts is strictly prohibited.
+   - All compiled release binaries are cleanly placed into the dedicated `release/` folder in the project root (`release/cathet.exe`, `release/cathet-x64.exe`, `release/cathet-arm64.exe`).
+10. **Dual-Window Architecture & Modular Layout**:
+   - **Main Editor**: `index.html` mounted by `src-ui/src/main.ts`, powered by `Editor.ts`, `TopBar.ts`, and `PopupMenu.ts`.
+   - **Settings Window**: `settings.html` mounted by `src-ui/src/settingsMain.ts`, powered by `SettingsTabs.ts` and `SettingsMenu.ts`.
+   - **Modular Services**: `fileService.ts`, `fontService.ts`, `themeService.ts`, `updateService.ts`, `windowService.ts`.
+   - **Modular Backend**: `src-tauri/src/commands/` split into `file.rs`, `migration.rs`, `updater.rs`, `vibrancy.rs`, and `window.rs`.
 
 ---
 

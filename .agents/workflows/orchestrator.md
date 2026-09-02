@@ -58,5 +58,5 @@ When synthesizing results, summarize what was done per mode and flag anything st
   - Title bar displays document file name.
   - Markdown toggle with `Ctrl+M`.
   - Settings dropdown with Theme, Fonts (including Noto Sans & Roboto), and Version 1.0 GitHub updater.
-  - Multi-target builds for Windows x64 and ARM64 via `build.ps1`.
-  - Atomic SemVer version bumping via `bump-version.ps1`.
+  - Unified automation via `build.ps1` (Dev, Check, Version Bumping, and Multi-Target Builds).
+  - Dedicated compilation output directory: `release/cathet.exe` (x64 and ARM64).

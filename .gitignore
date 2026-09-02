@@ -13,6 +13,7 @@ dist-isolation/
 # ── Rust & Tauri Build Output ───────────────────────────────────
 src-tauri/target/
 target/
+release/
 
 # ── Logs & Temporary Files ──────────────────────────────────────
 *.log

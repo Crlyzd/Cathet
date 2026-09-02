@@ -28,25 +28,38 @@ Cathet is a sleek, portable, ultra-lightweight text and markdown editor for Wind
 
 ## Development & Build Automation
 
-- **Live Development**:
+Cathet uses a single unified automation pipeline via `build.ps1`. All compiled release executables are cleanly placed into the dedicated **`release/`** directory in the project root.
+
+- **Live Development** (default with hot-reloading):
   ```powershell
-  .\build.ps1 -Live
+  .\build.ps1
+  # or: .\build.ps1 -Live
   ```
-- **Compile Size-Optimized Release (x64)**:
+- **Verification Check** (TypeScript & Cargo):
   ```powershell
-  .\build.ps1 -BuildX64
+  .\build.ps1 -Check
   ```
-- **Compile Size-Optimized Release (ARM64)**:
+- **Compile Production Release (Native Host)**:
   ```powershell
-  .\build.ps1 -BuildArm64
+  .\build.ps1 -Build          # Outputs to release/cathet.exe
+  .\build.ps1 -Build -Run     # Build and immediately launch executable
+  ```
+- **Compile Windows x64 Release**:
+  ```powershell
+  .\build.ps1 -BuildX64       # Outputs release/cathet-x64.exe and release/cathet.exe
+  ```
+- **Compile Windows ARM64 Release**:
+  ```powershell
+  .\build.ps1 -BuildArm64     # Outputs to release/cathet-arm64.exe
   ```
 - **Compile All Release Targets**:
   ```powershell
-  .\build.ps1 -All
+  .\build.ps1 -All            # Outputs both x64 and ARM64 release binaries
   ```
 - **SemVer Version Bumping**:
   ```powershell
-  .\bump-version.ps1 -Patch   # e.g., 1.0.0 -> 1.0.1
-  .\bump-version.ps1 -Minor   # e.g., 1.0.0 -> 1.1.0
-  .\bump-version.ps1 1.2.0    # Explicit target version
+  .\build.ps1 -Patch          # e.g., 1.0.0 -> 1.0.1
+  .\build.ps1 -Minor          # e.g., 1.0.0 -> 1.1.0
+  .\build.ps1 -Major          # e.g., 1.0.0 -> 2.0.0
+  .\build.ps1 -TargetVersion 1.2.0
   ```

@@ -39,3 +39,4 @@ You are a Senior Software Architect. Your task is to design technical solutions 
   - Rust backend commands partitioned into `vibrancy.rs`, `updater.rs`, `migration.rs`, `file.rs`, and `window.rs`.
   - Frontend partitioned into discrete single-responsibility services (`themeService.ts`, `fontService.ts`, `updateService.ts`, `fileService.ts`) and modular components.
   - Zero heavy frontend frameworks; keep binary size tiny.
+  - Single-script automation standard: all dev/build/version operations belong exclusively in `build.ps1`, outputting binaries to `release/`.

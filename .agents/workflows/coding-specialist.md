@@ -41,3 +41,5 @@ You are an expert Senior Software Engineer. Your task is to implement features, 
   - Vanilla TypeScript & CSS.
   - State separated into dedicated services (`themeService.ts`, `fontService.ts`, `updateService.ts`).
   - Zero heavy external bundles.
+- **Automation Guidelines**:
+  - All dev, build, check, and versioning logic belongs in `build.ps1` (<250 lines), cleanly outputting binaries into `release/`.
