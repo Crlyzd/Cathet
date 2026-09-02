@@ -21,8 +21,13 @@ function Invoke-Exit([int]$code = 0) {
     exit $code
 }
 
+function Get-AppVersion {
+    return (Get-Content -Raw (Join-Path $ProjectRoot "package.json") | ConvertFrom-Json).version
+}
+
 function Show-HelpGuide {
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build release binary & save to '$OutputDir/'`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific release binary`n  .\build.ps1 -All                   -> Build both x64 and ARM64 binaries`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
+    $ver = Get-AppVersion
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build release binary (cathet-v$ver.exe) & save to '$OutputDir/'`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific release binary`n  .\build.ps1 -All                   -> Build both x64 and ARM64 binaries`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -102,7 +107,7 @@ function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$
     Write-Host "Version bumped successfully: $currentVer -> $newVer" -ForegroundColor Green
 }
 
-function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$outputFileName) {
+function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$versionedFileName, [string]$aliasFileName = "") {
     Stop-ActiveProcesses
     if ($targetTriple) { Confirm-Target $targetTriple }
     Write-Host "`n>>> Compiling release for $label ($targetTriple)..." -ForegroundColor Yellow
@@ -120,23 +125,31 @@ function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$ou
     if (-not (Test-Path $sourceBin)) { throw "Binary not found at: $sourceBin" }
     if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
 
-    $destPath = Join-Path $ReleaseDir $outputFileName
+    $destPath = Join-Path $ReleaseDir $versionedFileName
     Copy-Item -Path $sourceBin -Destination $destPath -Force
     $sizeMb = [math]::Round((Get-Item $destPath).Length / 1MB, 2)
     Write-Host "Output saved: $destPath ($sizeMb MB)" -ForegroundColor Green
+
+    if ($aliasFileName) {
+        $aliasPath = Join-Path $ReleaseDir $aliasFileName
+        Copy-Item -Path $sourceBin -Destination $aliasPath -Force
+        Write-Host "Companion alias saved: $aliasPath" -ForegroundColor Gray
+    }
+    return $destPath
 }
 
 function Show-InteractiveMenu {
+    $ver = Get-AppVersion
     Write-Host @"
 Select an action:
   [1] Live Development (Hot Reload) [Default]
   [2] Run Verification Checks (Vite + Cargo)
-  [3] Build Native Release -> $OutputDir/cathet.exe
+  [3] Build Native Release -> $OutputDir/cathet-v$ver.exe
   [4] Build & Launch Native Release Immediately
-  [5] Build Windows x64 -> $OutputDir/cathet-x64.exe
-  [6] Build Windows ARM64 -> $OutputDir/cathet-arm64.exe
+  [5] Build Windows x64    -> $OutputDir/cathet-v$ver-x64.exe
+  [6] Build Windows ARM64  -> $OutputDir/cathet-v$ver-arm64.exe
   [7] Build All Targets (x64 + ARM64)
-  [8] Bump Project Version
+  [8] Bump Project Version (Current: v$ver)
   [Q] Exit
 "@ -ForegroundColor Yellow
     $c = (Read-Host "Enter option [1-8, Q] (Default: 1)").Trim()
@@ -150,23 +163,21 @@ function Invoke-Pipeline([hashtable]$opts) {
         return
     }
 
+    $ver = Get-AppVersion
     $compiledBin = $null
     if ($opts.All) {
-        Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-x64.exe"
+        Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "cathet-x64.exe"
         $compiledBin = Join-Path $ReleaseDir "cathet.exe"
         Copy-Item (Join-Path $ReleaseDir "cathet-x64.exe") $compiledBin -Force
-        Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-arm64.exe"
+        Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "cathet-arm64.exe"
         Write-Host "`nAll release targets compiled successfully into '$OutputDir/'!" -ForegroundColor Green
     } elseif ($opts.BuildArm64) {
-        Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-arm64.exe"
-        $compiledBin = Join-Path $ReleaseDir "cathet-arm64.exe"
+        $compiledBin = Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "cathet-arm64.exe"
     } elseif ($opts.BuildX64) {
-        Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-x64.exe"
-        $compiledBin = Join-Path $ReleaseDir "cathet.exe"
-        Copy-Item (Join-Path $ReleaseDir "cathet-x64.exe") $compiledBin -Force
+        $compiledBin = Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "cathet-x64.exe"
+        Copy-Item (Join-Path $ReleaseDir "cathet-x64.exe") (Join-Path $ReleaseDir "cathet.exe") -Force
     } elseif ($opts.Build) {
-        Invoke-CompileTarget "" "Native Release" "cathet.exe"
-        $compiledBin = Join-Path $ReleaseDir "cathet.exe"
+        $compiledBin = Invoke-CompileTarget "" "Native Release" "cathet-v$ver.exe" "cathet.exe"
     }
 
     if ($compiledBin -and $opts.Run) {
@@ -226,12 +237,7 @@ try {
             if ($ans -eq "q" -or $ans -eq "Q") { Invoke-Exit 0 }
         }
     } else {
-        Invoke-Pipeline @{
-            Dev = $Dev; Live = $Live; Check = $Check; Build = $Build
-            BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; All = $All; Run = $Run
-            Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion
-            Port = $Port
-        }
+        Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; All = $All; Run = $Run; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port }
         Invoke-Exit 0
     }
 } catch {

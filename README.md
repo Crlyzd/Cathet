@@ -134,7 +134,7 @@ npm install
 .\build.ps1 -All          # Both architectures
 ```
 
-Release binaries are automatically optimized (`opt-level = "z"`, LTO, symbol stripping) and saved to the `release/` directory.
+Release binaries are automatically optimized (`opt-level = "z"`, LTO, symbol stripping) and saved to the `release/` directory with versioned names (e.g. `cathet-v3.0.0-x64.exe`) and canonical aliases (`cathet-x64.exe`).
 
 ---
 
