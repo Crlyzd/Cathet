@@ -113,6 +113,42 @@
   margin: 1.2em 0;
 }
 
+/* Markdown and HTML Tables */
+.editor-content .md-table-wrapper {
+  margin: 1.2em 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.editor-content table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 0.95em;
+  border: 1px solid var(--col-border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 1em 0;
+}
+
+.editor-content th,
+.editor-content td {
+  padding: 8px 12px;
+  border: 1px solid var(--col-border);
+  line-height: 1.5;
+  text-align: left;
+}
+
+.editor-content th {
+  font-weight: 600;
+  background: var(--col-card-bg);
+  color: var(--col-text);
+}
+
+.editor-content tr:nth-child(even) td {
+  background: rgba(128, 128, 128, 0.04);
+}
+
 .editor-content img {
   max-width: 100%;
   height: auto;
@@ -135,3 +171,4 @@
 .editor-wrapper::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+

@@ -40,6 +40,69 @@ export function parseMarkdown(md: string): string {
       continue;
     }
 
+    // Markdown Table: requires header line with '|' and next line as delimiter
+    if (trimmed.includes("|") && i + 1 < lines.length && isTableDelimiter(lines[i + 1])) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      const headerCells = parseTableCells(trimmed);
+      const delimiterCells = parseTableCells(lines[i + 1]);
+      const alignments = delimiterCells.map(getAlignment);
+
+      let tableHtml = '<div class="md-table-wrapper"><table><thead><tr>';
+      for (let c = 0; c < headerCells.length; c++) {
+        const align = alignments[c] ? ` style="text-align:${alignments[c]}"` : "";
+        tableHtml += `<th${align}>${formatInline(headerCells[c])}</th>`;
+      }
+      tableHtml += "</tr></thead><tbody>";
+
+      i += 1; // Advance past delimiter
+
+      while (i + 1 < lines.length) {
+        const nextRow = lines[i + 1].trim();
+        if (!nextRow || !nextRow.includes("|")) break;
+        i++;
+        const bodyCells = parseTableCells(nextRow);
+        tableHtml += "<tr>";
+        for (let c = 0; c < headerCells.length; c++) {
+          const cellText = bodyCells[c] !== undefined ? bodyCells[c] : "";
+          const align = alignments[c] ? ` style="text-align:${alignments[c]}"` : "";
+          tableHtml += `<td${align}>${formatInline(cellText)}</td>`;
+        }
+        tableHtml += "</tr>";
+      }
+
+      tableHtml += "</tbody></table></div>";
+      out.push(tableHtml);
+      continue;
+    }
+
+    // Tab-separated Table (TSV / Excel paste)
+    if (raw.includes("\t") && i + 1 < lines.length && lines[i + 1].includes("\t")) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      const headerCells = raw.split("\t").map(c => c.trim());
+      let tableHtml = '<div class="md-table-wrapper"><table><thead><tr>';
+      for (const h of headerCells) {
+        tableHtml += `<th>${formatInline(h)}</th>`;
+      }
+      tableHtml += "</tr></thead><tbody>";
+
+      while (i + 1 < lines.length) {
+        const nextRow = lines[i + 1];
+        if (!nextRow.includes("\t")) break;
+        i++;
+        const bodyCells = nextRow.split("\t").map(c => c.trim());
+        tableHtml += "<tr>";
+        for (let c = 0; c < headerCells.length; c++) {
+          const cellText = bodyCells[c] !== undefined ? bodyCells[c] : "";
+          tableHtml += `<td>${formatInline(cellText)}</td>`;
+        }
+        tableHtml += "</tr>";
+      }
+
+      tableHtml += "</tbody></table></div>";
+      out.push(tableHtml);
+      continue;
+    }
+
     // Horizontal Rule
     if (/^(\*{3,}|-{3,}|_{3,})$/.test(trimmed)) {
       if (inList) { out.push("</ul>"); inList = false; }
@@ -84,6 +147,28 @@ export function parseMarkdown(md: string): string {
   }
 
   return out.join("\n");
+}
+
+function parseTableCells(rowStr: string): string[] {
+  let s = rowStr.trim();
+  if (s.startsWith("|")) s = s.slice(1);
+  if (s.endsWith("|")) s = s.slice(0, -1);
+  return s.split("|").map(c => c.trim());
+}
+
+function isTableDelimiter(rowStr: string): boolean {
+  const cells = parseTableCells(rowStr);
+  if (cells.length === 0) return false;
+  return cells.every(c => /^:?-+:?$/.test(c));
+}
+
+function getAlignment(cell: string): "left" | "center" | "right" | "" {
+  const left = cell.startsWith(":");
+  const right = cell.endsWith(":");
+  if (left && right) return "center";
+  if (right) return "right";
+  if (left) return "left";
+  return "";
 }
 
 function escapeHtml(str: string): string {

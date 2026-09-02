@@ -1,4 +1,5 @@
 import { parseMarkdown } from "../utils/markdown";
+import { htmlToMarkdown, isHtmlFormatted, tsvToMarkdownTable } from "../utils/htmlToMarkdown";
 import { readText } from "@tauri-apps/plugin-clipboard-manager";
 
 export class EditorComponent {
@@ -34,12 +35,14 @@ export class EditorComponent {
       }
     });
 
-    // Handle paste for image items
+    // Handle paste: images, rich HTML (tables/code), and TSV
     this.editorEl.addEventListener("paste", (e: ClipboardEvent) => {
       if (this.isMarkdownPreview) return;
-      const items = e.clipboardData?.items;
-      if (!items) return;
+      const clipboardData = e.clipboardData;
+      if (!clipboardData) return;
 
+      // 1. Image paste
+      const items = clipboardData.items;
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
           const file = items[i].getAsFile();
@@ -51,7 +54,30 @@ export class EditorComponent {
               document.execCommand("insertHTML", false, imgHtml);
             };
             reader.readAsDataURL(file);
+            return;
           }
+        }
+      }
+
+      // 2. Rich HTML paste (convert tables, headings, code to Markdown)
+      const html = clipboardData.getData("text/html");
+      if (html && isHtmlFormatted(html)) {
+        e.preventDefault();
+        const md = htmlToMarkdown(html);
+        if (md) {
+          document.execCommand("insertText", false, md);
+          return;
+        }
+      }
+
+      // 3. Tab-separated Table paste (e.g. from Excel or TSV files)
+      const plainText = clipboardData.getData("text/plain");
+      if (plainText && plainText.includes("\t")) {
+        const tableMd = tsvToMarkdownTable(plainText);
+        if (tableMd) {
+          e.preventDefault();
+          document.execCommand("insertText", false, tableMd);
+          return;
         }
       }
     });
@@ -91,7 +117,11 @@ export class EditorComponent {
   toggleMarkdownPreview(): boolean {
     if (!this.isMarkdownPreview) {
       // Switch from Edit to Markdown Preview
-      this.rawContent = this.editorEl.innerText;
+      if (isHtmlFormatted(this.editorEl.innerHTML)) {
+        this.rawContent = htmlToMarkdown(this.editorEl.innerHTML);
+      } else {
+        this.rawContent = this.editorEl.innerText;
+      }
       this.editorEl.innerHTML = parseMarkdown(this.rawContent);
       this.editorEl.setAttribute("contenteditable", "false");
       this.editorEl.classList.add("markdown-preview");
@@ -182,6 +212,13 @@ export class EditorComponent {
       const text = await readText();
       if (text) {
         this.editorEl.focus();
+        if (text.includes("\t")) {
+          const tableMd = tsvToMarkdownTable(text);
+          if (tableMd) {
+            document.execCommand("insertText", false, tableMd);
+            return;
+          }
+        }
         document.execCommand("insertText", false, text);
       }
     } catch (err) {
