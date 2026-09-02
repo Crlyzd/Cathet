@@ -25,7 +25,7 @@ function Show-HelpGuide {
     Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build release binary & save to '$OutputDir/'`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific release binary`n  .\build.ps1 -All                   -> Build both x64 and ARM64 binaries`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
 }
 
-function Ensure-Environment {
+function Initialize-Environment {
     foreach ($cmd in "node", "npm", "cargo") {
         if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { throw "$cmd is not installed or not in PATH." }
     }
@@ -35,7 +35,7 @@ function Ensure-Environment {
     }
 }
 
-function Ensure-Target([string]$target) {
+function Confirm-Target([string]$target) {
     if (-not $target) { return }
     $installed = rustup target list --installed
     if ($installed -notcontains $target) {
@@ -102,9 +102,9 @@ function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$
     Write-Host "Version bumped successfully: $currentVer -> $newVer" -ForegroundColor Green
 }
 
-function Compile-Target([string]$targetTriple, [string]$label, [string]$outputFileName) {
+function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$outputFileName) {
     Stop-ActiveProcesses
-    if ($targetTriple) { Ensure-Target $targetTriple }
+    if ($targetTriple) { Confirm-Target $targetTriple }
     Write-Host "`n>>> Compiling release for $label ($targetTriple)..." -ForegroundColor Yellow
     npm run build | Out-Host
 
@@ -143,7 +143,7 @@ Select an action:
     return $(if ($c) { $c } else { "1" })
 }
 
-function Execute-Pipeline([hashtable]$opts) {
+function Invoke-Pipeline([hashtable]$opts) {
     if ($opts.Check) { Invoke-CheckMode; return }
     if ($opts.TargetVersion -or $opts.Patch -or $opts.Minor -or $opts.Major) {
         Invoke-VersionBump $opts.TargetVersion ([bool]$opts.Patch) ([bool]$opts.Minor) ([bool]$opts.Major)
@@ -152,20 +152,20 @@ function Execute-Pipeline([hashtable]$opts) {
 
     $compiledBin = $null
     if ($opts.All) {
-        Compile-Target "x86_64-pc-windows-msvc" "Windows x64" "cathet-x64.exe"
+        Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-x64.exe"
         $compiledBin = Join-Path $ReleaseDir "cathet.exe"
         Copy-Item (Join-Path $ReleaseDir "cathet-x64.exe") $compiledBin -Force
-        Compile-Target "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-arm64.exe"
+        Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-arm64.exe"
         Write-Host "`nAll release targets compiled successfully into '$OutputDir/'!" -ForegroundColor Green
     } elseif ($opts.BuildArm64) {
-        Compile-Target "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-arm64.exe"
+        Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-arm64.exe"
         $compiledBin = Join-Path $ReleaseDir "cathet-arm64.exe"
     } elseif ($opts.BuildX64) {
-        Compile-Target "x86_64-pc-windows-msvc" "Windows x64" "cathet-x64.exe"
+        Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-x64.exe"
         $compiledBin = Join-Path $ReleaseDir "cathet.exe"
         Copy-Item (Join-Path $ReleaseDir "cathet-x64.exe") $compiledBin -Force
     } elseif ($opts.Build) {
-        Compile-Target "" "Native Release" "cathet.exe"
+        Invoke-CompileTarget "" "Native Release" "cathet.exe"
         $compiledBin = Join-Path $ReleaseDir "cathet.exe"
     }
 
@@ -193,7 +193,7 @@ try {
     if ($Help) { Show-HelpGuide; Invoke-Exit 0 }
     Write-Host "=== Cathet - Unified Build Pipeline ===" -ForegroundColor Cyan
     Stop-ActiveProcesses
-    Ensure-Environment
+    Initialize-Environment
 
     $isInteractive = ($PSBoundParameters.Count -eq 0) -or ($PSBoundParameters.Count -eq 1 -and $PSBoundParameters.ContainsKey("NoPause"))
 
@@ -221,12 +221,12 @@ try {
                 { $_ -in "q","Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
                 default { Write-Host "Invalid option '$_'. Choose 1-8 or Q." -ForegroundColor Red; continue }
             }
-            Execute-Pipeline $runOpts
+            Invoke-Pipeline $runOpts
             $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim()
             if ($ans -eq "q" -or $ans -eq "Q") { Invoke-Exit 0 }
         }
     } else {
-        Execute-Pipeline @{
+        Invoke-Pipeline @{
             Dev = $Dev; Live = $Live; Check = $Check; Build = $Build
             BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; All = $All; Run = $Run
             Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion

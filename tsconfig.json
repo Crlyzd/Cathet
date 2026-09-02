@@ -19,5 +19,5 @@
     "noUnusedParameters": false,
     "noImplicitReturns": true
   },
-  "include": ["src-ui/**/*"]
+  "include": ["src-ui/**/*", "vite.config.ts"]
 }
