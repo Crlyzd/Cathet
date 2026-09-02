@@ -26,7 +26,7 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
      - Stay on Top pin toggle (`Ctrl+T`).
      - Update checker with glowing action indicator.
      - About tab with author profile, donation links (Saweria, PayPal), bug reports, and engine stack attribution.
-7. **Version 1.0 GitHub Auto-Updater**:
+7. **GitHub Auto-Updater**:
    - Checks releases from `https://api.github.com/repos/Crlyzd/Cathet/releases/latest`.
    - Differentiates Windows `x64` vs `arm64` `.exe` targets.
    - Preserves shortcuts by downloading to temporary staging, launching `--replace-old "<target>"`, exiting current process, and cleanly replacing the binary at the original path.

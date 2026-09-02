@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 const GITHUB_REPO: &str = "Crlyzd/Cathet";
-const CURRENT_VERSION: &str = "1.0.0";
+const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateInfo {

@@ -1,6 +1,7 @@
 import { icons } from "../utils/monochromeIcons";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { APP_VERSION } from "../version";
 
 export interface SettingsTabCallbacks {
   onThemeChange: (theme: "dark" | "light") => void;
@@ -93,7 +94,7 @@ export class SettingsTabsComponent {
             </div>
             <div class="settings-app-meta" data-tauri-drag-region>
               <span class="settings-app-title" data-tauri-drag-region>Cathet</span>
-              <span class="settings-app-subtitle" data-tauri-drag-region>v1.0.0 (x64)</span>
+              <span class="settings-app-subtitle" data-tauri-drag-region>v${APP_VERSION} (x64)</span>
             </div>
           </div>
           <button class="settings-close-btn" id="settings-close-btn" title="Close">
@@ -187,8 +188,8 @@ export class SettingsTabsComponent {
                         : this.downloadState === "ready"
                         ? "Download complete!"
                         : this.state.updateAvailable
-                        ? `v${this.state.latestVersion || "2.0"} ready`
-                        : "Up to date (v1.0.0)"
+                        ? `v${this.state.latestVersion || "3.0"} ready`
+                        : `Up to date (v${APP_VERSION})`
                     }
                   </span>
                 </div>

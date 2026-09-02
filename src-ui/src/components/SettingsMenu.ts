@@ -3,6 +3,7 @@ import { ThemeService } from "../services/themeService";
 import { FontService } from "../services/fontService";
 import { UpdateService } from "../services/updateService";
 import { globalEventBus } from "../utils/eventBus";
+import { APP_VERSION } from "../version";
 
 export class SettingsMenuBuilder {
   private themeService: ThemeService;
@@ -88,7 +89,8 @@ export class SettingsMenuBuilder {
           } else {
             const info = await this.updateService.checkForUpdates();
             if (!info?.update_available) {
-              alert("Cathet is up to date (v1.0.0)");
+              const ver = info?.current_version || APP_VERSION;
+              alert(`Cathet is up to date (v${ver})`);
             }
           }
         },

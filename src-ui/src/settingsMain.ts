@@ -5,6 +5,7 @@ import { SettingsTabsComponent } from "./components/SettingsTabs";
 import { FontService } from "./services/fontService";
 import { ThemeService } from "./services/themeService";
 import { UpdateService } from "./services/updateService";
+import { APP_VERSION } from "./version";
 
 class SettingsApp {
   private fontService: FontService;
@@ -112,7 +113,8 @@ class SettingsApp {
         latestVersion: info.latest_version,
       });
     } else if (isManual) {
-      alert("Cathet is up to date (v1.0.0)");
+      const ver = info?.current_version || APP_VERSION;
+      alert(`Cathet is up to date (v${ver})`);
     }
   }
 
