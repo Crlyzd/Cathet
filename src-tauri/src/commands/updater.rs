@@ -5,7 +5,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 
-const GITHUB_REPO: &str = "Crlyzd/CleanPad";
+const GITHUB_REPO: &str = "Crlyzd/Cathet";
 const CURRENT_VERSION: &str = "1.0.0";
 
 #[derive(Debug, Serialize, Deserialize)]
