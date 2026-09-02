@@ -1,6 +1,7 @@
 import { parseMarkdown } from "../utils/markdown";
 import { htmlToMarkdown, isHtmlFormatted, tsvToMarkdownTable } from "../utils/htmlToMarkdown";
 import { readText } from "@tauri-apps/plugin-clipboard-manager";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 export class EditorComponent {
   private container: HTMLElement;
@@ -90,11 +91,29 @@ export class EditorComponent {
         this.adjustZoom(delta);
       }
     }, { passive: false });
+
+    // Click on links in Markdown preview
+    this.editorEl.addEventListener("click", (e: MouseEvent) => {
+      if (this.isMarkdownPreview) {
+        const target = (e.target as HTMLElement)?.closest("a");
+        if (target && target.getAttribute("href")) {
+          e.preventDefault();
+          const href = target.getAttribute("href")!;
+          if (/^(https?:\/\/|mailto:)/i.test(href)) {
+            openUrl(href).catch(console.error);
+          }
+        }
+      }
+    });
   }
 
   adjustZoom(deltaPercent: number): void {
     this.zoomLevel = Math.max(50, Math.min(300, this.zoomLevel + deltaPercent));
     this.editorEl.style.fontSize = `${14 * (this.zoomLevel / 100)}px`;
+  }
+
+  setFontFamily(family: string): void {
+    this.editorEl.style.fontFamily = family;
   }
 
   setContent(content: string): void {
@@ -141,17 +160,9 @@ export class EditorComponent {
     return this.isMarkdownPreview;
   }
 
-  toggleBold(): void {
-    if (!this.isMarkdownPreview) document.execCommand("bold", false);
-  }
-
-  toggleItalic(): void {
-    if (!this.isMarkdownPreview) document.execCommand("italic", false);
-  }
-
-  toggleUnderline(): void {
-    if (!this.isMarkdownPreview) document.execCommand("underline", false);
-  }
+  toggleBold(): void { if (!this.isMarkdownPreview) document.execCommand("bold", false); }
+  toggleItalic(): void { if (!this.isMarkdownPreview) document.execCommand("italic", false); }
+  toggleUnderline(): void { if (!this.isMarkdownPreview) document.execCommand("underline", false); }
 
   selectAllClean(): void {
     const range = document.createRange();
@@ -203,7 +214,14 @@ export class EditorComponent {
   }
 
   copy(): void {
-    document.execCommand("copy", false);
+    const text = this.getSelectedText();
+    if (text && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {
+        document.execCommand("copy", false);
+      });
+    } else {
+      document.execCommand("copy", false);
+    }
   }
 
   async paste(): Promise<void> {

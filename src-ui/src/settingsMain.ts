@@ -2,6 +2,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { SettingsTabsComponent } from "./components/SettingsTabs";
+import { showGlassDialog } from "./components/GlassDialog";
 import { FontService } from "./services/fontService";
 import { ThemeService } from "./services/themeService";
 import { UpdateService } from "./services/updateService";
@@ -114,7 +115,11 @@ class SettingsApp {
       });
     } else if (isManual) {
       const ver = info?.current_version || APP_VERSION;
-      alert(`Cathet is up to date (v${ver})`);
+      await showGlassDialog({
+        title: "Cathet",
+        message: `Cathet is up to date (v${ver})`,
+        type: "success",
+      });
     }
   }
 
@@ -126,7 +131,11 @@ class SettingsApp {
       });
       this.tabsComponent.setDownloadProgress(100);
     } catch (err) {
-      alert(`Download failed: ${err}`);
+      await showGlassDialog({
+        title: "Update Error",
+        message: `Download failed: ${err}`,
+        type: "error",
+      });
       this.tabsComponent.updateState({ updateAvailable: true });
     }
   }
@@ -135,7 +144,11 @@ class SettingsApp {
     try {
       await this.updateService.installAndRestart();
     } catch (err) {
-      alert(`Install failed: ${err}`);
+      await showGlassDialog({
+        title: "Update Error",
+        message: `Install failed: ${err}`,
+        type: "error",
+      });
     }
   }
 

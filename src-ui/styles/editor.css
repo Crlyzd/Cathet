@@ -24,8 +24,17 @@
   color: var(--col-text);
   white-space: pre-wrap;
   word-wrap: break-word;
+  overflow-wrap: break-word;
   user-select: text;
+  -webkit-user-select: text;
   transform-origin: top left;
+  cursor: text;
+}
+
+.editor-content,
+.editor-content * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 /* Dynamic Word Wrap Mode: Disabled (> 3MB files) */
@@ -35,8 +44,17 @@
 }
 
 /* Markdown Rendered Preview Elements */
+.editor-content.markdown-preview,
+.editor-content.markdown-preview * {
+  cursor: default;
+}
+
 .editor-content.markdown-preview {
   white-space: normal;
+}
+
+.editor-content.markdown-preview a {
+  cursor: pointer;
 }
 
 .editor-content h1, .editor-content h2, .editor-content h3,
@@ -163,6 +181,14 @@
   height: 8px;
 }
 
+.editor-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-wrapper::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .editor-wrapper::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
@@ -171,4 +197,13 @@
 .editor-wrapper::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+[data-theme="light"] .editor-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="light"] .editor-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.32);
+}
+
 

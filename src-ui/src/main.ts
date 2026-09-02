@@ -46,6 +46,7 @@ class CathetApp {
 
   private init(): void {
     this.topBar.setTitle("Untitled");
+    this.editor.setFontFamily(this.fontService.getCurrentFont().family);
 
     // Sync native DWM window theme on start
     invoke("sync_window_theme", { theme: this.themeService.getTheme() }).catch(console.error);
@@ -84,6 +85,7 @@ class CathetApp {
 
     listen<string>("cathet:font-change", (event) => {
       this.fontService.setFont(event.payload);
+      this.editor.setFontFamily(this.fontService.getCurrentFont().family);
     });
 
     listen<boolean>("cathet:ontop-change", (event) => {

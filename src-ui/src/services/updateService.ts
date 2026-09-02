@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
 import { globalEventBus } from "../utils/eventBus";
+import { showGlassDialog } from "../components/GlassDialog";
 
 export interface UpdateInfo {
   update_available: boolean;
@@ -110,7 +111,11 @@ export class UpdateService {
         downloadUrl: this.updateInfo.download_url,
       });
     } catch (err) {
-      alert(`Update failed: ${err}`);
+      await showGlassDialog({
+        title: "Update Error",
+        message: `Update failed: ${err}`,
+        type: "error",
+      });
     }
   }
 }

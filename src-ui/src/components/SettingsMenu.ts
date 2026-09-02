@@ -1,4 +1,5 @@
 import { MenuItem } from "./PopupMenu";
+import { showGlassDialog } from "./GlassDialog";
 import { ThemeService } from "../services/themeService";
 import { FontService } from "../services/fontService";
 import { UpdateService } from "../services/updateService";
@@ -90,7 +91,11 @@ export class SettingsMenuBuilder {
             const info = await this.updateService.checkForUpdates();
             if (!info?.update_available) {
               const ver = info?.current_version || APP_VERSION;
-              alert(`Cathet is up to date (v${ver})`);
+              await showGlassDialog({
+                title: "Cathet",
+                message: `Cathet is up to date (v${ver})`,
+                type: "success",
+              });
             }
           }
         },

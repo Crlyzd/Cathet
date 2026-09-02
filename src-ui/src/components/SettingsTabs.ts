@@ -42,9 +42,35 @@ export class SettingsTabsComponent {
     this.render();
   }
 
+  private outsideClickHandler: ((e: MouseEvent) => void) | null = null;
+
   public updateState(partial: Partial<SettingsInitialState>): void {
     this.state = { ...this.state, ...partial };
+    if (Object.keys(partial).length === 1 && partial.fontId !== undefined) {
+      this.updateFontUI(partial.fontId);
+      return;
+    }
     this.render();
+  }
+
+  private updateFontUI(fontId: string): void {
+    const font = this.state.fonts.find((f) => f.id === fontId);
+    const label = this.container.querySelector("#font-select-label");
+    if (label && font) label.textContent = font.name;
+    const options = this.container.querySelectorAll(".glass-select-option");
+    options.forEach((opt) => {
+      const isSelected = opt.getAttribute("data-font-id") === fontId;
+      opt.classList.toggle("selected", isSelected);
+      const existingCheck = opt.querySelector(".option-check");
+      if (isSelected && !existingCheck) {
+        const check = document.createElement("span");
+        check.className = "option-check";
+        check.innerHTML = icons.check;
+        opt.appendChild(check);
+      } else if (!isSelected && existingCheck) {
+        existingCheck.remove();
+      }
+    });
   }
 
   public setDownloadProgress(percent: number): void {
@@ -330,12 +356,16 @@ export class SettingsTabsComponent {
     });
 
     // Close dropdown on outside click
-    document.addEventListener("click", (e) => {
+    if (this.outsideClickHandler) {
+      document.removeEventListener("click", this.outsideClickHandler);
+    }
+    this.outsideClickHandler = (e: MouseEvent) => {
       if (!selectContainer?.contains(e.target as Node)) {
         menu?.classList.remove("open");
         trigger?.classList.remove("open");
       }
-    });
+    };
+    document.addEventListener("click", this.outsideClickHandler);
 
     // Option selection
     const options = this.container.querySelectorAll(".glass-select-option");
