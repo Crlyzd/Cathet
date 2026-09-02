@@ -101,7 +101,7 @@ pub fn init_cli_file(app: &App) {
             continue;
         }
         if arg.starts_with('-') {
-            if arg == "--replace-old" {
+            if arg == "--replace-old" || arg == "--cleanup-update" {
                 skip_next = true;
             }
             continue;

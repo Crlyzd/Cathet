@@ -193,16 +193,11 @@ pub async fn download_and_install_update(download_url: String) -> Result<(), Str
 }
 
 fn create_update_staging_file() -> Result<(File, PathBuf), String> {
-    if let Ok(current_exe) = env::current_exe() {
-        if let Some(app_dir) = current_exe.parent() {
-            let candidate = app_dir.join("cathet_update.exe");
-            if let Ok(file) = File::create(&candidate) {
-                return Ok((file, candidate));
-            }
-        }
-    }
+    let temp_dir = env::temp_dir().join("cathet");
+    let _ = std::fs::create_dir_all(&temp_dir);
+    let temp_exe = temp_dir.join("cathet_update.exe");
+    let _ = std::fs::remove_file(&temp_exe);
 
-    let temp_exe = env::temp_dir().join("cathet_update.exe");
     let file = File::create(&temp_exe).map_err(|e| format!("Failed to create update file: {}", e))?;
     Ok((file, temp_exe))
 }

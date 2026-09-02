@@ -6,5 +6,7 @@ fn main() {
         return;
     }
 
+    cathet::commands::migration::handle_cleanup_if_present();
+
     cathet::run();
 }
