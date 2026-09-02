@@ -18,9 +18,9 @@ export class TopBarComponent {
 
   private render(): void {
     this.container.innerHTML = `
-      <div class="topbar" data-tauri-drag-region>
+      <div class="topbar">
         <div class="dot-btn" id="topbar-dot-btn" title="Menu & Settings">●</div>
-        <div class="topbar-drag-area" id="topbar-drag-area" data-tauri-drag-region>Untitled</div>
+        <div class="topbar-drag-area" id="topbar-drag-area">Untitled</div>
         <div class="progress-bar-line" id="topbar-progress-line"></div>
       </div>
     `;
@@ -33,14 +33,24 @@ export class TopBarComponent {
   }
 
   private bindEvents(): void {
+    this.dotBtn.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+    });
+
     this.dotBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       const rect = this.dotBtn.getBoundingClientRect();
       globalEventBus.emit("topbar:toggleMenu", { x: rect.left, y: rect.bottom });
     });
 
-    this.titleArea.addEventListener("mousedown", (e: MouseEvent) => {
-      if (e.button === 0) {
+    const topbar = this.container.querySelector(".topbar");
+    topbar?.addEventListener("mousedown", (e: Event) => {
+      const me = e as MouseEvent;
+      if ((me.target as HTMLElement)?.closest("#topbar-dot-btn")) {
+        return;
+      }
+      if (me.button === 0) {
+        me.preventDefault();
         this.windowService.startDragging();
       }
     });

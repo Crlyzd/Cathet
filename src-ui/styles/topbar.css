@@ -13,6 +13,8 @@
   border-bottom: 1px solid var(--col-border);
   cursor: default;
   transition: background-color 0.2s ease, border-color 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Drag Region displaying File Name */
