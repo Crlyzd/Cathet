@@ -27,6 +27,18 @@ pub fn run() {
             }
             Ok(())
         })
+        .on_window_event(|window, event| {
+            if window.label() == "main" {
+                match event {
+                    tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed => {
+                        if let Some(settings_win) = window.app_handle().get_webview_window("settings") {
+                            let _ = settings_win.destroy();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             read_text_file,
             write_text_file,

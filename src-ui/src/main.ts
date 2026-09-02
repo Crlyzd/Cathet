@@ -50,6 +50,11 @@ class CathetApp {
     // Sync native DWM window theme on start
     invoke("sync_window_theme", { theme: this.themeService.getTheme() }).catch(console.error);
 
+    // Initial check for cached update status
+    if (this.updateService.hasUpdate()) {
+      this.topBar.setUpdateAvailable(true);
+    }
+
     // Event bus listeners
     globalEventBus.on("topbar:toggleMenu", (pos: { x: number; y: number }) => {
       this.openMainMenu(pos.x, pos.y);
@@ -67,7 +72,6 @@ class CathetApp {
 
     globalEventBus.on("update:statusChanged", async (info: any) => {
       this.topBar.setUpdateAvailable(!!info?.update_available);
-      await emit("cathet:update-status", info).catch(console.error);
     });
 
     // Cross-window synchronization
@@ -84,6 +88,23 @@ class CathetApp {
 
     listen<boolean>("cathet:ontop-change", (event) => {
       this.isAlwaysOnTop = event.payload;
+    });
+
+    listen<any>("cathet:update-status", (event) => {
+      const info = event.payload;
+      this.updateService.setUpdateInfo(info);
+      this.topBar.setUpdateAvailable(!!info?.update_available);
+    });
+
+    // Storage event listener for cross-window local storage sync
+    window.addEventListener("storage", (e) => {
+      if (e.key === "cathet_latest_update" && e.newValue) {
+        try {
+          const info = JSON.parse(e.newValue);
+          this.updateService.setUpdateInfo(info);
+          this.topBar.setUpdateAvailable(!!info?.update_available);
+        } catch (_) {}
+      }
     });
 
     // Register keyboard shortcuts

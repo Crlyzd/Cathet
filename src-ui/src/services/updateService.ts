@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { globalEventBus } from "../utils/eventBus";
 
 export interface UpdateInfo {
@@ -43,6 +43,7 @@ export class UpdateService {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(info));
       } catch (_) {}
       globalEventBus.emit("update:statusChanged", info);
+      await emit("cathet:update-status", info).catch(console.error);
       return info;
     } catch (err) {
       console.warn("Update check failed:", err);
@@ -50,6 +51,18 @@ export class UpdateService {
     } finally {
       this.isChecking = false;
     }
+  }
+
+  setUpdateInfo(info: UpdateInfo | null): void {
+    this.updateInfo = info;
+    try {
+      if (info) {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(info));
+      } else {
+        localStorage.removeItem(this.STORAGE_KEY);
+      }
+    } catch (_) {}
+    globalEventBus.emit("update:statusChanged", info);
   }
 
   getUpdateInfo(): UpdateInfo | null {

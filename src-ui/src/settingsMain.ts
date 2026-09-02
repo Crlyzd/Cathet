@@ -43,7 +43,7 @@ class SettingsApp {
         onThemeChange: (theme) => this.handleThemeChange(theme),
         onFontChange: (fontId) => this.handleFontChange(fontId),
         onAlwaysOnTopChange: (enabled) => this.handleAlwaysOnTopChange(enabled),
-        onCheckUpdates: () => this.handleCheckUpdates(),
+        onCheckUpdates: () => this.handleCheckUpdates(true),
         onStartDownload: () => this.handleStartDownload(),
         onInstallAndRestart: () => this.handleInstallAndRestart(),
         onClose: () => this.handleClose(),
@@ -55,8 +55,8 @@ class SettingsApp {
     // Fetch current always on top state immediately
     this.syncAlwaysOnTop();
 
-    // Auto-check for updates on launch to ensure synchronization with main window
-    this.handleCheckUpdates().catch(console.error);
+    // Auto-check for updates silently on launch to ensure synchronization with main window
+    this.handleCheckUpdates(false).catch(console.error);
 
     // Disable default browser context menu in compiled mode
     if (!import.meta.env.DEV) {
@@ -104,14 +104,14 @@ class SettingsApp {
     }
   }
 
-  private async handleCheckUpdates(): Promise<void> {
+  private async handleCheckUpdates(isManual: boolean = false): Promise<void> {
     const info = await this.updateService.checkForUpdates();
     if (info?.update_available) {
       this.tabsComponent.updateState({
         updateAvailable: true,
         latestVersion: info.latest_version,
       });
-    } else {
+    } else if (isManual) {
       alert("Cathet is up to date (v1.0.0)");
     }
   }
