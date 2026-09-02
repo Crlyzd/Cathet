@@ -132,8 +132,12 @@ function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$ve
 
     if ($aliasFileName) {
         $aliasPath = Join-Path $ReleaseDir $aliasFileName
-        Copy-Item -Path $sourceBin -Destination $aliasPath -Force
-        Write-Host "Companion alias saved: $aliasPath" -ForegroundColor Gray
+        try {
+            Copy-Item -Path $sourceBin -Destination $aliasPath -Force -ErrorAction Stop
+            Write-Host "Companion alias saved: $aliasPath" -ForegroundColor Gray
+        } catch {
+            Write-Host "Notice: Companion alias '$aliasFileName' was in use and skipped." -ForegroundColor Yellow
+        }
     }
     return $destPath
 }
