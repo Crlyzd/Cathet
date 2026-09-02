@@ -1,5 +1,6 @@
 import { TopBarComponent } from "./components/TopBar";
 import { PopupMenuComponent, MenuItem } from "./components/PopupMenu";
+import { ContextMenuComponent } from "./components/ContextMenu";
 import { EditorComponent } from "./components/Editor";
 import { FileService } from "./services/fileService";
 import { WindowService } from "./services/windowService";
@@ -8,8 +9,10 @@ import { FontService } from "./services/fontService";
 import { UpdateService } from "./services/updateService";
 import { globalEventBus } from "./utils/eventBus";
 import { registerShortcuts } from "./utils/shortcuts";
+import { buildContextMenuItems } from "./utils/contextMenuItems";
 import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 class CathetApp {
   private fileService: FileService;
@@ -20,6 +23,7 @@ class CathetApp {
 
   private topBar: TopBarComponent;
   private popupMenu: PopupMenuComponent;
+  private contextMenu: ContextMenuComponent;
   private editor: EditorComponent;
 
   private currentFilePath: string | null = null;
@@ -34,6 +38,7 @@ class CathetApp {
 
     this.topBar = new TopBarComponent("topbar-container", this.windowService);
     this.popupMenu = new PopupMenuComponent("popup-container");
+    this.contextMenu = new ContextMenuComponent("contextmenu-container");
     this.editor = new EditorComponent("editor-container");
 
     this.init();
@@ -77,10 +82,8 @@ class CathetApp {
       this.fontService.setFont(event.payload);
     });
 
-    listen<boolean>("cathet:toggle-ontop", async () => {
-      const state = await this.windowService.toggleAlwaysOnTop();
-      this.isAlwaysOnTop = state;
-      await emit("cathet:ontop-change", state);
+    listen<boolean>("cathet:ontop-change", (event) => {
+      this.isAlwaysOnTop = event.payload;
     });
 
     // Register keyboard shortcuts
@@ -102,7 +105,27 @@ class CathetApp {
       onToggleItalic: () => this.editor.toggleItalic(),
       onToggleUnderline: () => this.editor.toggleUnderline(),
       onSelectAll: () => this.editor.selectAllClean(),
+      onToggleWordWrap: () => this.editor.toggleWordWrap(),
+      onSearchWeb: () => {
+        const text = this.editor.getSelectedText().trim();
+        if (text) {
+          openUrl(`https://www.google.com/search?q=${encodeURIComponent(text)}`).catch(console.error);
+        }
+      },
       onQuit: () => this.windowService.close(),
+    });
+
+    // Right-click context menu: suppressed in compiled mode & replaced with Windows 11 context menu
+    window.addEventListener("contextmenu", (e) => {
+      if (!import.meta.env.DEV) {
+        e.preventDefault();
+        this.contextMenu.show(e.clientX, e.clientY, buildContextMenuItems(this.editor));
+      } else if (e.altKey) {
+        // In dev live mode, Alt + Right-Click allows testing the custom context menu
+        e.preventDefault();
+        this.contextMenu.show(e.clientX, e.clientY, buildContextMenuItems(this.editor));
+      }
+      // In dev live mode without Alt, native browser context menu remains active for inspection
     });
 
     // Drag and drop loading

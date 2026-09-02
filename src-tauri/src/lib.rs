@@ -6,7 +6,10 @@ use commands::updater::{
     check_for_updates, download_and_install_update, download_update_payload, install_and_restart,
 };
 use commands::vibrancy::apply_frosted_glass;
-use commands::window::{open_new_instance, open_settings_window, sync_window_theme, toggle_always_on_top};
+use commands::window::{
+    get_always_on_top, open_new_instance, open_settings_window, set_always_on_top,
+    sync_window_theme, toggle_always_on_top,
+};
 use state::AppState;
 use tauri::Manager;
 
@@ -30,6 +33,8 @@ pub fn run() {
             show_open_dialog,
             show_save_dialog,
             toggle_always_on_top,
+            get_always_on_top,
+            set_always_on_top,
             open_new_instance,
             open_settings_window,
             sync_window_theme,

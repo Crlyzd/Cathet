@@ -11,6 +11,8 @@ export interface ShortcutHandlers {
   onSelectAll: () => void;
   onQuit: () => void;
   onSettings?: () => void;
+  onToggleWordWrap?: () => void;
+  onSearchWeb?: () => void;
 }
 
 export function registerShortcuts(handlers: ShortcutHandlers): () => void {
@@ -19,6 +21,19 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
     if (e.key === "Escape") {
       e.preventDefault();
       handlers.onQuit();
+      return;
+    }
+
+    // Alt+W or Ctrl+Shift+W -> Toggle Word Wrap (avoids NVIDIA overlay Alt+Z conflict)
+    if (e.altKey && (e.key === "w" || e.key === "W")) {
+      e.preventDefault();
+      handlers.onToggleWordWrap?.();
+      return;
+    }
+
+    if (e.ctrlKey && e.shiftKey && (e.key === "w" || e.key === "W")) {
+      e.preventDefault();
+      handlers.onToggleWordWrap?.();
       return;
     }
 
@@ -58,6 +73,10 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
       case "M":
         e.preventDefault();
         handlers.onToggleMarkdown();
+        break;
+      case "E":
+        e.preventDefault();
+        handlers.onSearchWeb?.();
         break;
       case "A":
         e.preventDefault();

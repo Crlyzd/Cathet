@@ -1,4 +1,5 @@
 import { parseMarkdown } from "../utils/markdown";
+import { readText } from "@tauri-apps/plugin-clipboard-manager";
 
 export class EditorComponent {
   private container: HTMLElement;
@@ -137,6 +138,54 @@ export class EditorComponent {
       this.editorEl.classList.remove("no-wrap");
     } else {
       this.editorEl.classList.add("no-wrap");
+    }
+  }
+
+  isWordWrapEnabled(): boolean {
+    return !this.editorEl.classList.contains("no-wrap");
+  }
+
+  toggleWordWrap(): boolean {
+    const newState = !this.isWordWrapEnabled();
+    this.setWordWrap(newState);
+    return newState;
+  }
+
+  getSelectedText(): string {
+    const selection = window.getSelection();
+    return selection ? selection.toString() : "";
+  }
+
+  hasSelection(): boolean {
+    return this.getSelectedText().length > 0;
+  }
+
+  undo(): void {
+    if (!this.isMarkdownPreview) document.execCommand("undo", false);
+  }
+
+  redo(): void {
+    if (!this.isMarkdownPreview) document.execCommand("redo", false);
+  }
+
+  cut(): void {
+    if (!this.isMarkdownPreview) document.execCommand("cut", false);
+  }
+
+  copy(): void {
+    document.execCommand("copy", false);
+  }
+
+  async paste(): Promise<void> {
+    if (this.isMarkdownPreview) return;
+    try {
+      const text = await readText();
+      if (text) {
+        this.editorEl.focus();
+        document.execCommand("insertText", false, text);
+      }
+    } catch (err) {
+      console.error("Failed to read native clipboard:", err);
     }
   }
 }

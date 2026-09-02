@@ -1,6 +1,6 @@
 use std::process::Command;
 use std::sync::atomic::Ordering;
-use tauri::{AppHandle, Manager, State, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewWindow};
 
 use crate::state::AppState;
 
@@ -21,6 +21,26 @@ pub async fn toggle_always_on_top(
 }
 
 #[tauri::command]
+pub async fn get_always_on_top(state: State<'_, AppState>) -> Result<bool, String> {
+    Ok(state.is_always_on_top.load(Ordering::Relaxed))
+}
+
+#[tauri::command]
+pub async fn set_always_on_top(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<bool, String> {
+    if let Some(main_win) = app_handle.get_webview_window("main") {
+        main_win
+            .set_always_on_top(enabled)
+            .map_err(|e| e.to_string())?;
+    }
+    state.is_always_on_top.store(enabled, Ordering::Relaxed);
+    Ok(enabled)
+}
+
+#[tauri::command]
 pub async fn open_new_instance(_app_handle: AppHandle) -> Result<(), String> {
     let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
     Command::new(current_exe)
@@ -35,6 +55,7 @@ pub async fn open_settings_window(app_handle: AppHandle) -> Result<(), String> {
         let _ = win.unminimize();
         let _ = win.show();
         let _ = win.set_focus();
+        let _ = win.emit("cathet:settings-focused", ());
         return Ok(());
     }
 

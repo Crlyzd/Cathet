@@ -1,0 +1,104 @@
+/* ============================================================
+   contextmenu.css — Windows 11 Fluent Frosted Glass Context Menu
+   ============================================================ */
+
+.context-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: transparent;
+}
+
+.context-menu {
+  position: absolute;
+  min-width: 220px;
+  background: var(--col-menu-bg);
+  backdrop-filter: blur(32px) saturate(190%);
+  -webkit-backdrop-filter: blur(32px) saturate(190%);
+  border: 1px solid var(--col-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  padding: 5px;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: fadeInContextMenu 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+@keyframes fadeInContextMenu {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.context-menu-item {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--col-text);
+  cursor: pointer;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.context-menu-item:hover:not(.disabled) {
+  background-color: var(--col-menu-sel);
+  color: #ffffff;
+}
+
+.context-menu-item.disabled {
+  opacity: 0.38;
+  cursor: default;
+  pointer-events: none;
+}
+
+.context-menu-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.context-menu-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.context-menu-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.context-menu-shortcut {
+  font-size: 11px;
+  color: var(--col-text-muted);
+  margin-left: 20px;
+  white-space: nowrap;
+}
+
+.context-menu-item:hover:not(.disabled) .context-menu-shortcut {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.context-divider {
+  height: 1px;
+  background-color: var(--col-border);
+  margin: 4px 6px;
+}

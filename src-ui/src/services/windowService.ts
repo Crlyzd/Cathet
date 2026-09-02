@@ -18,6 +18,30 @@ export class WindowService {
   }
 
   /**
+   * Retrieves current Always-On-Top state from backend.
+   */
+  async getAlwaysOnTop(): Promise<boolean> {
+    try {
+      return await invoke<boolean>("get_always_on_top");
+    } catch (err) {
+      console.error("Failed to get always-on-top state:", err);
+      return false;
+    }
+  }
+
+  /**
+   * Explicitly sets Always-On-Top state on backend.
+   */
+  async setAlwaysOnTop(enabled: boolean): Promise<boolean> {
+    try {
+      return await invoke<boolean>("set_always_on_top", { enabled });
+    } catch (err) {
+      console.error("Failed to set always-on-top state:", err);
+      return false;
+    }
+  }
+
+  /**
    * Starts native window drag.
    */
   startDragging(): void {

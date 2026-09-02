@@ -52,8 +52,16 @@ class SettingsApp {
 
     this.initListeners();
 
+    // Fetch current always on top state immediately
+    this.syncAlwaysOnTop();
+
     // Auto-check for updates on launch to ensure synchronization with main window
     this.handleCheckUpdates().catch(console.error);
+
+    // Disable default browser context menu in compiled mode
+    if (!import.meta.env.DEV) {
+      window.addEventListener("contextmenu", (e) => e.preventDefault());
+    }
   }
 
   private applyTheme(theme: "dark" | "light"): void {
@@ -80,7 +88,20 @@ class SettingsApp {
   private async handleAlwaysOnTopChange(enabled: boolean): Promise<void> {
     this.isAlwaysOnTop = enabled;
     this.tabsComponent.updateState({ isAlwaysOnTop: enabled });
-    await emit("cathet:toggle-ontop", enabled);
+    await invoke("set_always_on_top", { enabled }).catch(console.error);
+    await emit("cathet:ontop-change", enabled);
+  }
+
+  private async syncAlwaysOnTop(): Promise<void> {
+    try {
+      const state = await invoke<boolean>("get_always_on_top");
+      if (this.isAlwaysOnTop !== state) {
+        this.isAlwaysOnTop = state;
+        this.tabsComponent.updateState({ isAlwaysOnTop: state });
+      }
+    } catch (err) {
+      console.error("Failed to sync always on top:", err);
+    }
   }
 
   private async handleCheckUpdates(): Promise<void> {
@@ -137,10 +158,19 @@ class SettingsApp {
       this.tabsComponent.updateState({ fontId: event.payload });
     });
 
-    // Listen for stay-on-top changes
+    // Listen for stay-on-top changes from other windows
     await listen<boolean>("cathet:ontop-change", (event) => {
       this.isAlwaysOnTop = event.payload;
       this.tabsComponent.updateState({ isAlwaysOnTop: event.payload });
+    });
+
+    // Re-sync when window gains focus or receives show event
+    window.addEventListener("focus", () => {
+      this.syncAlwaysOnTop();
+    });
+
+    await listen("cathet:settings-focused", () => {
+      this.syncAlwaysOnTop();
     });
 
     // Listen for cross-window update status changes
