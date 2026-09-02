@@ -40,6 +40,17 @@ export class WindowService {
   }
 
   /**
+   * Spawns or brings into focus the Settings & About window.
+   */
+  async openSettingsWindow(): Promise<void> {
+    try {
+      await invoke("open_settings_window");
+    } catch (err) {
+      console.error("Failed to open settings window:", err);
+    }
+  }
+
+  /**
    * Quits application (ESC key).
    */
   async close(): Promise<void> {

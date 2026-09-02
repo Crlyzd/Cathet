@@ -1,0 +1,688 @@
+/* ============================================================
+   settings.css — Compact Glassmorphic Settings & About Window
+   ============================================================ */
+
+.settings-window {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  background-color: transparent;
+  border: 1px solid var(--col-border);
+  overflow: hidden;
+  position: relative;
+  user-select: none;
+  font-family: var(--font-ui, 'Segoe UI', system-ui, -apple-system, sans-serif);
+  color: var(--col-text);
+  box-sizing: border-box;
+}
+
+/* Compact Header */
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 6px 12px;
+  cursor: default;
+  user-select: none;
+}
+
+.settings-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: default;
+  user-select: none;
+}
+
+.settings-app-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+}
+
+.settings-header-icon-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.settings-app-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  cursor: default;
+  user-select: none;
+}
+
+.settings-app-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--col-text);
+}
+
+.settings-app-subtitle {
+  font-size: 10.5px;
+  color: var(--col-text-muted);
+}
+
+.settings-close-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--col-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-close-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* Compact Segmented Tabs */
+.tabs-nav-wrap {
+  padding: 2px 12px 6px 12px;
+}
+
+.segmented-nav {
+  display: flex;
+  width: 100%;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--col-card-border);
+  border-radius: 7px;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .segmented-nav {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.segmented-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 0;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--col-text-muted);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.segmented-tab:hover {
+  color: var(--col-text);
+}
+
+.segmented-tab.active {
+  background: var(--col-menu-bg);
+  color: var(--col-text);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Content Area */
+.settings-content {
+  flex: 1;
+  padding: 2px 12px 6px 12px;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-pane {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+  overflow: visible;
+}
+
+.tab-pane.active {
+  display: flex;
+}
+
+/* Unified Compact Glass Card */
+.settings-card {
+  background: var(--col-card-bg);
+  border: 1px solid var(--col-card-border);
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 11px;
+  border-bottom: 1px solid var(--col-divider-subtle);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.setting-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--col-text);
+}
+
+.setting-subtext {
+  font-size: 10px;
+  color: var(--col-text-muted);
+}
+
+/* Pill Toggle (Dark / Light) */
+.pill-toggle-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--col-card-border);
+  border-radius: 5px;
+  padding: 1px;
+}
+
+[data-theme="light"] .pill-toggle-group {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.pill-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--col-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.pill-toggle-btn:hover {
+  color: var(--col-text);
+}
+
+.pill-toggle-btn.active {
+  background: var(--col-menu-bg);
+  color: var(--col-text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+/* Frosted Glass Select Dropdown */
+.glass-select-container {
+  position: relative;
+  display: inline-block;
+}
+
+.glass-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 105px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--col-card-border);
+  color: var(--col-text);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+[data-theme="light"] .glass-select-trigger {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.glass-select-trigger:hover,
+.glass-select-trigger.open {
+  border-color: var(--col-accent);
+}
+
+.glass-select-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--col-text-muted);
+  transition: transform 0.15s ease;
+}
+
+.glass-select-trigger.open .glass-select-arrow {
+  transform: rotate(180deg);
+}
+
+.glass-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 135px;
+  max-height: 112px;
+  overflow-y: auto;
+  background: var(--col-menu-bg);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid var(--col-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  padding: 4px;
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  gap: 1px;
+  animation: fadeInMenu 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-select-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.glass-select-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-select-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+}
+
+[data-theme="light"] .glass-select-menu::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.glass-select-menu.open {
+  display: flex;
+}
+
+.glass-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--col-text);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.glass-select-option:hover {
+  background: var(--col-menu-sel);
+  color: #ffffff;
+}
+
+.glass-select-option.selected {
+  background: rgba(37, 99, 235, 0.85);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.glass-select-option.selected .option-name,
+.glass-select-option.selected .option-check {
+  color: #ffffff;
+}
+
+.glass-select-option.selected:hover {
+  background: var(--col-menu-sel);
+  color: #ffffff;
+}
+
+.option-check {
+  display: flex;
+  align-items: center;
+  margin-left: 6px;
+}
+
+.option-check svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Compact Switch */
+.switch-control {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  height: 16px;
+}
+
+.switch-control input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-track {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(120, 120, 128, 0.25);
+  border: 1px solid var(--col-card-border);
+  transition: 0.18s ease;
+  border-radius: 16px;
+}
+
+.switch-track:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 1px;
+  bottom: 1px;
+  background-color: #ffffff;
+  transition: 0.18s ease;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+input:checked + .switch-track {
+  background-color: var(--col-accent);
+}
+
+input:checked + .switch-track:before {
+  transform: translateX(12px);
+}
+
+/* Glass Action Button */
+.glass-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 500;
+  background: var(--col-card-bg);
+  border: 1px solid var(--col-card-border);
+  color: var(--col-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.glass-btn:hover {
+  background: var(--col-menu-sel);
+  color: #ffffff;
+  border-color: var(--col-menu-sel);
+}
+
+.glass-btn.update-ready {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+  font-weight: 600;
+  animation: pulseUpdate 2s infinite ease-in-out;
+}
+
+[data-theme="light"] .glass-btn.update-ready {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+  border-color: #0284c7;
+  box-shadow: 0 0 8px rgba(2, 132, 199, 0.3);
+}
+
+@keyframes pulseUpdate {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(56, 189, 248, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.65);
+  }
+}
+
+/* Download Progress Bar */
+.update-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 120px;
+}
+
+.update-progress-track {
+  width: 100%;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--col-card-border);
+}
+
+.update-progress-fill {
+  height: 100%;
+  background: var(--col-accent);
+  transition: width 0.12s ease;
+}
+
+.update-progress-info {
+  font-size: 9.5px;
+  color: var(--col-text-muted);
+  text-align: right;
+}
+
+/* Redesigned About Box */
+.about-box {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 12px;
+}
+
+.about-hero-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-bottom: 1px;
+}
+
+.about-hero-icon-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.about-hero-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--col-text);
+}
+
+.about-desc {
+  font-family: var(--font-ui, 'Segoe UI', system-ui, -apple-system, sans-serif);
+  font-size: 11px;
+  line-height: 1.45;
+  color: #e2e8f0;
+  text-align: center;
+  padding: 0 6px;
+}
+
+[data-theme="light"] .about-desc {
+  color: var(--col-text-muted);
+}
+
+.about-hairline {
+  height: 1px;
+  width: 100%;
+  background: var(--col-divider-subtle);
+  margin: 1px 0;
+}
+
+.about-author-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--col-text-muted);
+}
+
+.minimal-heart-wrap {
+  display: inline-flex;
+  align-items: center;
+  color: #ef4444;
+}
+
+.minimal-heart-wrap svg {
+  width: 14px;
+  height: 14px;
+}
+
+.author-name-link {
+  font-weight: 600;
+  color: var(--col-text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.author-name-link:hover {
+  color: var(--col-accent);
+  text-decoration: underline;
+}
+
+/* Coffee Capsule */
+.about-coffee-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--col-text-muted);
+}
+
+.coffee-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  color: #f59e0b;
+}
+
+.coffee-icon-wrap svg {
+  width: 15px;
+  height: 15px;
+}
+
+.coffee-capsule {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--col-card-border);
+  border-radius: 14px;
+  padding: 2px 7px;
+  gap: 5px;
+}
+
+[data-theme="light"] .coffee-capsule {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.capsule-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--col-coffee-text);
+  cursor: pointer;
+  padding: 1px 2px;
+  border-radius: 3px;
+  transition: all 0.12s ease;
+}
+
+.capsule-link:hover {
+  text-decoration: underline;
+  filter: brightness(1.15);
+}
+
+.capsule-link svg {
+  width: 10px;
+  height: 10px;
+}
+
+.capsule-slash {
+  font-size: 10.5px;
+  color: var(--col-text-dim);
+}
+
+/* Standalone Bug Report Button */
+.about-bug-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.standalone-bug-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--col-card-border);
+  color: var(--col-text);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+[data-theme="light"] .standalone-bug-btn {
+  background: var(--col-card-bg);
+}
+
+.standalone-bug-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--col-accent);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.standalone-bug-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Compact Footer Attribution */
+.settings-footer-bar {
+  margin-top: auto;
+  padding: 6px 12px 6px 12px;
+  border-top: 1px solid var(--col-divider-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--col-text-dim);
+}

@@ -10,6 +10,7 @@ export interface ShortcutHandlers {
   onToggleMarkdown: () => void;
   onSelectAll: () => void;
   onQuit: () => void;
+  onSettings?: () => void;
 }
 
 export function registerShortcuts(handlers: ShortcutHandlers): () => void {
@@ -22,6 +23,12 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
     }
 
     if (!e.ctrlKey) return;
+
+    if (e.key === ",") {
+      e.preventDefault();
+      handlers.onSettings?.();
+      return;
+    }
 
     const key = e.key.toUpperCase();
 

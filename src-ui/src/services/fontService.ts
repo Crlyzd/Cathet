@@ -45,6 +45,6 @@ export class FontService {
   }
 
   private applyFont(font: FontOption): void {
-    document.documentElement.style.setProperty("--font-family", font.family);
+    document.documentElement.style.setProperty("--font-editor", font.family);
   }
 }

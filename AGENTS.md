@@ -18,16 +18,20 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
    - The title bar must strictly display the current document's file name (e.g. `Untitled` when unsaved, or `notes.md` when loaded).
 5. **Markdown Support**:
    - Support seamless instant toggle (`Ctrl+M`) between raw markdown editing and rendered preview.
-6. **Settings & Themes**:
-   - Single top-bar dot button dropdown houses:
-     - Theme toggle (Dark / Light).
+6. **Settings, Themes & About**:
+   - Top-bar dot button dropdown is streamlined for document workflows (`New`, `Open`, `Save`, `Save As`, `Markdown Toggle`, `Settings & About...`, `Quit`).
+   - Dedicated Settings & About native window with frosted glass backdrop houses:
+     - Theme selector (Dark / Light).
      - Font selector (Noto Sans, Roboto, Cascadia Code, Consolas, Segoe UI, Inter, JetBrains Mono, Fira Code, Arial).
-     - Markdown preview toggle (`Ctrl+M`).
-     - Update button with glowing indicator.
+     - Stay on Top pin toggle (`Ctrl+T`).
+     - Update checker with glowing action indicator.
+     - About tab with author profile, donation links (Saweria, PayPal), bug reports, and engine stack attribution.
 7. **Version 1.0 GitHub Auto-Updater**:
    - Checks releases from `https://api.github.com/repos/Crlyzd/CleanPad/releases/latest`.
    - Differentiates Windows `x64` vs `arm64` `.exe` targets.
    - Preserves shortcuts by downloading to temporary staging, launching `--replace-old "<target>"`, exiting current process, and cleanly replacing the binary at the original path.
+8. **Frosted Glass Dropdowns & Menus Standard**:
+   - All dropdowns, context menus, and select popups (both the Main window top bar dropdown and the Settings font selector) must strictly use custom frosted glassmorphism components (`backdrop-filter: blur(28px)`, translucent backdrop `rgba(...)`, smooth rounded corners, and hairline borders). Native OS `<select>` elements that spawn opaque, rectangular Windows popups are strictly prohibited.
 
 ---
 

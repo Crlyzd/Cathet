@@ -75,6 +75,87 @@ pub async fn check_for_updates() -> Result<UpdateInfo, String> {
     })
 }
 
+use tauri::{AppHandle, Emitter};
+
+#[derive(Clone, Serialize)]
+pub struct DownloadProgress {
+    pub percent: f64,
+    pub downloaded_bytes: u64,
+    pub total_bytes: u64,
+}
+
+#[tauri::command]
+pub async fn download_update_payload(
+    app_handle: AppHandle,
+    download_url: String,
+) -> Result<String, String> {
+    if download_url.is_empty() {
+        return Err("Download URL is empty".into());
+    }
+
+    let client = reqwest::Client::builder()
+        .user_agent("Cathet-Updater")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let mut response = client
+        .get(&download_url)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to download update: {}", e))?;
+
+    let total_bytes = response.content_length().unwrap_or(0);
+    let mut downloaded_bytes: u64 = 0;
+
+    let temp_dir = env::temp_dir();
+    let temp_exe = temp_dir.join("cathet_update.exe");
+    let mut file = File::create(&temp_exe).map_err(|e| e.to_string())?;
+
+    while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
+        file.write_all(&chunk).map_err(|e| e.to_string())?;
+        downloaded_bytes += chunk.len() as u64;
+        let percent = if total_bytes > 0 {
+            (downloaded_bytes as f64 / total_bytes as f64) * 100.0
+        } else {
+            0.0
+        };
+
+        let _ = app_handle.emit(
+            "update:progress",
+            DownloadProgress {
+                percent,
+                downloaded_bytes,
+                total_bytes,
+            },
+        );
+    }
+
+    drop(file);
+
+    let _ = app_handle.emit(
+        "update:progress",
+        DownloadProgress {
+            percent: 100.0,
+            downloaded_bytes,
+            total_bytes,
+        },
+    );
+
+    Ok(temp_exe.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn install_and_restart(temp_path: String) -> Result<(), String> {
+    let current_exe = env::current_exe().map_err(|e| e.to_string())?;
+    Command::new(&temp_path)
+        .arg("--replace-old")
+        .arg(&current_exe)
+        .spawn()
+        .map_err(|e| format!("Failed to launch updater: {}", e))?;
+
+    std::process::exit(0);
+}
+
 #[tauri::command]
 pub async fn download_and_install_update(download_url: String) -> Result<(), String> {
     if download_url.is_empty() {
@@ -106,14 +187,12 @@ pub async fn download_and_install_update(download_url: String) -> Result<(), Str
 
     let current_exe = env::current_exe().map_err(|e| e.to_string())?;
 
-    // Spawn the downloaded updater binary with the original path to replace
     Command::new(&temp_exe)
         .arg("--replace-old")
         .arg(&current_exe)
         .spawn()
         .map_err(|e| format!("Failed to launch updater: {}", e))?;
 
-    // Exit immediately to release lock on current_exe
     std::process::exit(0);
 }
 

@@ -4,34 +4,48 @@
 
 :root,
 [data-theme="dark"] {
-  --col-bg-main: rgba(18, 18, 22, 0.45);
-  --col-bg-bar: rgba(28, 28, 34, 0.55);
-  --col-text: #f1f5f9;
-  --col-text-muted: #94a3b8;
-  --col-menu-bg: rgba(24, 24, 28, 0.9);
+  color-scheme: dark;
+  --col-bg-main: transparent;
+  --col-bg-bar: rgba(28, 28, 34, 0.25);
+  --col-text: #ffffff;
+  --col-text-muted: #cbd5e1;
+  --col-text-dim: #94a3b8;
+  --col-menu-bg: rgba(22, 22, 28, 0.80);
   --col-menu-sel: #2563eb;
   --col-accent: #38bdf8;
-  --col-border: rgba(255, 255, 255, 0.12);
+  --col-border: rgba(255, 255, 255, 0.14);
   --col-code-bg: rgba(0, 0, 0, 0.35);
   --col-quote-border: #38bdf8;
+  --col-card-bg: rgba(255, 255, 255, 0.09);
+  --col-card-border: rgba(255, 255, 255, 0.14);
+  --col-divider-subtle: rgba(255, 255, 255, 0.10);
+  --col-coffee-text: #fb923c;
   
   --top-bar-height: 32px;
   --file-btn-width: 32px;
-  --font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-editor: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family: var(--font-ui);
   --font-mono: 'Cascadia Code', 'Consolas', monospace;
 }
 
 [data-theme="light"] {
-  --col-bg-main: rgba(248, 250, 252, 0.65);
-  --col-bg-bar: rgba(241, 245, 249, 0.75);
+  color-scheme: light;
+  --col-bg-main: transparent;
+  --col-bg-bar: rgba(255, 255, 255, 0.25);
   --col-text: #0f172a;
   --col-text-muted: #64748b;
-  --col-menu-bg: rgba(255, 255, 255, 0.94);
+  --col-text-dim: #94a3b8;
+  --col-menu-bg: rgba(255, 255, 255, 0.80);
   --col-menu-sel: #2563eb;
   --col-accent: #0284c7;
-  --col-border: rgba(0, 0, 0, 0.12);
-  --col-code-bg: rgba(0, 0, 0, 0.06);
+  --col-border: rgba(0, 0, 0, 0.10);
+  --col-code-bg: rgba(0, 0, 0, 0.05);
   --col-quote-border: #0284c7;
+  --col-card-bg: rgba(255, 255, 255, 0.45);
+  --col-card-border: rgba(0, 0, 0, 0.09);
+  --col-divider-subtle: rgba(0, 0, 0, 0.08);
+  --col-coffee-text: #ea580c;
 }
 
 * {

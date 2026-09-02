@@ -134,6 +134,25 @@ pub fn apply_frosted_glass(window: &WebviewWindow) {
     }
 }
 
+/// Updates Windows DWM immersive dark mode attribute to match the current theme.
+pub fn update_window_theme(window: &WebviewWindow, is_dark: bool) {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(hwnd_raw) = window.hwnd() {
+            let hwnd = hwnd_raw.0 as HWND;
+            let val: u32 = if is_dark { 1 } else { 0 };
+            unsafe {
+                DwmSetWindowAttribute(
+                    hwnd,
+                    DWMWA_USE_IMMERSIVE_DARK_MODE,
+                    &val as *const _ as *const _,
+                    std::mem::size_of::<u32>() as u32,
+                );
+            }
+        }
+    }
+}
+
 /// No-op placeholder to preserve compatibility with existing focus events if called.
 pub fn refresh_vibrancy_on_focus(_window: &WebviewWindow, _focused: bool) {
     // Windows DWM handles active/inactive backdrop composition natively.

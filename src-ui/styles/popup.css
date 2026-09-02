@@ -15,12 +15,12 @@
   position: absolute;
   min-width: 180px;
   background: var(--col-menu-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
   border: 1px solid var(--col-border);
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  padding: 6px 0;
+  border-radius: 9px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  padding: 5px 0;
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -81,11 +81,18 @@
 .popup-menu-item.glow-update {
   font-weight: 600;
   color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
+  background: rgba(56, 189, 248, 0.12);
+  box-shadow: inset 3px 0 0 #38bdf8;
+}
+
+[data-theme="light"] .popup-menu-item.glow-update {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.08);
+  box-shadow: inset 3px 0 0 #0284c7;
 }
 
 .popup-menu-item.glow-update:hover {
-  background: #0284c7;
+  background: var(--col-menu-sel);
   color: #ffffff;
 }
 

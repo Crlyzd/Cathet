@@ -1,6 +1,5 @@
 import { TopBarComponent } from "./components/TopBar";
 import { PopupMenuComponent, MenuItem } from "./components/PopupMenu";
-import { SettingsMenuBuilder } from "./components/SettingsMenu";
 import { EditorComponent } from "./components/Editor";
 import { FileService } from "./services/fileService";
 import { WindowService } from "./services/windowService";
@@ -9,6 +8,8 @@ import { FontService } from "./services/fontService";
 import { UpdateService } from "./services/updateService";
 import { globalEventBus } from "./utils/eventBus";
 import { registerShortcuts } from "./utils/shortcuts";
+import { emit, listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 
 class CathetApp {
   private fileService: FileService;
@@ -19,7 +20,6 @@ class CathetApp {
 
   private topBar: TopBarComponent;
   private popupMenu: PopupMenuComponent;
-  private settingsBuilder: SettingsMenuBuilder;
   private editor: EditorComponent;
 
   private currentFilePath: string | null = null;
@@ -35,11 +35,6 @@ class CathetApp {
     this.topBar = new TopBarComponent("topbar-container", this.windowService);
     this.popupMenu = new PopupMenuComponent("popup-container");
     this.editor = new EditorComponent("editor-container");
-    this.settingsBuilder = new SettingsMenuBuilder(
-      this.themeService,
-      this.fontService,
-      this.updateService
-    );
 
     this.init();
   }
@@ -47,24 +42,45 @@ class CathetApp {
   private init(): void {
     this.topBar.setTitle("Untitled");
 
+    // Sync native DWM window theme on start
+    invoke("sync_window_theme", { theme: this.themeService.getTheme() }).catch(console.error);
+
     // Event bus listeners
     globalEventBus.on("topbar:toggleMenu", (pos: { x: number; y: number }) => {
       this.openMainMenu(pos.x, pos.y);
     });
 
     globalEventBus.on("editor:toggleMarkdown", () => {
-      const isMd = this.editor.toggleMarkdownPreview();
-      this.settingsBuilder.setMarkdownMode(isMd);
+      this.editor.toggleMarkdownPreview();
     });
 
     globalEventBus.on("window:toggleAlwaysOnTop", async () => {
       const state = await this.windowService.toggleAlwaysOnTop();
       this.isAlwaysOnTop = state;
-      this.settingsBuilder.setAlwaysOnTop(state);
+      await emit("cathet:ontop-change", state);
     });
 
-    globalEventBus.on("update:statusChanged", (info: any) => {
+    globalEventBus.on("update:statusChanged", async (info: any) => {
       this.topBar.setUpdateAvailable(!!info?.update_available);
+      await emit("cathet:update-status", info).catch(console.error);
+    });
+
+    // Cross-window synchronization
+    listen<"dark" | "light">("cathet:theme-change", (event) => {
+      if (this.themeService.getTheme() !== event.payload) {
+        this.themeService.toggleTheme();
+      }
+      invoke("sync_window_theme", { theme: event.payload }).catch(console.error);
+    });
+
+    listen<string>("cathet:font-change", (event) => {
+      this.fontService.setFont(event.payload);
+    });
+
+    listen<boolean>("cathet:toggle-ontop", async () => {
+      const state = await this.windowService.toggleAlwaysOnTop();
+      this.isAlwaysOnTop = state;
+      await emit("cathet:ontop-change", state);
     });
 
     // Register keyboard shortcuts
@@ -73,14 +89,14 @@ class CathetApp {
       onSave: () => this.handleSave(),
       onSaveAs: () => this.handleSaveAs(),
       onNewWindow: () => this.windowService.openNewInstance(),
+      onSettings: () => this.windowService.openSettingsWindow(),
       onToggleAlwaysOnTop: async () => {
         const state = await this.windowService.toggleAlwaysOnTop();
         this.isAlwaysOnTop = state;
-        this.settingsBuilder.setAlwaysOnTop(state);
+        await emit("cathet:ontop-change", state);
       },
       onToggleMarkdown: () => {
-        const isMd = this.editor.toggleMarkdownPreview();
-        this.settingsBuilder.setMarkdownMode(isMd);
+        this.editor.toggleMarkdownPreview();
       },
       onToggleBold: () => this.editor.toggleBold(),
       onToggleItalic: () => this.editor.toggleItalic(),
@@ -100,38 +116,43 @@ class CathetApp {
     });
     window.addEventListener("dragover", (e) => e.preventDefault());
 
-    // Background check for updates (non-blocking)
+    // Immediate background check for updates on app launch
     setTimeout(() => {
       this.updateService.checkForUpdates();
-    }, 1500);
+    }, 150);
   }
 
   private openMainMenu(x: number, y: number): void {
-    const fileItems: MenuItem[] = [
+    const isMd = this.editor.getIsMarkdownPreview();
+    const hasUpdate = this.updateService.hasUpdate();
+
+    const items: MenuItem[] = [
       { id: "new", label: "New Window", shortcut: "Ctrl+N", action: () => this.windowService.openNewInstance() },
       { id: "open", label: "Open...", shortcut: "Ctrl+O", action: () => this.handleOpen() },
       { id: "save", label: "Save", shortcut: "Ctrl+S", action: () => this.handleSave() },
       { id: "saveas", label: "Save As...", shortcut: "Ctrl+Shift+S", action: () => this.handleSaveAs() },
       { id: "div_file", label: "", isDivider: true },
-    ];
-
-    const settingsItems = this.settingsBuilder.buildSettingsItems(() => {
-      this.openFontMenu(x, y);
-    });
-
-    const quitItem: MenuItem[] = [
+      {
+        id: "toggle_markdown",
+        label: isMd ? "Markdown: Preview" : "Markdown: Edit",
+        shortcut: "Ctrl+M",
+        action: () => {
+          this.editor.toggleMarkdownPreview();
+        },
+      },
+      { id: "div_settings", label: "", isDivider: true },
+      {
+        id: "settings",
+        label: "Settings",
+        shortcut: "Ctrl+,",
+        isGlowing: hasUpdate,
+        action: () => this.windowService.openSettingsWindow(),
+      },
       { id: "div_quit", label: "", isDivider: true },
       { id: "quit", label: "Quit", shortcut: "Esc", action: () => this.windowService.close() },
     ];
 
-    this.popupMenu.toggle(x, y, [...fileItems, ...settingsItems, ...quitItem]);
-  }
-
-  private openFontMenu(x: number, y: number): void {
-    const fontItems = this.settingsBuilder.buildFontMenuItems((fontId) => {
-      this.fontService.setFont(fontId);
-    });
-    this.popupMenu.show(x, y, fontItems);
+    this.popupMenu.toggle(x, y, items);
   }
 
   private async handleOpen(): Promise<void> {
