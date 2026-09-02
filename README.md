@@ -2,151 +2,138 @@
 
 # Cathet
 
-**A sleek, portable, ultra-lightweight text & markdown editor for Windows with persistent frosted glass.**
+**A beautiful, crystal-clear frosted glass scratchpad & markdown editor for Windows.**
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6?logo=windows&logoColor=white)](https://github.com/Crlyzd/Cathet)
 [![Architecture](https://img.shields.io/badge/Arch-x64%20%7C%20ARM64-orange)](https://github.com/Crlyzd/Cathet/releases)
-[![Built with](https://img.shields.io/badge/Built%20with-Rust%20%2B%20Tauri%20v2-blue?logo=rust&logoColor=white)](https://tauri.app)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/Crlyzd/Cathet?color=purple&label=Release)](https://github.com/Crlyzd/Cathet/releases/latest)
 
 <br/>
 
-<!-- 
-  ======================================================================
-  📸 SCREENSHOT PLACEHOLDER
-  To add your screenshot:
-  1. Capture your app screenshot (e.g. Win + Shift + S).
-  2. Save it as 'screenshot.png' inside the 'docs/' directory.
-     (Or replace the path below with your desired image URL / path)
-  ======================================================================
--->
 <p align="center">
-  <img src="docs/screenshot.png" alt="Cathet Application Screenshot" width="800" style="max-width: 100%; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.35);" />
+  <img src="docs/screenshot.png" alt="Cathet Application Screenshot" width="800" style="max-width: 100%; border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.35);" />
 </p>
 
-*Distraction-free writing wrapped in modern Windows Acrylic blur.*
+*Distraction-free writing that blends gracefully into your Windows desktop.*
 
 </div>
 
 ---
 
-## ✨ Why Cathet?
+## ✨ What is Cathet?
 
-Traditional text editors can feel plain and dated, while modern markdown apps often come bloated with heavy Electron runtimes consuming hundreds of megabytes of memory. 
+Standard Notepad feels plain and dated, while modern writing apps are often heavy, slow to open, and take up huge amounts of computer memory.
 
-**Cathet** bridges that gap:
-- **Instant startup & tiny footprint** — Single portable executable under 5 MB, sipping ~15 MB of RAM.
-- **True Acrylic vibrancy** — Translucent frosted glass effect that stays active both in the foreground and background.
-- **Dual-mode flexibility** — A lightweight daily scratchpad that transforms into a full Markdown viewer with a single keystroke (`Ctrl + M`).
-
----
-
-## 🌟 Features
-
-- 🪟 **Persistent Frosted Glass (Acrylic / Mica)**: Native Windows DWM backdrop blur that remains translucent even when the window is unfocused.
-- ⚡ **Zero-Bloat Portability**: Completely standalone single `.exe`. No installer, no background services, no registry junk.
-- 📝 **Markdown Preview (`Ctrl + M`)**: Effortlessly switch back and forth between raw text editing and formatted Markdown preview.
-- 📌 **Always on Top (`Ctrl + T`)**: Keep quick notes, code snippets, or reference material floating neatly above your apps.
-- 🎨 **Sleek Themes & Curated Typography**: Clean Dark and Light modes paired with high-legibility developer and reading typefaces (*Inter, JetBrains Mono, Cascadia Code, Fira Code, Roboto, Noto Sans, Consolas, Segoe UI, Arial*).
-- 🖱️ **Modern Fluent Context Menu**: Right-click menu crafted with custom frosted glassmorphism matching Windows 11 aesthetics.
-- 🔍 **In-App Zoom & Web Search**: Quick font scaling (`Ctrl + MouseWheel`) and instant Google lookup for selected text (`Ctrl + E`).
-- 📂 **Drag & Drop**: Drop any `.txt` or `.md` file directly into the window to open it instantly.
-- 🔄 **Built-in Auto-Updater**: Discreetly notifies you when a new GitHub release is available and updates in-place without breaking your shortcuts.
+**Cathet** is designed to be the best of both worlds:
+- 🪟 **Real Frosted Glass**: Gorgeous blurred glass appearance that stays translucent even when you are working in other windows.
+- ⚡ **Opens Instantly**: No loading screens, no heavy background baggage. It opens in a blink and uses virtually no memory (~15 MB RAM).
+- 🎒 **100% Portable**: Just a single `.exe` file. No installer, no setup wizards, and no leftover files on your computer.
+- 📝 **Everyday Notes or Rich Markdown**: Use it as a clean scratchpad for quick thoughts, or press `Ctrl + M` to preview rich formatted Markdown with headings, bold text, lists, and links.
 
 ---
 
-## 🚀 Download & Quick Start
+## 🚀 Getting Started (No Installation Needed!)
 
-Cathet requires no installation—just download and launch!
+Using Cathet takes less than 10 seconds:
 
-1. Head over to the **[Latest Releases](https://github.com/Crlyzd/Cathet/releases/latest)** page.
-2. Download the binary for your system:
-   - **`cathet.exe`** — for standard 64-bit Windows PCs (Intel / AMD x64).
-   - **`cathet-arm64.exe`** — for Windows on ARM devices (Surface Pro, Snapdragon X Elite).
-3. Run the executable and start typing!
+1. Go to the **[Latest Downloads Page](https://github.com/Crlyzd/Cathet/releases/latest)**.
+2. Choose the download that matches your PC:
+   - **`cathet.exe`** (or `cathet-x64.exe`): For almost all regular Windows laptops and desktop PCs (Intel or AMD).
+   - **`cathet-arm64.exe`**: For modern ARM-powered Windows devices (like Microsoft Surface Pro Copilot+ or Snapdragon laptops).
+3. **Double-click to run!** That's it.
 
-> **Tip:** Pin Cathet to your Taskbar or Start Menu for instant access whenever inspiration strikes.
+> 💡 **Helpful Tip:** Right-click `cathet.exe` and select **Pin to taskbar** or **Pin to Start** so you can open your notes anytime with one click.
 
 ---
 
-## ⌨️ Keyboard Shortcuts
+## 🌟 Everyday Features You'll Love
 
-| Shortcut | Action |
+- 📌 **Always on Top (`Ctrl + T`)**: Keep your notes floating neatly on top of your screen while watching a video, attending a Zoom call, or browsing the web.
+- 🎨 **Dark & Light Modes**: Seamlessly switch between dark glass and light glass to match your style or room lighting.
+- 🔤 **Curated Fonts**: Choose from clean, easy-on-the-eyes fonts (*Inter, Cascadia Code, JetBrains Mono, Roboto, Segoe UI, and more*).
+- 🖱️ **Sleek Right-Click Menu**: Modern rounded glass menu designed specifically to match Windows 11 aesthetics.
+- 🔍 **Instant Web Search (`Ctrl + E`)**: Highlight any word or sentence and press `Ctrl + E` to look it up on Google immediately.
+- 🔍 **Zoom In / Out (`Ctrl + Mouse Scroll`)**: Adjust text size on the fly for comfortable reading.
+- 📂 **Drag & Drop**: Drag any `.txt` or `.md` file from your desktop right into the window to read or edit it.
+- 🔄 **Hassle-Free Updates**: Cathet gently notifies you when a new version is released and updates with a single click—keeping your shortcut intact.
+
+---
+
+## ⌨️ Handy Keyboard Shortcuts
+
+| What you want to do | Shortcut |
 | :--- | :--- |
-| `Ctrl + M` | **Toggle Markdown Preview** / Raw Edit Mode |
-| `Ctrl + T` | **Toggle Always on Top** (Pin Window) |
-| `Ctrl + N` | **New Window** instance |
-| `Ctrl + O` | **Open** file... |
-| `Ctrl + S` | **Save** file |
-| `Ctrl + Shift + S` | **Save As**... |
-| `Ctrl + ,` | Open **Settings & About** |
-| `Ctrl + B` / `I` / `U` | **Bold** / *Italic* / <u>Underline</u> |
-| `Ctrl + A` | **Clean Select All** (excludes trailing newline) |
-| `Alt + W` / `Ctrl + Shift + W` | Toggle **Word Wrap** |
-| `Ctrl + E` | **Search Selected Text** on Google |
-| `Ctrl + MouseWheel` | **Zoom** text size in / out |
-| `Esc` | **Close** application |
+| **Switch Markdown Preview on / off** | `Ctrl + M` |
+| **Pin / Unpin window to stay on top** | `Ctrl + T` |
+| **Open Settings & Personalization** | `Ctrl + ,` (or click `···` in the top corner) |
+| **Open a new window** | `Ctrl + N` |
+| **Open a file** | `Ctrl + O` |
+| **Save your document** | `Ctrl + S` |
+| **Save as a new file** | `Ctrl + Shift + S` |
+| **Bold** / *Italic* / <u>Underline</u> | `Ctrl + B` / `Ctrl + I` / `Ctrl + U` |
+| **Search highlighted text on Google** | `Ctrl + E` |
+| **Turn Word Wrap on / off** | `Alt + W` |
+| **Zoom text in / out** | `Ctrl + Mouse Wheel` |
+| **Close Cathet** | `Esc` |
 
 ---
 
-## ⚙️ Settings & Customization
+## ⚙️ Personalizing Cathet
 
-Click the three dots (**`···`**) in the top-right corner or press **`Ctrl + ,`** to open Settings:
-
-- **Theme Selection**: Switch between **Dark** and **Light** frosted glass appearances.
-- **Font Family**: Pick your favorite coding or prose font from the custom frosted dropdown.
-- **Stay on Top**: Toggle persistent window pinning.
-- **Check for Updates**: Check against GitHub releases with one-click background upgrade.
-- **About & Community**: View credits, report bugs, or support development.
+Click the **`···`** button in the top-right corner (or press `Ctrl + ,`) to open **Settings**:
+- **Appearance**: Toggle between Dark and Light mode.
+- **Typography**: Select your favorite font family from the glass dropdown.
+- **Window Behavior**: Turn on persistent "Always on Top" pinning.
+- **Updates**: Check for new updates with a glowing status indicator.
+- **About**: View version info, developer details, or support the project.
 
 ---
 
-## 🛠️ Building from Source (Developers)
+<details>
+<summary><b>🛠️ For Developers & Builders (Compiling from Source)</b></summary>
 
-If you'd like to build or customize Cathet locally:
+<br/>
 
-### Prerequisites
+If you are a developer and wish to build Cathet locally from source:
+
+### Requirements
 - [Node.js](https://nodejs.org/) (v18+) & `npm`
-- [Rust](https://www.rust-lang.org/tools/install) (latest stable) & Cargo
-- PowerShell 5.1+ (built into Windows)
+- [Rust](https://www.rust-lang.org/) (latest stable)
+- Windows PowerShell
 
-### Automation Pipeline
-Cathet includes a unified PowerShell build script (`build.ps1`):
+### Single-Script Automation (`build.ps1`)
 
 ```powershell
-# 1. Clone the repository
+# 1. Clone repository & install frontend modules
 git clone https://github.com/Crlyzd/Cathet.git
 cd Cathet
-
-# 2. Install frontend dependencies
 npm install
 
-# 3. Launch live hot-reload development
+# 2. Live development with hot-reload
 .\build.ps1 -Live
 
-# 4. Compile a production release (placed into release/)
-.\build.ps1 -Build
-
-# 5. Compile for specific architecture targets
-.\build.ps1 -BuildX64     # Windows x64
-.\build.ps1 -BuildArm64   # Windows ARM64
-.\build.ps1 -All          # Both architectures
+# 3. Build optimized release binary
+.\build.ps1 -BuildX64     # Windows x64 (~3.7 MB)
+.\build.ps1 -BuildArm64   # Windows ARM64 (~3.5 MB)
+.\build.ps1 -All          # Both targets
 ```
 
-Release binaries are automatically optimized (`opt-level = "z"`, LTO, symbol stripping) and saved to the `release/` directory with versioned names (e.g. `cathet-v3.0.0-x64.exe`) and canonical aliases (`cathet-x64.exe`).
+All release binaries are created in `release/` with zero bloat (`opt-level = "z"`, stripped symbols, native Windows Schannel TLS).
+
+</details>
 
 ---
 
-## ❤️ Support & Feedback
+## ❤️ Support & Community
 
-Cathet is free and open-source. If you find it useful:
-- ⭐ Star the project on GitHub
-- 🐛 Found an issue? [Submit a bug report](https://github.com/Crlyzd/Cathet/issues)
-- ☕ Buy me a coffee via [Saweria](https://saweria.co/crlyzd) or [PayPal](https://paypal.me/crlyzd)
+Cathet is free, open-source, and crafted with care.
+- ⭐ If you enjoy Cathet, please consider starring the repository on GitHub!
+- 🐛 Found a problem or have an idea? [Submit an issue](https://github.com/Crlyzd/Cathet/issues).
+- ☕ Support the creator via [Saweria](https://saweria.co/crlyzd) or [PayPal](https://paypal.me/crlyzd).
 
 ---
 
 ## 📄 License
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for more details.
+Cathet is open-source software licensed under the [MIT License](LICENSE).

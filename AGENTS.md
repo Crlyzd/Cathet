@@ -12,6 +12,7 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
 2. **Minimal Binary Footprint & Zero Bloat**:
    - Rust release profile must use `opt-level = "z"`, `lto = true`, `codegen-units = 1`, `panic = "abort"`, and `strip = true`.
    - Avoid heavy external dependencies. Use lightweight native APIs and minimal HTTP queries.
+   - **Native TLS Backend**: `reqwest` must strictly use `features = ["json", "native-tls"]` (Windows SChannel) instead of `default-tls` (`aws-lc-sys`), ensuring seamless compilation without assembly linkage errors (`LNK1181`) across both Windows x64 and ARM64. Release binary sizes must remain under 4 MB (`cathet-arm64.exe` ~3.49 MB, `cathet-x64.exe` ~3.72 MB).
 3. **Backdrop Vibrancy & Acrylic**:
    - The frosted glass effect must persist in **both foreground (focused) and background (unfocused)** states via modern Windows DWM system backdrops (`DwmSetWindowAttribute` with `DWMWA_SYSTEMBACKDROP_TYPE` for Acrylic/Mica) and graceful platform vibrancy fallbacks. Undocumented legacy `SetWindowCompositionAttribute(BlurBehind)` is deprecated and prohibited as it produces opaque black artifacts and drag flicker on Windows 10 (1903+) and Windows 11.
 4. **Title Bar File Name**:
@@ -36,6 +37,7 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
    - `build.ps1` in the project root is the single, authoritative automation pipeline for live development (`-Live`/`-Dev`), verification (`-Check`), SemVer bumping (`-Patch`/`-Minor`/`-Major`/`-TargetVersion`), and release compilation.
    - Proliferating auxiliary `.ps1` or `.bat` runner scripts is strictly prohibited.
    - All compiled release binaries are cleanly placed into the dedicated `release/` folder in the project root with versioned naming (`release/cathet-v<version>.exe`, `release/cathet-v<version>-x64.exe`, `release/cathet-v<version>-arm64.exe`) alongside unversioned companion aliases (`cathet.exe`, `cathet-x64.exe`, `cathet-arm64.exe`) for backward compatibility.
+   - Companion alias copying in `build.ps1` must gracefully catch and skip in-use file locks without aborting the release artifact creation.
 10. **Dual-Window Architecture & Modular Layout**:
    - **Main Editor**: `index.html` mounted by `src-ui/src/main.ts`, powered by `Editor.ts`, `TopBar.ts`, and `PopupMenu.ts`.
    - **Settings Window**: `settings.html` mounted by `src-ui/src/settingsMain.ts`, powered by `SettingsTabs.ts` and `SettingsMenu.ts`.
