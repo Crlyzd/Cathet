@@ -49,7 +49,7 @@ pub fn handle_migration_if_present() -> bool {
     // Schedule cleanup of the temporary staging executable on exit
     #[cfg(target_os = "windows")]
     {
-        let current_str = current_exe.to_string_lossy().to_string();
+        let current_str = format!("\"{}\"", current_exe.to_string_lossy());
         let _ = Command::new("cmd")
             .args(["/C", "timeout", "2", ">nul", "&", "del", "/f", "/q", &current_str])
             .spawn();

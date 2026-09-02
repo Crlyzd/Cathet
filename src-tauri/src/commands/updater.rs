@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 use std::process::Command;
 
 const GITHUB_REPO: &str = "Crlyzd/CleanPad";
@@ -107,9 +108,7 @@ pub async fn download_update_payload(
     let total_bytes = response.content_length().unwrap_or(0);
     let mut downloaded_bytes: u64 = 0;
 
-    let temp_dir = env::temp_dir();
-    let temp_exe = temp_dir.join("cathet_update.exe");
-    let mut file = File::create(&temp_exe).map_err(|e| e.to_string())?;
+    let (mut file, staging_exe) = create_update_staging_file()?;
 
     while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
         file.write_all(&chunk).map_err(|e| e.to_string())?;
@@ -141,7 +140,7 @@ pub async fn download_update_payload(
         },
     );
 
-    Ok(temp_exe.to_string_lossy().to_string())
+    Ok(staging_exe.to_string_lossy().to_string())
 }
 
 #[tauri::command]
@@ -178,22 +177,34 @@ pub async fn download_and_install_update(download_url: String) -> Result<(), Str
         .await
         .map_err(|e| format!("Failed to read update payload: {}", e))?;
 
-    let temp_dir = env::temp_dir();
-    let temp_exe = temp_dir.join("cathet_update.exe");
-
-    let mut file = File::create(&temp_exe).map_err(|e| e.to_string())?;
+    let (mut file, staging_exe) = create_update_staging_file()?;
     file.write_all(&bytes).map_err(|e| e.to_string())?;
     drop(file);
 
     let current_exe = env::current_exe().map_err(|e| e.to_string())?;
 
-    Command::new(&temp_exe)
+    Command::new(&staging_exe)
         .arg("--replace-old")
         .arg(&current_exe)
         .spawn()
         .map_err(|e| format!("Failed to launch updater: {}", e))?;
 
     std::process::exit(0);
+}
+
+fn create_update_staging_file() -> Result<(File, PathBuf), String> {
+    if let Ok(current_exe) = env::current_exe() {
+        if let Some(app_dir) = current_exe.parent() {
+            let candidate = app_dir.join("cathet_update.exe");
+            if let Ok(file) = File::create(&candidate) {
+                return Ok((file, candidate));
+            }
+        }
+    }
+
+    let temp_exe = env::temp_dir().join("cathet_update.exe");
+    let file = File::create(&temp_exe).map_err(|e| format!("Failed to create update file: {}", e))?;
+    Ok((file, temp_exe))
 }
 
 fn find_matching_asset(assets: &[GithubAsset]) -> Option<&GithubAsset> {
