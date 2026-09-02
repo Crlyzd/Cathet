@@ -1,15 +1,18 @@
 import { resolve } from "path";
 import { defineConfig } from "vite";
 
+const host = process.env.TAURI_DEV_HOST || "127.0.0.1";
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 5173;
+
 // https://vitejs.dev/config/
 export default defineConfig({
   // Prevent vite from obscuring rust errors
   clearScreen: false,
-  // Tauri expects a fixed port, fail if that port is not available
+  // Dynamic port configuration compatible with Tauri dev
   server: {
-    port: 1420,
+    port,
     strictPort: true,
-    host: true,
+    host,
   },
   // Env variables starting with TAURI_ are exposed to webview
   envPrefix: ["VITE_", "TAURI_ENV_*"],

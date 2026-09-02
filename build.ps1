@@ -1,69 +1,64 @@
 <#
 .SYNOPSIS
     build.ps1 - Cathet Unified Automation Pipeline (Interactive CLI, Dev, Build, Check, Bump)
-
-.DESCRIPTION
-    Interactive CLI and automated pipeline for live development, verification checks,
-    SemVer version bumping, and size-optimized production builds for Windows (x64 and ARM64).
-    Compiled binaries are placed in the dedicated 'release' folder at the root.
-
-.EXAMPLE
-    .\build.ps1                      # Interactive Pickable CLI Menu
-    .\build.ps1 -Dev                 # Directly launch live dev mode
-    .\build.ps1 -Check               # Run frontend & Rust compilation checks
-    .\build.ps1 -Build               # Build native release -> release/cathet.exe
-    .\build.ps1 -Build -Run          # Build release and immediately launch it
-    .\build.ps1 -BuildX64            # Build x64 release -> release/cathet-x64.exe
-    .\build.ps1 -BuildArm64          # Build ARM64 release -> release/cathet-arm64.exe
-    .\build.ps1 -All                 # Build both x64 and ARM64 releases
-    .\build.ps1 -Patch               # Bump version 1.0.0 -> 1.0.1
-    .\build.ps1 -TargetVersion 1.2.3 # Explicit target version bump
 #>
 
 param(
-    [switch]$Dev,
-    [switch]$Live,
-    [switch]$Check,
-    [switch]$Build,
-    [switch]$BuildX64,
-    [switch]$BuildArm64,
-    [switch]$All,
-    [switch]$Run,
-    [switch]$Patch,
-    [switch]$Minor,
-    [switch]$Major,
-    [string]$TargetVersion,
-    [string]$OutputDir = "release",
-    [switch]$Help
+    [switch]$Dev, [switch]$Live, [switch]$Check, [switch]$Build,
+    [switch]$BuildX64, [switch]$BuildArm64, [switch]$All, [switch]$Run,
+    [switch]$Patch, [switch]$Minor, [switch]$Major,
+    [string]$TargetVersion, [string]$OutputDir = "release",
+    [int]$Port = 0, [switch]$NoPause, [switch]$Help
 )
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = $PSScriptRoot
+Set-Location $ProjectRoot
 $ReleaseDir = Join-Path $ProjectRoot $OutputDir
+
+function Invoke-Exit([int]$code = 0) {
+    if (-not $NoPause) {
+        Write-Host ""
+        [void](Read-Host "Press Enter to exit...")
+    }
+    exit $code
+}
 
 function Show-HelpGuide {
     Write-Host "Cathet Unified Automation Script" -ForegroundColor Cyan
     Write-Host "Usage:" -ForegroundColor Yellow
-    Write-Host "  .\build.ps1                        -> Interactive pickable CLI menu"
+    Write-Host "  .\build.ps1                        -> Interactive CLI menu"
     Write-Host "  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)"
     Write-Host "  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check"
     Write-Host "  .\build.ps1 -Build [-Run]          -> Build release binary & save to '$OutputDir/'"
-    Write-Host "  .\build.ps1 -BuildX64              -> Build x64 release binary"
-    Write-Host "  .\build.ps1 -BuildArm64            -> Build ARM64 release binary"
+    Write-Host "  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific release binary"
     Write-Host "  .\build.ps1 -All                   -> Build both x64 and ARM64 binaries"
     Write-Host "  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests"
     Write-Host "  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump"
+    Write-Host "  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)"
 }
 
 function Ensure-Environment {
-    if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw "Node.js is not installed." }
-    if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { throw "npm is not installed." }
-    if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) { throw "Rust (cargo) is not installed." }
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw "Node.js is not installed or not in PATH." }
+    if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { throw "npm is not installed or not in PATH." }
+    if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) { throw "Rust (cargo) is not installed or not in PATH." }
     $nodeModules = Join-Path $ProjectRoot "node_modules"
     if (-not (Test-Path $nodeModules)) {
         Write-Host "Installing frontend dependencies..." -ForegroundColor Yellow
         npm install
     }
+}
+
+function Get-FreePort([int]$startPort = 5173) {
+    for ($p = $startPort; $p -lt ($startPort + 100); $p++) {
+        try {
+            $l = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $p)
+            $l.Start()
+            $l.Stop()
+            return $p
+        } catch { continue }
+    }
+    return $startPort
 }
 
 function Stop-ActiveProcesses {
@@ -76,7 +71,7 @@ function Invoke-CheckMode {
     npm run build
     Write-Host "[Check] Running backend Cargo check..." -ForegroundColor Yellow
     cargo check --manifest-path (Join-Path $ProjectRoot "src-tauri\Cargo.toml")
-    Write-Host "All checks passed successfully!" -ForegroundColor Green
+    Write-Host "`nAll checks passed successfully!" -ForegroundColor Green
 }
 
 function Invoke-VersionBump([string]$targetVer, [switch]$isPatch, [switch]$isMinor, [switch]$isMajor) {
@@ -108,8 +103,7 @@ function Invoke-VersionBump([string]$targetVer, [switch]$isPatch, [switch]$isMin
 }
 
 function Compile-Target([string]$targetTriple, [string]$label, [string]$outputFileName) {
-    Write-Host ""
-    Write-Host ">>> Compiling smallest release for $label ($targetTriple)..." -ForegroundColor Yellow
+    Write-Host "`n>>> Compiling smallest release for $label ($targetTriple)..." -ForegroundColor Yellow
     npm run build
 
     $manifest = Join-Path $ProjectRoot "src-tauri\Cargo.toml"
@@ -121,9 +115,7 @@ function Compile-Target([string]$targetTriple, [string]$label, [string]$outputFi
         $sourceBin = Join-Path $ProjectRoot "src-tauri\target\release\cathet.exe"
     }
 
-    if (-not (Test-Path $sourceBin)) {
-        throw "Binary not found at expected location: $sourceBin"
-    }
+    if (-not (Test-Path $sourceBin)) { throw "Binary not found at expected location: $sourceBin" }
 
     if (-not (Test-Path $ReleaseDir)) {
         New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null
@@ -157,83 +149,99 @@ function Show-InteractiveMenu {
     return $c
 }
 
-# --- Main Entry Point ---
-if ($Help) { Show-HelpGuide; exit 0 }
-
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "               Cathet - Unified Build Pipeline              " -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-
-Stop-ActiveProcesses
-Ensure-Environment
-
-# If executed without parameters, display the interactive pickable menu
-if ($PSBoundParameters.Count -eq 0) {
-    $selection = Show-InteractiveMenu
-    switch ($selection) {
-        "1" { $Dev = $true }
-        "2" { $Check = $true }
-        "3" { $Build = $true }
-        "4" { $Build = $true; $Run = $true }
-        "5" { $BuildX64 = $true }
-        "6" { $BuildArm64 = $true }
-        "7" { $All = $true }
-        "8" {
-            Write-Host "`nSelect version bump type:" -ForegroundColor Yellow
-            Write-Host "  [1] Patch (e.g. 1.0.0 -> 1.0.1) [Default]"
-            Write-Host "  [2] Minor (e.g. 1.0.0 -> 1.1.0)"
-            Write-Host "  [3] Major (e.g. 1.0.0 -> 2.0.0)"
-            Write-Host "  [4] Custom Version String"
-            $bChoice = (Read-Host "Pick bump type [1-4] (Default: 1)").Trim()
-            if ($bChoice -eq "2") { $Minor = $true }
-            elseif ($bChoice -eq "3") { $Major = $true }
-            elseif ($bChoice -eq "4") { $TargetVersion = Read-Host "Enter target SemVer" }
-            else { $Patch = $true }
-        }
-        default { Write-Host "Exited." -ForegroundColor Gray; exit 0 }
+function Execute-Pipeline([hashtable]$opts) {
+    if ($opts.Check) { Invoke-CheckMode; return }
+    if ($opts.TargetVersion -or $opts.Patch -or $opts.Minor -or $opts.Major) {
+        Invoke-VersionBump $opts.TargetVersion $opts.Patch $opts.Minor $opts.Major
+        return
     }
-}
 
-# 1. Verification Check Mode
-if ($Check) {
-    Invoke-CheckMode
-    exit 0
-}
+    $compiledBin = $null
+    if ($opts.All) {
+        Compile-Target "x86_64-pc-windows-msvc" "Windows x64" "cathet-x64.exe" | Out-Null
+        $compiledBin = Compile-Target "x86_64-pc-windows-msvc" "Windows x64" "cathet.exe"
+        Compile-Target "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-arm64.exe" | Out-Null
+        Write-Host "`nAll release targets compiled successfully into '$OutputDir/'!" -ForegroundColor Green
+    } elseif ($opts.BuildArm64) {
+        $compiledBin = Compile-Target "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-arm64.exe"
+    } elseif ($opts.BuildX64) {
+        Compile-Target "x86_64-pc-windows-msvc" "Windows x64" "cathet-x64.exe" | Out-Null
+        $compiledBin = Compile-Target "x86_64-pc-windows-msvc" "Windows x64" "cathet.exe"
+    } elseif ($opts.Build) {
+        $compiledBin = Compile-Target "" "Native Release" "cathet.exe"
+    }
 
-# 2. Version Bumping Mode
-if ($TargetVersion -or $Patch -or $Minor -or $Major) {
-    Invoke-VersionBump $TargetVersion $Patch $Minor $Major
-    exit 0
-}
-
-# 3. Compilation Modes
-$compiledBin = $null
-if ($All) {
-    Compile-Target "x86_64-pc-windows-msvc" "Windows x64" "cathet-x64.exe" | Out-Null
-    $compiledBin = Compile-Target "x86_64-pc-windows-msvc" "Windows x64" "cathet.exe"
-    Compile-Target "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-arm64.exe" | Out-Null
-    Write-Host "`nAll release targets compiled successfully into '$OutputDir/'!" -ForegroundColor Green
-} elseif ($BuildArm64) {
-    $compiledBin = Compile-Target "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-arm64.exe"
-} elseif ($BuildX64) {
-    Compile-Target "x86_64-pc-windows-msvc" "Windows x64" "cathet-x64.exe" | Out-Null
-    $compiledBin = Compile-Target "x86_64-pc-windows-msvc" "Windows x64" "cathet.exe"
-} elseif ($Build) {
-    $compiledBin = Compile-Target "" "Native Release" "cathet.exe"
-}
-
-if ($compiledBin) {
-    if ($Run) {
+    if ($compiledBin -and $opts.Run) {
         Write-Host "Launching compiled binary: $compiledBin" -ForegroundColor Cyan
         Start-Process -FilePath $compiledBin
     }
-    exit 0
+
+    if ($opts.Dev -or $opts.Live) {
+        $p = if ($opts.Port -gt 0) { $opts.Port } else { Get-FreePort 5173 }
+        $env:PORT = "$p"
+        $env:VITE_PORT = "$p"
+        Write-Host "`nAllocated dynamic dev port: $p" -ForegroundColor Cyan
+        Write-Host "Launching Cathet in live dev mode (Hot Reload)..." -ForegroundColor Yellow
+        Write-Host " -> Press Ctrl+C to stop dev server." -ForegroundColor Gray
+        $cfg = Join-Path $env:TEMP "cathet-dev-$p.json"
+        try {
+            @{ build = @{ devUrl = "http://127.0.0.1:$p" } } | ConvertTo-Json | Set-Content $cfg
+            npx tauri dev -c $cfg
+        } finally {
+            Remove-Item $cfg -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
-# 4. Live Development Mode
-if ($Dev -or $Live) {
-    Write-Host "Launching Cathet in live development mode (Hot Reload)..." -ForegroundColor Yellow
-    Write-Host " -> Press Ctrl+C in terminal to stop dev server." -ForegroundColor Gray
-    Write-Host ""
-    npx tauri dev
+# --- Main Entry Point ---
+try {
+    if ($Help) { Show-HelpGuide; Invoke-Exit 0 }
+
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host "               Cathet - Unified Build Pipeline              " -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor Cyan
+
+    Stop-ActiveProcesses
+    Ensure-Environment
+
+    $isInteractive = ($PSBoundParameters.Count -eq 0) -or ($PSBoundParameters.Count -eq 1 -and $PSBoundParameters.ContainsKey("NoPause"))
+
+    if ($isInteractive) {
+        while ($true) {
+            $selection = Show-InteractiveMenu
+            $runOpts = @{ Port = $Port }
+            switch ($selection) {
+                "1" { $runOpts.Dev = $true }
+                "2" { $runOpts.Check = $true }
+                "3" { $runOpts.Build = $true }
+                "4" { $runOpts.Build = $true; $runOpts.Run = $true }
+                "5" { $runOpts.BuildX64 = $true }
+                "6" { $runOpts.BuildArm64 = $true }
+                "7" { $runOpts.All = $true }
+                "8" {
+                    Write-Host "`nSelect bump type: [1] Patch [2] Minor [3] Major [4] Custom" -ForegroundColor Yellow
+                    $bChoice = (Read-Host "Pick bump type [1-4] (Default: 1)").Trim()
+                    if ($bChoice -eq "2") { $runOpts.Minor = $true }
+                    elseif ($bChoice -eq "3") { $runOpts.Major = $true }
+                    elseif ($bChoice -eq "4") { $runOpts.TargetVersion = Read-Host "Enter target SemVer" }
+                    else { $runOpts.Patch = $true }
+                }
+                default { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
+            }
+            Execute-Pipeline $runOpts
+            $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim()
+            if ($ans -eq "q" -or $ans -eq "Q") { Invoke-Exit 0 }
+        }
+    } else {
+        Execute-Pipeline @{
+            Dev = $Dev; Live = $Live; Check = $Check; Build = $Build
+            BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; All = $All; Run = $Run
+            Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion
+            Port = $Port
+        }
+        Invoke-Exit 0
+    }
+} catch {
+    Write-Host "`n[BUILD ERROR] $_" -ForegroundColor Red
+    Invoke-Exit 1
 }
