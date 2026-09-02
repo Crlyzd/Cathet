@@ -206,4 +206,71 @@
   background: rgba(0, 0, 0, 0.32);
 }
 
+/* ============================================================
+   Frosted Glass Drag & Drop Overlay
+   ============================================================ */
+.cathet-drop-overlay {
+  position: absolute;
+  top: var(--top-bar-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--col-menu-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  z-index: 900;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s ease;
+  transform: scale(0.98);
+}
+
+.cathet-drop-overlay.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.drop-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 32px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--col-accent);
+  background: var(--col-card-bg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.drop-overlay-icon {
+  stroke: var(--col-accent);
+  animation: pulseDrop 1.5s ease-in-out infinite;
+}
+
+.drop-overlay-title {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--col-text);
+  letter-spacing: 0.3px;
+}
+
+.drop-overlay-subtitle {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--col-text-muted);
+}
+
+@keyframes pulseDrop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+
 

@@ -36,8 +36,7 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
 9. **Unified Single-Script Automation & Dedicated Output**:
    - `build.ps1` in the project root is the single, authoritative automation pipeline for live development (`-Live`/`-Dev`), verification (`-Check`), SemVer bumping (`-Patch`/`-Minor`/`-Major`/`-TargetVersion`), and release compilation.
    - Proliferating auxiliary `.ps1` or `.bat` runner scripts is strictly prohibited.
-   - All compiled release binaries are cleanly placed into the dedicated `release/` folder in the project root with versioned naming (`release/cathet-v<version>.exe`, `release/cathet-v<version>-x64.exe`, `release/cathet-v<version>-arm64.exe`) alongside unversioned companion aliases (`cathet.exe`, `cathet-x64.exe`, `cathet-arm64.exe`) for backward compatibility.
-   - Companion alias copying in `build.ps1` must gracefully catch and skip in-use file locks without aborting the release artifact creation.
+   - All compiled release binaries are cleanly placed into the dedicated `release/` folder in the project root with versioned architecture naming (`release/cathet-v<version>-x64.exe` and `release/cathet-v<version>-arm64.exe`). Redundant unversioned companion aliases (`cathet.exe`, `cathet-x64.exe`, `cathet-arm64.exe`) are eliminated to keep release output clean and free of duplicates.
 10. **Dual-Window Architecture & Modular Layout**:
    - **Main Editor**: `index.html` mounted by `src-ui/src/main.ts`, powered by `Editor.ts`, `TopBar.ts`, and `PopupMenu.ts`.
    - **Settings Window**: `settings.html` mounted by `src-ui/src/settingsMain.ts`, powered by `SettingsTabs.ts` and `SettingsMenu.ts`.

@@ -2,11 +2,13 @@ import { TopBarComponent } from "./components/TopBar";
 import { PopupMenuComponent, MenuItem } from "./components/PopupMenu";
 import { ContextMenuComponent } from "./components/ContextMenu";
 import { EditorComponent } from "./components/Editor";
-import { FileService } from "./services/fileService";
+import { DropOverlayComponent } from "./components/DropOverlay";
+import { FileService, FilePayload } from "./services/fileService";
 import { WindowService } from "./services/windowService";
 import { ThemeService } from "./services/themeService";
 import { FontService } from "./services/fontService";
 import { UpdateService } from "./services/updateService";
+import { DragDropService } from "./services/dragDropService";
 import { globalEventBus } from "./utils/eventBus";
 import { registerShortcuts } from "./utils/shortcuts";
 import { buildContextMenuItems } from "./utils/contextMenuItems";
@@ -20,11 +22,13 @@ class CathetApp {
   private themeService: ThemeService;
   private fontService: FontService;
   private updateService: UpdateService;
+  private dragDropService: DragDropService;
 
   private topBar: TopBarComponent;
   private popupMenu: PopupMenuComponent;
   private contextMenu: ContextMenuComponent;
   private editor: EditorComponent;
+  private dropOverlay: DropOverlayComponent;
 
   private currentFilePath: string | null = null;
   private isAlwaysOnTop: boolean = false;
@@ -35,11 +39,13 @@ class CathetApp {
     this.themeService = new ThemeService();
     this.fontService = new FontService();
     this.updateService = new UpdateService();
+    this.dragDropService = new DragDropService();
 
     this.topBar = new TopBarComponent("topbar-container", this.windowService);
     this.popupMenu = new PopupMenuComponent("popup-container");
     this.contextMenu = new ContextMenuComponent("contextmenu-container");
     this.editor = new EditorComponent("editor-container");
+    this.dropOverlay = new DropOverlayComponent("app");
 
     this.init();
   }
@@ -57,21 +63,14 @@ class CathetApp {
     }
 
     // Event bus listeners
-    globalEventBus.on("topbar:toggleMenu", (pos: { x: number; y: number }) => {
-      this.openMainMenu(pos.x, pos.y);
-    });
-
-    globalEventBus.on("editor:toggleMarkdown", () => {
-      this.editor.toggleMarkdownPreview();
-    });
-
+    globalEventBus.on("topbar:toggleMenu", (pos: { x: number; y: number }) => this.openMainMenu(pos.x, pos.y));
+    globalEventBus.on("editor:toggleMarkdown", () => this.editor.toggleMarkdownPreview());
     globalEventBus.on("window:toggleAlwaysOnTop", async () => {
       const state = await this.windowService.toggleAlwaysOnTop();
       this.isAlwaysOnTop = state;
       await emit("cathet:ontop-change", state);
     });
-
-    globalEventBus.on("update:statusChanged", async (info: any) => {
+    globalEventBus.on("update:statusChanged", (info: any) => {
       this.topBar.setUpdateAvailable(!!info?.update_available);
     });
 
@@ -121,9 +120,7 @@ class CathetApp {
         this.isAlwaysOnTop = state;
         await emit("cathet:ontop-change", state);
       },
-      onToggleMarkdown: () => {
-        this.editor.toggleMarkdownPreview();
-      },
+      onToggleMarkdown: () => this.editor.toggleMarkdownPreview(),
       onToggleBold: () => this.editor.toggleBold(),
       onToggleItalic: () => this.editor.toggleItalic(),
       onToggleUnderline: () => this.editor.toggleUnderline(),
@@ -138,34 +135,34 @@ class CathetApp {
       onQuit: () => this.windowService.close(),
     });
 
-    // Right-click context menu: suppressed in compiled mode & replaced with Windows 11 context menu
+    // Right-click context menu: Windows 11 style in compiled mode
     window.addEventListener("contextmenu", (e) => {
-      if (!import.meta.env.DEV) {
-        e.preventDefault();
-        this.contextMenu.show(e.clientX, e.clientY, buildContextMenuItems(this.editor));
-      } else if (e.altKey) {
-        // In dev live mode, Alt + Right-Click allows testing the custom context menu
+      if (!import.meta.env.DEV || e.altKey) {
         e.preventDefault();
         this.contextMenu.show(e.clientX, e.clientY, buildContextMenuItems(this.editor));
       }
-      // In dev live mode without Alt, native browser context menu remains active for inspection
     });
 
-    // Drag and drop loading
-    window.addEventListener("drop", (e) => {
-      e.preventDefault();
-      if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        // @ts-ignore
-        if (file.path) this.loadFileFromPath(file.path);
-      }
+    // Native window drag-and-drop loading with frosted glass overlay
+    this.dragDropService.init({
+      onDragStateChange: (isDragging) => {
+        if (isDragging) {
+          this.dropOverlay.show();
+        } else {
+          this.dropOverlay.hide();
+        }
+      },
+      onFileDrop: (filePath) => {
+        this.dropOverlay.hide();
+        this.loadFileFromPath(filePath);
+      },
     });
-    window.addEventListener("dragover", (e) => e.preventDefault());
+
+    // Load initial document if launched with file path (Windows file association)
+    this.loadInitialFile();
 
     // Immediate background check for updates on app launch
-    setTimeout(() => {
-      this.updateService.checkForUpdates();
-    }, 150);
+    setTimeout(() => this.updateService.checkForUpdates(), 150);
   }
 
   private openMainMenu(x: number, y: number): void {
@@ -178,22 +175,9 @@ class CathetApp {
       { id: "save", label: "Save", shortcut: "Ctrl+S", action: () => this.handleSave() },
       { id: "saveas", label: "Save As...", shortcut: "Ctrl+Shift+S", action: () => this.handleSaveAs() },
       { id: "div_file", label: "", isDivider: true },
-      {
-        id: "toggle_markdown",
-        label: isMd ? "Markdown: Preview" : "Markdown: Edit",
-        shortcut: "Ctrl+M",
-        action: () => {
-          this.editor.toggleMarkdownPreview();
-        },
-      },
+      { id: "toggle_markdown", label: isMd ? "Markdown: Preview" : "Markdown: Edit", shortcut: "Ctrl+M", action: () => this.editor.toggleMarkdownPreview() },
       { id: "div_settings", label: "", isDivider: true },
-      {
-        id: "settings",
-        label: "Settings",
-        shortcut: "Ctrl+,",
-        isGlowing: hasUpdate,
-        action: () => this.windowService.openSettingsWindow(),
-      },
+      { id: "settings", label: "Settings", shortcut: "Ctrl+,", isGlowing: hasUpdate, action: () => this.windowService.openSettingsWindow() },
       { id: "div_quit", label: "", isDivider: true },
       { id: "quit", label: "Quit", shortcut: "Esc", action: () => this.windowService.close() },
     ];
@@ -201,52 +185,48 @@ class CathetApp {
     this.popupMenu.toggle(x, y, items);
   }
 
+  private applyLoadedFile(result: FilePayload): void {
+    this.setDocumentPath(result.path);
+    this.editor.setContent(result.content);
+    const size = result.fileSize ?? result.file_size ?? 0;
+    this.editor.setWordWrap(size <= 3 * 1024 * 1024);
+  }
+
+  private setDocumentPath(path: string): void {
+    this.currentFilePath = path;
+    const fileName = path.split(/[/\\]/).pop() || "Untitled";
+    this.topBar.setTitle(fileName);
+  }
+
+  private async loadInitialFile(): Promise<void> {
+    const result = await this.fileService.getInitialFile();
+    if (result) this.applyLoadedFile(result);
+  }
+
   private async handleOpen(): Promise<void> {
     this.topBar.setLoading(true);
     const result = await this.fileService.promptOpen();
     this.topBar.setLoading(false);
-
-    if (result) {
-      this.currentFilePath = result.path;
-      this.editor.setContent(result.content);
-      const fileName = result.path.split(/[/\\]/).pop() || "Untitled";
-      this.topBar.setTitle(fileName);
-      this.editor.setWordWrap(result.fileSize <= 3 * 1024 * 1024);
-    }
+    if (result) this.applyLoadedFile(result);
   }
 
   private async loadFileFromPath(path: string): Promise<void> {
     this.topBar.setLoading(true);
     const result = await this.fileService.loadFile(path);
     this.topBar.setLoading(false);
-
-    if (result) {
-      this.currentFilePath = result.path;
-      this.editor.setContent(result.content);
-      const fileName = result.path.split(/[/\\]/).pop() || "Untitled";
-      this.topBar.setTitle(fileName);
-      this.editor.setWordWrap(result.fileSize <= 3 * 1024 * 1024);
-    }
+    if (result) this.applyLoadedFile(result);
   }
 
   private async handleSave(): Promise<void> {
     const content = this.editor.getText();
     const savedPath = await this.fileService.saveFile(this.currentFilePath, content);
-    if (savedPath) {
-      this.currentFilePath = savedPath;
-      const fileName = savedPath.split(/[/\\]/).pop() || "Untitled";
-      this.topBar.setTitle(fileName);
-    }
+    if (savedPath) this.setDocumentPath(savedPath);
   }
 
   private async handleSaveAs(): Promise<void> {
     const content = this.editor.getText();
     const savedPath = await this.fileService.promptSaveAs(content);
-    if (savedPath) {
-      this.currentFilePath = savedPath;
-      const fileName = savedPath.split(/[/\\]/).pop() || "Untitled";
-      this.topBar.setTitle(fileName);
-    }
+    if (savedPath) this.setDocumentPath(savedPath);
   }
 }
 

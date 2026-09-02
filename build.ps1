@@ -25,9 +25,15 @@ function Get-AppVersion {
     return (Get-Content -Raw (Join-Path $ProjectRoot "package.json") | ConvertFrom-Json).version
 }
 
+function Get-NativeArch {
+    if ($env:PROCESSOR_ARCHITECTURE -match "ARM64") { return "arm64" }
+    return "x64"
+}
+
 function Show-HelpGuide {
     $ver = Get-AppVersion
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build release binary (cathet-v$ver.exe) & save to '$OutputDir/'`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific release binary`n  .\build.ps1 -All                   -> Build both x64 and ARM64 binaries`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
+    $arch = Get-NativeArch
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build native release binary (cathet-v$ver-$arch.exe)`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific release binary`n  .\build.ps1 -All                   -> Build both x64 and ARM64 binaries (2 versioned files)`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -107,7 +113,7 @@ function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$
     Write-Host "Version bumped successfully: $currentVer -> $newVer" -ForegroundColor Green
 }
 
-function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$versionedFileName, [string]$aliasFileName = "") {
+function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$versionedFileName) {
     Stop-ActiveProcesses
     if ($targetTriple) { Confirm-Target $targetTriple }
     Write-Host "`n>>> Compiling release for $label ($targetTriple)..." -ForegroundColor Yellow
@@ -129,30 +135,21 @@ function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$ve
     Copy-Item -Path $sourceBin -Destination $destPath -Force
     $sizeMb = [math]::Round((Get-Item $destPath).Length / 1MB, 2)
     Write-Host "Output saved: $destPath ($sizeMb MB)" -ForegroundColor Green
-
-    if ($aliasFileName) {
-        $aliasPath = Join-Path $ReleaseDir $aliasFileName
-        try {
-            Copy-Item -Path $sourceBin -Destination $aliasPath -Force -ErrorAction Stop
-            Write-Host "Companion alias saved: $aliasPath" -ForegroundColor Gray
-        } catch {
-            Write-Host "Notice: Companion alias '$aliasFileName' was in use and skipped." -ForegroundColor Yellow
-        }
-    }
     return $destPath
 }
 
 function Show-InteractiveMenu {
     $ver = Get-AppVersion
+    $arch = Get-NativeArch
     Write-Host @"
 Select an action:
   [1] Live Development (Hot Reload) [Default]
   [2] Run Verification Checks (Vite + Cargo)
-  [3] Build Native Release -> $OutputDir/cathet-v$ver.exe
-  [4] Build & Launch Native Release Immediately
+  [3] Build Native ($arch) Release -> $OutputDir/cathet-v$ver-$arch.exe
+  [4] Build & Launch Native ($arch) Release Immediately
   [5] Build Windows x64    -> $OutputDir/cathet-v$ver-x64.exe
   [6] Build Windows ARM64  -> $OutputDir/cathet-v$ver-arm64.exe
-  [7] Build All Targets (x64 + ARM64)
+  [7] Build All Targets    -> x64 and ARM64 (2 versioned binaries)
   [8] Bump Project Version (Current: v$ver)
   [Q] Exit
 "@ -ForegroundColor Yellow
@@ -168,20 +165,20 @@ function Invoke-Pipeline([hashtable]$opts) {
     }
 
     $ver = Get-AppVersion
+    $nativeArch = Get-NativeArch
     $compiledBin = $null
     if ($opts.All) {
-        Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "cathet-x64.exe"
-        $compiledBin = Join-Path $ReleaseDir "cathet.exe"
-        Copy-Item (Join-Path $ReleaseDir "cathet-x64.exe") $compiledBin -Force
-        Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "cathet-arm64.exe"
+        Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe"
+        Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe"
+        $compiledBin = Join-Path $ReleaseDir "cathet-v$ver-$nativeArch.exe"
         Write-Host "`nAll release targets compiled successfully into '$OutputDir/'!" -ForegroundColor Green
     } elseif ($opts.BuildArm64) {
-        $compiledBin = Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "cathet-arm64.exe"
+        $compiledBin = Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe"
     } elseif ($opts.BuildX64) {
-        $compiledBin = Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "cathet-x64.exe"
-        Copy-Item (Join-Path $ReleaseDir "cathet-x64.exe") (Join-Path $ReleaseDir "cathet.exe") -Force
+        $compiledBin = Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe"
     } elseif ($opts.Build) {
-        $compiledBin = Invoke-CompileTarget "" "Native Release" "cathet-v$ver.exe" "cathet.exe"
+        $nativeTriple = if ($nativeArch -eq "arm64") { "aarch64-pc-windows-msvc" } else { "x86_64-pc-windows-msvc" }
+        $compiledBin = Invoke-CompileTarget $nativeTriple "Windows $nativeArch" "cathet-v$ver-$nativeArch.exe"
     }
 
     if ($compiledBin -and $opts.Run) {

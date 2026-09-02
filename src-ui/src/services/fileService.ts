@@ -4,6 +4,7 @@ export interface FilePayload {
   path: string;
   content: string;
   fileSize: number;
+  file_size?: number;
 }
 
 export class FileService {
@@ -13,6 +14,9 @@ export class FileService {
   async promptOpen(): Promise<FilePayload | null> {
     try {
       const result = await invoke<FilePayload | null>("show_open_dialog");
+      if (result && result.fileSize === undefined && result.file_size !== undefined) {
+        result.fileSize = result.file_size;
+      }
       return result;
     } catch (err) {
       console.error("Failed to open file dialog:", err);
@@ -25,9 +29,29 @@ export class FileService {
    */
   async loadFile(path: string): Promise<FilePayload | null> {
     try {
-      return await invoke<FilePayload>("read_text_file", { path });
+      const result = await invoke<FilePayload>("read_text_file", { path });
+      if (result && result.fileSize === undefined && result.file_size !== undefined) {
+        result.fileSize = result.file_size;
+      }
+      return result;
     } catch (err) {
       console.error("Failed to load file:", err);
+      return null;
+    }
+  }
+
+  /**
+   * Retrieves the initial file opened via CLI / Windows file association.
+   */
+  async getInitialFile(): Promise<FilePayload | null> {
+    try {
+      const result = await invoke<FilePayload | null>("get_initial_file");
+      if (result && result.fileSize === undefined && result.file_size !== undefined) {
+        result.fileSize = result.file_size;
+      }
+      return result;
+    } catch (err) {
+      console.error("Failed to get initial file:", err);
       return null;
     }
   }

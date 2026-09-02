@@ -1,7 +1,10 @@
 pub mod commands;
 pub mod state;
 
-use commands::file::{read_text_file, show_open_dialog, show_save_dialog, write_text_file};
+use commands::file::{
+    get_initial_file, init_cli_file, read_text_file, show_open_dialog, show_save_dialog,
+    write_text_file,
+};
 use commands::updater::{
     check_for_updates, download_and_install_update, download_update_payload, install_and_restart,
 };
@@ -25,6 +28,7 @@ pub fn run() {
             if let Some(main_window) = app.get_webview_window("main") {
                 apply_frosted_glass(&main_window);
             }
+            init_cli_file(app);
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -44,6 +48,7 @@ pub fn run() {
             write_text_file,
             show_open_dialog,
             show_save_dialog,
+            get_initial_file,
             toggle_always_on_top,
             get_always_on_top,
             set_always_on_top,

@@ -114,12 +114,12 @@ npm install
 .\build.ps1 -Live
 
 # 3. Build optimized release binary
-.\build.ps1 -BuildX64     # Windows x64 (~3.7 MB)
-.\build.ps1 -BuildArm64   # Windows ARM64 (~3.5 MB)
-.\build.ps1 -All          # Both targets
+.\build.ps1 -BuildX64     # Windows x64 (~3.7 MB -> release/cathet-v<version>-x64.exe)
+.\build.ps1 -BuildArm64   # Windows ARM64 (~3.5 MB -> release/cathet-v<version>-arm64.exe)
+.\build.ps1 -All          # Both targets (2 versioned binaries)
 ```
 
-All release binaries are created in `release/` with zero bloat (`opt-level = "z"`, stripped symbols, native Windows Schannel TLS).
+All release binaries are created in `release/` as versioned architecture-specific binaries (`cathet-v<version>-x64.exe` and `cathet-v<version>-arm64.exe`) with zero bloat (`opt-level = "z"`, stripped symbols, native Windows Schannel TLS).
 
 </details>
 
