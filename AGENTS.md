@@ -14,13 +14,13 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
    - Avoid heavy external dependencies. Use lightweight native APIs and minimal HTTP queries.
    - **Native TLS Backend**: `reqwest` must strictly use `features = ["json", "native-tls"]` (Windows SChannel) instead of `default-tls` (`aws-lc-sys`), ensuring seamless compilation without assembly linkage errors (`LNK1181`) across both Windows x64 and ARM64. Release binary sizes must remain under 4 MB (`cathet-arm64.exe` ~3.49 MB, `cathet-x64.exe` ~3.72 MB).
 3. **Backdrop Vibrancy & Acrylic**:
-   - The frosted glass effect must persist in **both foreground (focused) and background (unfocused)** states via modern Windows DWM system backdrops (`DwmSetWindowAttribute` with `DWMWA_SYSTEMBACKDROP_TYPE` for Acrylic/Mica) and graceful platform vibrancy fallbacks. Undocumented legacy `SetWindowCompositionAttribute(BlurBehind)` is deprecated and prohibited as it produces opaque black artifacts and drag flicker on Windows 10 (1903+) and Windows 11.
+   - The frosted glass effect is implemented via modern Windows DWM system backdrops (`DwmSetWindowAttribute` with `DWMWA_SYSTEMBACKDROP_TYPE` for Acrylic/Mica) and graceful platform vibrancy fallbacks. While active (focused), native hardware-accelerated Acrylic renders translucent frosted glass; when inactive (unfocused), Windows DWM automatically transitions to an energy-saving solid dark/light backdrop to conserve GPU fill-rate. Undocumented legacy `SetWindowCompositionAttribute(BlurBehind)` is deprecated and prohibited as it produces opaque black artifacts and drag flicker on Windows 10 (1903+) and Windows 11.
 4. **Title Bar File Name**:
    - The title bar must strictly display the current document's file name (e.g. `Untitled` when unsaved, or `notes.md` when loaded).
 5. **Markdown Support**:
    - Support seamless instant toggle (`Ctrl+M`) between raw markdown editing and rendered preview.
 6. **Settings, Themes & About**:
-   - Top-bar dot button dropdown is streamlined for document workflows (`New`, `Open`, `Save`, `Save As`, `Markdown Toggle`, `Settings & About...`, `Quit`).
+   - Top-bar dot button (`●`) dropdown on the top-left is streamlined for document workflows (`New`, `Open`, `Save`, `Save As`, `Markdown Toggle`, `Settings & About...`, `Quit`).
    - Dedicated Settings & About native window with frosted glass backdrop houses:
      - Theme selector (Dark / Light).
      - Font selector (Noto Sans, Roboto, Cascadia Code, Consolas, Segoe UI, Inter, JetBrains Mono, Fira Code, Arial).

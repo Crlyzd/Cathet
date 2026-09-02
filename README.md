@@ -26,7 +26,7 @@
 Standard Notepad feels plain and dated, while modern writing apps are often heavy, slow to open, and take up huge amounts of computer memory.
 
 **Cathet** is designed to be the best of both worlds:
-- 🪟 **Real Frosted Glass**: Gorgeous blurred glass appearance that stays translucent even when you are working in other windows.
+- 🪟 **Real Frosted Glass**: Gorgeous hardware-accelerated Windows Acrylic blur while active, transitioning to an energy-saving solid appearance when unfocused.
 - ⚡ **Opens Instantly**: No loading screens, no heavy background baggage. It opens in a blink and uses virtually no memory (~15 MB RAM).
 - 🎒 **100% Portable**: Just a single `.exe` file. No installer, no setup wizards, and no leftover files on your computer.
 - 📝 **Everyday Notes or Rich Markdown**: Use it as a clean scratchpad for quick thoughts, or press `Ctrl + M` to preview rich formatted Markdown with headings, bold text, lists, and links.
@@ -66,7 +66,7 @@ Using Cathet takes less than 10 seconds:
 | :--- | :--- |
 | **Switch Markdown Preview on / off** | `Ctrl + M` |
 | **Pin / Unpin window to stay on top** | `Ctrl + T` |
-| **Open Settings & Personalization** | `Ctrl + ,` (or click `···` in the top corner) |
+| **Open Settings & Personalization** | `Ctrl + ,` (or click `●` dot in the top-left) |
 | **Open a new window** | `Ctrl + N` |
 | **Open a file** | `Ctrl + O` |
 | **Save your document** | `Ctrl + S` |
@@ -81,7 +81,7 @@ Using Cathet takes less than 10 seconds:
 
 ## ⚙️ Personalizing Cathet
 
-Click the **`···`** button in the top-right corner (or press `Ctrl + ,`) to open **Settings**:
+Click the dot (**`●`**) in the top-left corner (or press `Ctrl + ,`) to open **Settings**:
 - **Appearance**: Toggle between Dark and Light mode.
 - **Typography**: Select your favorite font family from the glass dropdown.
 - **Window Behavior**: Turn on persistent "Always on Top" pinning.
