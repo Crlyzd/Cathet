@@ -12,7 +12,7 @@
 <br/>
 
 <p align="center">
-  <img src="docs/screenshot.png" alt="Cathet Application Screenshot" width="800" style="max-width: 100%; border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.35);" />
+  <img src="docs/app-screenshot.png" alt="Cathet Application Screenshot" width="800" style="max-width: 100%; border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.35);" />
 </p>
 
 *Distraction-free writing that blends gracefully into your Windows desktop.*
