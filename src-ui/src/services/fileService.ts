@@ -8,17 +8,25 @@ export interface FilePayload {
 }
 
 export class FileService {
+  private lastError: string | null = null;
+
+  getLastError(): string | null {
+    return this.lastError;
+  }
+
   /**
    * Prompts user with native Open File dialog and loads text content.
    */
   async promptOpen(): Promise<FilePayload | null> {
+    this.lastError = null;
     try {
       const result = await invoke<FilePayload | null>("show_open_dialog");
       if (result && result.fileSize === undefined && result.file_size !== undefined) {
         result.fileSize = result.file_size;
       }
       return result;
-    } catch (err) {
+    } catch (err: any) {
+      this.lastError = typeof err === "string" ? err : err?.message || String(err);
       console.error("Failed to open file dialog:", err);
       return null;
     }
@@ -28,13 +36,15 @@ export class FileService {
    * Loads text content from given path via async Rust command.
    */
   async loadFile(path: string): Promise<FilePayload | null> {
+    this.lastError = null;
     try {
       const result = await invoke<FilePayload>("read_text_file", { path });
       if (result && result.fileSize === undefined && result.file_size !== undefined) {
         result.fileSize = result.file_size;
       }
       return result;
-    } catch (err) {
+    } catch (err: any) {
+      this.lastError = typeof err === "string" ? err : err?.message || String(err);
       console.error("Failed to load file:", err);
       return null;
     }

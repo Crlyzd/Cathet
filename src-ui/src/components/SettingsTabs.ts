@@ -10,6 +10,8 @@ export interface SettingsTabCallbacks {
   onCheckUpdates: () => Promise<void>;
   onStartDownload: () => Promise<void>;
   onInstallAndRestart: () => Promise<void>;
+  onConfigureDefaultApp: () => Promise<void>;
+  onUnregisterDefaultApp: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -20,6 +22,9 @@ export interface SettingsInitialState {
   fonts: { id: string; name: string }[];
   updateAvailable: boolean;
   latestVersion?: string;
+  isRegistered?: boolean;
+  currentExePath?: string;
+  registeredExePath?: string | null;
 }
 
 export class SettingsTabsComponent {
@@ -109,6 +114,11 @@ export class SettingsTabsComponent {
         </button>
       `;
     }
+
+    const activePath = this.state.registeredExePath || this.state.currentExePath || "";
+    const prefix = this.state.isRegistered ? "Registered: " : "Path: ";
+    const truncated = activePath.length > 28 ? "..." + activePath.slice(-25) : activePath;
+    const defaultAppSubtext = activePath ? `${prefix}${truncated}` : "Set as default for .txt & .md";
 
     this.container.innerHTML = `
       <div class="settings-window">
@@ -201,6 +211,23 @@ export class SettingsTabsComponent {
                   <input type="checkbox" id="ontop-checkbox" ${this.state.isAlwaysOnTop ? "checked" : ""} />
                   <span class="switch-track"></span>
                 </label>
+              </div>
+
+              <!-- Default Application Row -->
+              <div class="setting-item">
+                <div class="setting-meta">
+                  <span class="setting-title">Default Application</span>
+                  <span class="setting-subtext" id="default-app-subtext" title="${prefix}${activePath}">
+                    ${defaultAppSubtext}
+                  </span>
+                </div>
+                <div class="default-app-actions">
+                  ${
+                    this.state.isRegistered
+                      ? `<button class="glass-btn" id="btn-unregister-default-app" title="Remove Cathet file associations">Unregister</button>`
+                      : `<button class="glass-btn" id="btn-set-default-app">Set as Default</button>`
+                  }
+                </div>
               </div>
 
               <!-- Updates Row -->
@@ -385,6 +412,28 @@ export class SettingsTabsComponent {
     const ontopCheckbox = this.container.querySelector("#ontop-checkbox") as HTMLInputElement | null;
     ontopCheckbox?.addEventListener("change", () => {
       this.callbacks.onAlwaysOnTopChange(ontopCheckbox.checked);
+    });
+
+    // Set as default app button
+    this.container.querySelector("#btn-set-default-app")?.addEventListener("click", async () => {
+      const btn = this.container.querySelector("#btn-set-default-app") as HTMLButtonElement | null;
+      if (btn) btn.disabled = true;
+      try {
+        await this.callbacks.onConfigureDefaultApp();
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+
+    // Unregister default app button
+    this.container.querySelector("#btn-unregister-default-app")?.addEventListener("click", async () => {
+      const btn = this.container.querySelector("#btn-unregister-default-app") as HTMLButtonElement | null;
+      if (btn) btn.disabled = true;
+      try {
+        await this.callbacks.onUnregisterDefaultApp();
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     });
 
     // Check updates button

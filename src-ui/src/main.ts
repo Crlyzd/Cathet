@@ -3,6 +3,7 @@ import { PopupMenuComponent, MenuItem } from "./components/PopupMenu";
 import { ContextMenuComponent } from "./components/ContextMenu";
 import { EditorComponent } from "./components/Editor";
 import { DropOverlayComponent } from "./components/DropOverlay";
+import { showGlassDialog } from "./components/GlassDialog";
 import { FileService, FilePayload } from "./services/fileService";
 import { WindowService } from "./services/windowService";
 import { ThemeService } from "./services/themeService";
@@ -207,14 +208,36 @@ class CathetApp {
     this.topBar.setLoading(true);
     const result = await this.fileService.promptOpen();
     this.topBar.setLoading(false);
-    if (result) this.applyLoadedFile(result);
+    if (result) {
+      this.applyLoadedFile(result);
+    } else {
+      const err = this.fileService.getLastError();
+      if (err) {
+        showGlassDialog({
+          type: "warning",
+          title: "Cannot Open File",
+          message: err,
+        });
+      }
+    }
   }
 
   private async loadFileFromPath(path: string): Promise<void> {
     this.topBar.setLoading(true);
     const result = await this.fileService.loadFile(path);
     this.topBar.setLoading(false);
-    if (result) this.applyLoadedFile(result);
+    if (result) {
+      this.applyLoadedFile(result);
+    } else {
+      const err = this.fileService.getLastError();
+      if (err) {
+        showGlassDialog({
+          type: "warning",
+          title: "Cannot Open File",
+          message: err,
+        });
+      }
+    }
   }
 
   private async handleSave(): Promise<void> {

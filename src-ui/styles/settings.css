@@ -191,6 +191,10 @@
 .setting-subtext {
   font-size: 10px;
   color: var(--col-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 175px;
 }
 
 /* Pill Toggle (Dark / Light) */
@@ -436,6 +440,12 @@ input:checked + .switch-track:before {
   background: var(--col-menu-sel);
   color: #ffffff;
   border-color: var(--col-menu-sel);
+}
+
+.default-app-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .glass-btn.update-ready {

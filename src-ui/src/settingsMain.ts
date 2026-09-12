@@ -6,12 +6,14 @@ import { showGlassDialog } from "./components/GlassDialog";
 import { FontService } from "./services/fontService";
 import { ThemeService } from "./services/themeService";
 import { UpdateService } from "./services/updateService";
+import { AssociationService } from "./services/associationService";
 import { APP_VERSION } from "./version";
 
 class SettingsApp {
   private fontService: FontService;
   private themeService: ThemeService;
   private updateService: UpdateService;
+  private associationService: AssociationService;
   private tabsComponent: SettingsTabsComponent;
   private currentWindow = getCurrentWindow();
   private isAlwaysOnTop: boolean = false;
@@ -20,6 +22,7 @@ class SettingsApp {
     this.fontService = new FontService();
     this.themeService = new ThemeService();
     this.updateService = new UpdateService();
+    this.associationService = new AssociationService();
 
     const root = document.getElementById("settings-root");
     if (!root) throw new Error("Settings root container not found");
@@ -48,6 +51,8 @@ class SettingsApp {
         onCheckUpdates: () => this.handleCheckUpdates(true),
         onStartDownload: () => this.handleStartDownload(),
         onInstallAndRestart: () => this.handleInstallAndRestart(),
+        onConfigureDefaultApp: () => this.handleConfigureDefaultApp(),
+        onUnregisterDefaultApp: () => this.handleUnregisterDefaultApp(),
         onClose: () => this.handleClose(),
       }
     );
@@ -56,6 +61,9 @@ class SettingsApp {
 
     // Fetch current always on top state immediately
     this.syncAlwaysOnTop();
+
+    // Query and sync default app association status
+    this.syncAssociationStatus();
 
     // Auto-check for updates silently on launch to ensure synchronization with main window
     this.handleCheckUpdates(false).catch(console.error);
@@ -182,10 +190,12 @@ class SettingsApp {
     // Re-sync when window gains focus or receives show event
     window.addEventListener("focus", () => {
       this.syncAlwaysOnTop();
+      this.syncAssociationStatus();
     });
 
     await listen("cathet:settings-focused", () => {
       this.syncAlwaysOnTop();
+      this.syncAssociationStatus();
     });
 
     // Listen for cross-window update status changes
@@ -196,6 +206,66 @@ class SettingsApp {
         latestVersion: info?.latest_version,
       });
     });
+  }
+
+  private async syncAssociationStatus(): Promise<void> {
+    const status = await this.associationService.getStatus();
+    if (status) {
+      this.tabsComponent.updateState({
+        isRegistered: status.isRegistered,
+        currentExePath: status.currentExePath,
+        registeredExePath: status.registeredExePath,
+      });
+    }
+  }
+
+  private async handleConfigureDefaultApp(): Promise<void> {
+    try {
+      const status = await this.associationService.configureDefaultApp();
+      if (status) {
+        this.tabsComponent.updateState({
+          isRegistered: status.isRegistered,
+          currentExePath: status.currentExePath,
+          registeredExePath: status.registeredExePath,
+        });
+        const exeName = status.currentExePath.split(/[/\\]/).pop() || "Cathet";
+        await showGlassDialog({
+          type: "success",
+          title: "Default App Registered",
+          message: `Cathet has been registered at:\n"${status.currentExePath}"\n\nWindows Settings has opened—choose ${exeName} for your .txt and .md files.`,
+        });
+      }
+    } catch (err: any) {
+      await showGlassDialog({
+        type: "error",
+        title: "Registration Failed",
+        message: typeof err === "string" ? err : err?.message || String(err),
+      });
+    }
+  }
+
+  private async handleUnregisterDefaultApp(): Promise<void> {
+    try {
+      const status = await this.associationService.unregisterDefaultApp();
+      if (status) {
+        this.tabsComponent.updateState({
+          isRegistered: status.isRegistered,
+          currentExePath: status.currentExePath,
+          registeredExePath: status.registeredExePath,
+        });
+        await showGlassDialog({
+          type: "info",
+          title: "Associations Removed",
+          message: "Cathet file associations have been cleanly removed from the Windows Registry.",
+        });
+      }
+    } catch (err: any) {
+      await showGlassDialog({
+        type: "error",
+        title: "Unregister Failed",
+        message: typeof err === "string" ? err : err?.message || String(err),
+      });
+    }
   }
 }
 

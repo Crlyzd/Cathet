@@ -1,6 +1,9 @@
 pub mod commands;
 pub mod state;
 
+use commands::association::{
+    configure_default_app, get_association_status, self_heal_if_moved, unregister_default_app,
+};
 use commands::file::{
     get_initial_file, init_cli_file, read_text_file, show_open_dialog, show_save_dialog,
     write_text_file,
@@ -30,6 +33,7 @@ pub fn run() {
                 apply_frosted_glass(&main_window);
             }
             init_cli_file(app);
+            self_heal_if_moved();
 
             // Trim initial startup heap & working set spike once UI stabilizes
             tauri::async_runtime::spawn(async move {
@@ -70,7 +74,10 @@ pub fn run() {
             download_and_install_update,
             download_update_payload,
             install_and_restart,
-            trim_memory
+            trim_memory,
+            get_association_status,
+            configure_default_app,
+            unregister_default_app
         ])
         .run(tauri::generate_context!())
         .expect("error while running cathet application");

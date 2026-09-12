@@ -14,11 +14,28 @@ pub struct FilePayload {
     pub file_size: u64,
 }
 
+const FILTER_ALL_SUPPORTED: &[&str] = &[
+    "txt", "md", "markdown", "log", "rtf", "html", "htm", "json", "yaml", "yml", "toml",
+    "xml", "ini", "env", "cfg", "csv", "tsv", "js", "ts", "rs", "py", "css", "sql",
+    "sh", "bat", "ps1", "c", "cpp", "h",
+];
+const FILTER_MARKDOWN: &[&str] = &["md", "markdown"];
+const FILTER_TEXT_LOGS: &[&str] = &["txt", "log", "rtf"];
+const FILTER_DATA_CONFIG: &[&str] = &["json", "yaml", "yml", "toml", "xml", "ini", "env", "cfg", "csv", "tsv"];
+const FILTER_CODE: &[&str] = &["js", "ts", "rs", "py", "html", "htm", "css", "sql", "sh", "bat", "ps1", "c", "cpp", "h"];
+const FILTER_ALL: &[&str] = &["*"];
+
 #[tauri::command]
 pub async fn read_text_file(path: String) -> Result<FilePayload, String> {
     let path_buf = PathBuf::from(&path);
     let metadata = fs::metadata(&path_buf).map_err(|e| e.to_string())?;
-    let content = fs::read_to_string(&path_buf).map_err(|e| e.to_string())?;
+    let content = fs::read_to_string(&path_buf).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::InvalidData {
+            "This file contains binary data or an unsupported encoding. Cathet supports UTF-8 plain text and markdown documents.".to_string()
+        } else {
+            e.to_string()
+        }
+    })?;
 
     Ok(FilePayload {
         path,
@@ -36,9 +53,18 @@ pub async fn write_text_file(path: String, content: String) -> Result<(), String
 pub async fn show_open_dialog(app_handle: AppHandle) -> Result<Option<FilePayload>, String> {
     let (tx, rx) = tokio::sync::oneshot::channel();
 
-    app_handle.dialog().file().pick_file(move |file_path| {
-        let _ = tx.send(file_path);
-    });
+    app_handle
+        .dialog()
+        .file()
+        .add_filter("Supported Text Files", FILTER_ALL_SUPPORTED)
+        .add_filter("Markdown Documents", FILTER_MARKDOWN)
+        .add_filter("Plain Text & Logs", FILTER_TEXT_LOGS)
+        .add_filter("Data & Config Files", FILTER_DATA_CONFIG)
+        .add_filter("Source Code & Scripts", FILTER_CODE)
+        .add_filter("All Files", FILTER_ALL)
+        .pick_file(move |file_path| {
+            let _ = tx.send(file_path);
+        });
 
     let selected = rx.await.map_err(|e| e.to_string())?;
 
@@ -58,8 +84,12 @@ pub async fn show_save_dialog(app_handle: AppHandle) -> Result<Option<String>, S
     app_handle
         .dialog()
         .file()
-        .add_filter("Text Files", &["txt", "md", "log", "rtf", "html"])
-        .add_filter("All Files", &["*"])
+        .add_filter("Supported Text Files", FILTER_ALL_SUPPORTED)
+        .add_filter("Markdown Documents", FILTER_MARKDOWN)
+        .add_filter("Plain Text & Logs", FILTER_TEXT_LOGS)
+        .add_filter("Data & Config Files", FILTER_DATA_CONFIG)
+        .add_filter("Source Code & Scripts", FILTER_CODE)
+        .add_filter("All Files", FILTER_ALL)
         .save_file(move |file_path| {
             let _ = tx.send(file_path);
         });
