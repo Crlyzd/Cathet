@@ -47,10 +47,19 @@
   justify-content: center;
   cursor: pointer;
   color: var(--col-text);
-  font-size: 13px;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
   position: relative;
   flex-shrink: 0;
+}
+
+.dot-btn .dot-icon {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: currentColor;
+  display: block;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .dot-btn:hover {
@@ -65,17 +74,18 @@
 
 /* Glowing Notification when an update is available */
 .dot-btn.glow-update {
-  color: #38bdf8;
-  text-shadow: 0 0 8px rgba(56, 189, 248, 0.75);
   will-change: opacity, transform;
   animation: pulse-dot 1.8s ease-in-out 3;
 }
 
-[data-theme="light"] .dot-btn.glow-update {
-  color: #0284c7;
-  text-shadow: 0 0 8px rgba(2, 132, 199, 0.65);
-  will-change: opacity, transform;
-  animation: pulse-dot 1.8s ease-in-out 3;
+.dot-btn.glow-update .dot-icon {
+  background-color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.85);
+}
+
+[data-theme="light"] .dot-btn.glow-update .dot-icon {
+  background-color: #0284c7;
+  box-shadow: 0 0 8px rgba(2, 132, 199, 0.75);
 }
 
 @keyframes pulse-dot {

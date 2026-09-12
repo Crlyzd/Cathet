@@ -19,7 +19,9 @@ export class TopBarComponent {
   private render(): void {
     this.container.innerHTML = `
       <div class="topbar" id="topbar-header">
-        <div class="dot-btn" id="topbar-dot-btn" title="Menu & Settings">●</div>
+        <div class="dot-btn" id="topbar-dot-btn" title="Menu & Settings">
+          <span class="dot-icon"></span>
+        </div>
         <div class="topbar-drag-area" id="topbar-drag-area">Untitled</div>
         <div class="progress-bar-line" id="topbar-progress-line"></div>
       </div>
