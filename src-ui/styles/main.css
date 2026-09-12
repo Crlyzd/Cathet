@@ -3,8 +3,8 @@
    ============================================================ */
 
 :root {
-  --top-bar-height: 32px;
-  --file-btn-width: 32px;
+  --top-bar-height: 30px;
+  --file-btn-width: 24px;
   --font-ui: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-editor: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-family: var(--font-ui);
@@ -15,11 +15,11 @@
 [data-theme="dark"] {
   color-scheme: dark;
   --col-bg-main: transparent;
-  --col-bg-bar: rgba(28, 28, 34, 0.25);
+  --col-bg-bar: transparent;
   --col-text: #ffffff;
   --col-text-muted: #cbd5e1;
   --col-text-dim: #94a3b8;
-  --col-menu-bg: rgba(22, 22, 28, 0.80);
+  --col-menu-bg: rgba(22, 22, 28, 0.62);
   --col-menu-sel: #2563eb;
   --col-accent: #38bdf8;
   --col-border: rgba(255, 255, 255, 0.14);
@@ -34,19 +34,19 @@
 [data-theme="light"] {
   color-scheme: light;
   --col-bg-main: transparent;
-  --col-bg-bar: rgba(255, 255, 255, 0.25);
-  --col-text: #0f172a;
-  --col-text-muted: #64748b;
-  --col-text-dim: #94a3b8;
-  --col-menu-bg: rgba(255, 255, 255, 0.80);
+  --col-bg-bar: transparent;
+  --col-text: #1e293b;
+  --col-text-muted: #334155;
+  --col-text-dim: #475569;
+  --col-menu-bg: rgba(255, 255, 255, 0.65);
   --col-menu-sel: #2563eb;
   --col-accent: #0284c7;
-  --col-border: rgba(0, 0, 0, 0.10);
-  --col-code-bg: rgba(0, 0, 0, 0.05);
+  --col-border: rgba(15, 23, 42, 0.12);
+  --col-code-bg: rgba(15, 23, 42, 0.05);
   --col-quote-border: #0284c7;
   --col-card-bg: rgba(255, 255, 255, 0.45);
-  --col-card-border: rgba(0, 0, 0, 0.09);
-  --col-divider-subtle: rgba(0, 0, 0, 0.08);
+  --col-card-border: rgba(15, 23, 42, 0.10);
+  --col-divider-subtle: rgba(15, 23, 42, 0.08);
   --col-coffee-text: #ea580c;
 }
 
@@ -131,6 +131,10 @@ html, body {
   flex-direction: column;
   gap: 12px;
   animation: scaleUpDialog 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .glass-dialog-card {
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.20);
 }
 
 @keyframes fadeInDialog {

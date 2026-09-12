@@ -18,6 +18,8 @@
   background: var(--col-menu-bg);
   backdrop-filter: blur(32px) saturate(190%);
   -webkit-backdrop-filter: blur(32px) saturate(190%);
+  isolation: isolate;
+  transform: translateZ(0);
   border: 1px solid var(--col-border);
   border-radius: 8px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
@@ -28,6 +30,10 @@
   gap: 1px;
   animation: fadeInContextMenu 0.1s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+}
+
+[data-theme="light"] .context-menu {
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
 }
 
 @keyframes fadeInContextMenu {

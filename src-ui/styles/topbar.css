@@ -2,17 +2,22 @@
    topbar.css — Custom Top Bar, File Name Display, & Update Glow
    ============================================================ */
 
-#topbar-container,
+#topbar-container {
+  width: 100%;
+  background: transparent;
+}
+
 .topbar {
   height: var(--top-bar-height);
   width: 100%;
-  background-color: var(--col-bg-bar);
+  background-color: transparent;
   display: flex;
   align-items: center;
   position: relative;
-  border-bottom: 1px solid var(--col-border);
+  border-bottom: none;
+  padding: 0 12px 0 8px;
+  box-sizing: border-box;
   cursor: default;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -23,30 +28,38 @@
   height: 100%;
   display: flex;
   align-items: center;
-  padding-left: 10px;
+  padding-left: 8px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 550;
   color: var(--col-text-muted);
   user-select: none;
   letter-spacing: 0.2px;
+  cursor: default;
 }
 
 /* Dot Menu Button (●) */
 .dot-btn {
-  width: var(--file-btn-width);
-  height: 100%;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: var(--col-text);
-  font-size: 14px;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  font-size: 13px;
+  transition: all 0.15s ease;
   position: relative;
+  flex-shrink: 0;
 }
 
 .dot-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.12);
+  color: var(--col-accent);
+}
+
+[data-theme="light"] .dot-btn:hover {
+  background-color: rgba(15, 23, 42, 0.07);
   color: var(--col-accent);
 }
 
@@ -79,13 +92,14 @@
 /* File Loading Progress Line */
 .progress-bar-line {
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 0;
   height: 2px;
   background-color: var(--col-accent);
   width: 0%;
   opacity: 0;
   transition: opacity 0.2s ease;
+  pointer-events: none;
 }
 
 .progress-bar-line.loading {
