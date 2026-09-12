@@ -444,7 +444,7 @@ input:checked + .switch-track:before {
   border-color: #38bdf8;
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
   font-weight: 600;
-  animation: pulseUpdate 2s infinite ease-in-out;
+  animation: pulseUpdate 2s ease-in-out 3;
 }
 
 [data-theme="light"] .glass-btn.update-ready {

@@ -67,21 +67,21 @@ function Get-FreePort([int]$startPort = 5173) {
 }
 
 function Stop-ActiveProcesses {
-    Stop-Process -Name "cathet" -Force -ErrorAction SilentlyContinue
-    Stop-Process -Name "cleanpad" -Force -ErrorAction SilentlyContinue
+    Get-Process | Where-Object { $_.ProcessName -like "cathet*" -or $_.ProcessName -eq "cleanpad" } | Stop-Process -Force -ErrorAction SilentlyContinue
 }
 
 function Invoke-CheckMode {
     Write-Host "[Check] Running frontend TypeScript & Vite build..." -ForegroundColor Yellow
     npm run build
+    if ($LASTEXITCODE -ne 0) { throw "Frontend build failed with exit code $LASTEXITCODE." }
     Write-Host "[Check] Running backend Cargo check..." -ForegroundColor Yellow
     cargo check --manifest-path (Join-Path $ProjectRoot "src-tauri\Cargo.toml")
+    if ($LASTEXITCODE -ne 0) { throw "Backend Cargo check failed with exit code $LASTEXITCODE." }
     Write-Host "`nAll checks passed successfully!" -ForegroundColor Green
 }
 
 function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$isMinor = $false, [bool]$isMajor = $false) {
     $pkgPath = Join-Path $ProjectRoot "package.json"
-    $pkgLockPath = Join-Path $ProjectRoot "package-lock.json"
     $tauriPath = Join-Path $ProjectRoot "src-tauri\tauri.conf.json"
     $cargoPath = Join-Path $ProjectRoot "src-tauri\Cargo.toml"
 
@@ -101,15 +101,16 @@ function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$
     if ($newVer -notmatch '^\d+\.\d+\.\d+') { throw "Invalid SemVer format: '$newVer'. Expected X.Y.Z" }
     Write-Host "Bumping version to: $newVer" -ForegroundColor Green
 
-    (Get-Content -Raw $pkgPath) -replace '"version":\s*"[^"]+"', """version"": ""$newVer""" | Set-Content $pkgPath -NoNewline
-    if (Test-Path $pkgLockPath) {
-        (Get-Content -Raw $pkgLockPath) -replace '(?m)^(\s*"version":\s*)"[^"]+"', "`$1""$newVer""" | Set-Content $pkgLockPath -NoNewline
-    }
+    # Safely bump package.json and package-lock.json via npm to prevent lockfile corruption
+    npm version $newVer --no-git-tag-version --allow-same-version | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "npm version bump failed." }
+
     (Get-Content -Raw $tauriPath) -replace '"version":\s*"[^"]+"', """version"": ""$newVer""" | Set-Content $tauriPath -NoNewline
     (Get-Content -Raw $cargoPath) -replace '(?m)^version\s*=\s*"[^"]+"', "version = ""$newVer""" | Set-Content $cargoPath -NoNewline
 
     Write-Host "Synchronizing Cargo.lock..." -ForegroundColor Gray
     cargo check --manifest-path $cargoPath --quiet
+    if ($LASTEXITCODE -ne 0) { throw "Cargo lock synchronization failed." }
     Write-Host "Version bumped successfully: $currentVer -> $newVer" -ForegroundColor Green
 }
 
@@ -118,15 +119,24 @@ function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$ve
     if ($targetTriple) { Confirm-Target $targetTriple }
     Write-Host "`n>>> Compiling release for $label ($targetTriple)..." -ForegroundColor Yellow
     npm run build | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "Frontend build failed with exit code $LASTEXITCODE." }
 
     $manifest = Join-Path $ProjectRoot "src-tauri\Cargo.toml"
+    $sourceBin = if ($targetTriple) {
+        Join-Path $ProjectRoot "src-tauri\target\$targetTriple\release\cathet.exe"
+    } else {
+        Join-Path $ProjectRoot "src-tauri\target\release\cathet.exe"
+    }
+
+    # Remove stale binary if present so a compilation failure never reuses an old artifact
+    Remove-Item -Path $sourceBin -Force -ErrorAction SilentlyContinue
+
     if ($targetTriple) {
         cargo build --release --target $targetTriple --manifest-path $manifest
-        $sourceBin = Join-Path $ProjectRoot "src-tauri\target\$targetTriple\release\cathet.exe"
     } else {
         cargo build --release --manifest-path $manifest
-        $sourceBin = Join-Path $ProjectRoot "src-tauri\target\release\cathet.exe"
     }
+    if ($LASTEXITCODE -ne 0) { throw "Cargo release build failed with exit code $LASTEXITCODE." }
 
     if (-not (Test-Path $sourceBin)) { throw "Binary not found at: $sourceBin" }
     if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }

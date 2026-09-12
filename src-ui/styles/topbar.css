@@ -50,36 +50,29 @@
   color: var(--col-accent);
 }
 
-/* Glowing Pulse when an update is available */
+/* Glowing Notification when an update is available */
 .dot-btn.glow-update {
   color: #38bdf8;
-  animation: pulse-glow 1.8s infinite ease-in-out;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.75);
+  will-change: opacity, transform;
+  animation: pulse-dot 1.8s ease-in-out 3;
 }
 
 [data-theme="light"] .dot-btn.glow-update {
   color: #0284c7;
-  animation: pulse-glow-light 1.8s infinite ease-in-out;
+  text-shadow: 0 0 8px rgba(2, 132, 199, 0.65);
+  will-change: opacity, transform;
+  animation: pulse-dot 1.8s ease-in-out 3;
 }
 
-@keyframes pulse-glow {
+@keyframes pulse-dot {
   0%, 100% {
-    text-shadow: 0 0 4px #0284c7, 0 0 8px #38bdf8;
     opacity: 0.85;
+    transform: scale(1);
   }
   50% {
-    text-shadow: 0 0 14px #38bdf8, 0 0 24px #0284c7;
     opacity: 1;
-  }
-}
-
-@keyframes pulse-glow-light {
-  0%, 100% {
-    text-shadow: 0 0 3px rgba(2, 132, 199, 0.4), 0 0 6px rgba(2, 132, 199, 0.2);
-    opacity: 0.9;
-  }
-  50% {
-    text-shadow: 0 0 10px rgba(2, 132, 199, 0.8), 0 0 18px rgba(2, 132, 199, 0.4);
-    opacity: 1;
+    transform: scale(1.15);
   }
 }
 

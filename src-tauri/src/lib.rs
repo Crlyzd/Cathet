@@ -5,6 +5,7 @@ use commands::file::{
     get_initial_file, init_cli_file, read_text_file, show_open_dialog, show_save_dialog,
     write_text_file,
 };
+use commands::memory::trim_memory;
 use commands::updater::{
     check_for_updates, download_and_install_update, download_update_payload, install_and_restart,
 };
@@ -29,6 +30,13 @@ pub fn run() {
                 apply_frosted_glass(&main_window);
             }
             init_cli_file(app);
+
+            // Trim initial startup heap & working set spike once UI stabilizes
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_millis(2200)).await;
+                trim_memory();
+            });
+
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -38,6 +46,9 @@ pub fn run() {
                         if let Some(settings_win) = window.app_handle().get_webview_window("settings") {
                             let _ = settings_win.destroy();
                         }
+                    }
+                    tauri::WindowEvent::Focused(false) => {
+                        trim_memory();
                     }
                     _ => {}
                 }
@@ -58,7 +69,8 @@ pub fn run() {
             check_for_updates,
             download_and_install_update,
             download_update_payload,
-            install_and_restart
+            install_and_restart,
+            trim_memory
         ])
         .run(tauri::generate_context!())
         .expect("error while running cathet application");

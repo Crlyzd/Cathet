@@ -1,0 +1,48 @@
+/* ============================================================
+   fonts.css — Zero-Network Local Font Definitions (WOFF2)
+   ============================================================ */
+
+/* Inter */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Inter'), local('Inter Regular'), url('/fonts/Inter-Regular.woff2') format('woff2');
+}
+
+/* JetBrains Mono */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('JetBrains Mono'), local('JetBrainsMono-Regular'), url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+}
+
+/* Fira Code */
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Fira Code'), local('FiraCode-Regular'), url('/fonts/FiraCode-Regular.woff2') format('woff2');
+}
+
+/* Roboto */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Roboto'), local('Roboto-Regular'), url('/fonts/Roboto-Regular.woff2') format('woff2');
+}
+
+/* Noto Sans */
+@font-face {
+  font-family: 'Noto Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Noto Sans'), local('NotoSans-Regular'), url('/fonts/NotoSans-Regular.woff2') format('woff2');
+}
