@@ -53,6 +53,29 @@ export class WindowService {
   }
 
   /**
+   * Toggles window between Maximized and Restored state.
+   */
+  async toggleMaximize(): Promise<void> {
+    try {
+      await this.appWindow.toggleMaximize();
+    } catch (err) {
+      console.error("Failed to toggle window maximize:", err);
+    }
+  }
+
+  /**
+   * Checks whether the window is currently maximized.
+   */
+  async isMaximized(): Promise<boolean> {
+    try {
+      return await this.appWindow.isMaximized();
+    } catch (err) {
+      console.error("Failed to check window maximized state:", err);
+      return false;
+    }
+  }
+
+  /**
    * Spawns a new CleanPad process instance (Ctrl+N).
    */
   async openNewInstance(): Promise<void> {

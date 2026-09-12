@@ -18,9 +18,9 @@ export class TopBarComponent {
 
   private render(): void {
     this.container.innerHTML = `
-      <div class="topbar" id="topbar-header" data-tauri-drag-region>
+      <div class="topbar" id="topbar-header">
         <div class="dot-btn" id="topbar-dot-btn" title="Menu & Settings">●</div>
-        <div class="topbar-drag-area" id="topbar-drag-area" data-tauri-drag-region>Untitled</div>
+        <div class="topbar-drag-area" id="topbar-drag-area">Untitled</div>
         <div class="progress-bar-line" id="topbar-progress-line"></div>
       </div>
     `;
@@ -49,10 +49,18 @@ export class TopBarComponent {
       if ((me.target as HTMLElement)?.closest("#topbar-dot-btn")) {
         return;
       }
-      if (me.button === 0) {
+      if (me.button === 0 && me.detail === 1) {
         me.preventDefault();
         this.windowService.startDragging();
       }
+    });
+
+    topbar?.addEventListener("dblclick", (e: Event) => {
+      const me = e as MouseEvent;
+      if ((me.target as HTMLElement)?.closest("#topbar-dot-btn")) {
+        return;
+      }
+      this.windowService.toggleMaximize();
     });
   }
 
