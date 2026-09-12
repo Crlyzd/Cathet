@@ -19,7 +19,7 @@
   --col-text: #ffffff;
   --col-text-muted: #cbd5e1;
   --col-text-dim: #94a3b8;
-  --col-menu-bg: rgba(22, 22, 28, 0.62);
+  --col-menu-bg: rgba(20, 20, 26, 0.95);
   --col-menu-sel: #2563eb;
   --col-accent: #38bdf8;
   --col-border: rgba(255, 255, 255, 0.14);
@@ -38,7 +38,7 @@
   --col-text: #1e293b;
   --col-text-muted: #334155;
   --col-text-dim: #475569;
-  --col-menu-bg: rgba(255, 255, 255, 0.65);
+  --col-menu-bg: rgba(255, 255, 255, 0.95);
   --col-menu-sel: #2563eb;
   --col-accent: #0284c7;
   --col-border: rgba(15, 23, 42, 0.12);
@@ -73,7 +73,8 @@
   color: inherit;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -138,13 +139,25 @@ html, body {
 }
 
 @keyframes fadeInDialog {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleUpDialog {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .glass-dialog-body {

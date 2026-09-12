@@ -10,9 +10,10 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
    - **No monolithic files**. Every file must have a single, clearly defined responsibility.
    - **Line Count Target**: 100–250 lines per file maximum. Any file approaching 300+ lines must be refactored into composable submodules or helper services.
 2. **Minimal Binary Footprint & Zero Bloat**:
-   - Rust release profile must use `opt-level = "z"`, `lto = true`, `codegen-units = 1`, `panic = "abort"`, and `strip = true`.
+   - Production distribution release profile (`profile.release`) must use `opt-level = "z"`, `lto = true`, `codegen-units = 1`, `panic = "abort"`, and `strip = true` for smallest possible binary size under 4 MB (`cathet-arm64.exe` ~3.49 MB, `cathet-x64.exe` ~3.72 MB).
+   - Local rapid iteration profile (`profile.fast-release`) with `opt-level = 1`, `lto = "off"`, `codegen-units = 256`, and `incremental = true` is used for `build.ps1` native options `[3]` and `[4]` to maximize compilation speed.
    - Avoid heavy external dependencies. Use lightweight native APIs and minimal HTTP queries.
-   - **Native TLS Backend**: `reqwest` must strictly use `features = ["json", "native-tls"]` (Windows SChannel) instead of `default-tls` (`aws-lc-sys`), ensuring seamless compilation without assembly linkage errors (`LNK1181`) across both Windows x64 and ARM64. Release binary sizes must remain under 4 MB (`cathet-arm64.exe` ~3.49 MB, `cathet-x64.exe` ~3.72 MB).
+   - **Native TLS Backend**: `reqwest` must strictly use `features = ["json", "native-tls"]` (Windows SChannel) instead of `default-tls` (`aws-lc-sys`), ensuring seamless compilation without assembly linkage errors (`LNK1181`) across both Windows x64 and ARM64. Release binary sizes must remain under 4 MB.
 3. **Backdrop Vibrancy & Acrylic**:
    - The frosted glass effect is implemented via modern Windows DWM system backdrops (`DwmSetWindowAttribute` with `DWMWA_SYSTEMBACKDROP_TYPE` for Acrylic/Mica) and graceful platform vibrancy fallbacks. While active (focused), native hardware-accelerated Acrylic renders translucent frosted glass; when inactive (unfocused), Windows DWM automatically transitions to an energy-saving solid dark/light backdrop to conserve GPU fill-rate. Undocumented legacy `SetWindowCompositionAttribute(BlurBehind)` is deprecated and prohibited as it produces opaque black artifacts and drag flicker on Windows 10 (1903+) and Windows 11.
 4. **Title Bar File Name**:

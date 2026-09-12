@@ -33,7 +33,7 @@ function Get-NativeArch {
 function Show-HelpGuide {
     $ver = Get-AppVersion
     $arch = Get-NativeArch
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build native release binary (cathet-v$ver-$arch.exe)`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific release binary`n  .\build.ps1 -All                   -> Build both x64 and ARM64 binaries (2 versioned files)`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build native fast executable (cathet-v$ver-$arch.exe)`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific distribution release binary (smallest size)`n  .\build.ps1 -All                   -> Build both x64 and ARM64 distribution binaries (2 versioned files)`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -114,29 +114,29 @@ function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$
     Write-Host "Version bumped successfully: $currentVer -> $newVer" -ForegroundColor Green
 }
 
-function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$versionedFileName) {
+function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$versionedFileName, [string]$profile = "release") {
     Stop-ActiveProcesses
     if ($targetTriple) { Confirm-Target $targetTriple }
-    Write-Host "`n>>> Compiling release for $label ($targetTriple)..." -ForegroundColor Yellow
+    Write-Host "`n>>> Compiling ($profile) for $label ($targetTriple)..." -ForegroundColor Yellow
     npm run build | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "Frontend build failed with exit code $LASTEXITCODE." }
 
     $manifest = Join-Path $ProjectRoot "src-tauri\Cargo.toml"
     $sourceBin = if ($targetTriple) {
-        Join-Path $ProjectRoot "src-tauri\target\$targetTriple\release\cathet.exe"
+        Join-Path $ProjectRoot "src-tauri\target\$targetTriple\$profile\cathet.exe"
     } else {
-        Join-Path $ProjectRoot "src-tauri\target\release\cathet.exe"
+        Join-Path $ProjectRoot "src-tauri\target\$profile\cathet.exe"
     }
 
     # Remove stale binary if present so a compilation failure never reuses an old artifact
     Remove-Item -Path $sourceBin -Force -ErrorAction SilentlyContinue
 
     if ($targetTriple) {
-        cargo build --release --target $targetTriple --manifest-path $manifest
+        cargo build --profile $profile --target $targetTriple --manifest-path $manifest
     } else {
-        cargo build --release --manifest-path $manifest
+        cargo build --profile $profile --manifest-path $manifest
     }
-    if ($LASTEXITCODE -ne 0) { throw "Cargo release build failed with exit code $LASTEXITCODE." }
+    if ($LASTEXITCODE -ne 0) { throw "Cargo $profile build failed with exit code $LASTEXITCODE." }
 
     if (-not (Test-Path $sourceBin)) { throw "Binary not found at: $sourceBin" }
     if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
@@ -155,11 +155,11 @@ function Show-InteractiveMenu {
 Select an action:
   [1] Live Development (Hot Reload) [Default]
   [2] Run Verification Checks (Vite + Cargo)
-  [3] Build Native ($arch) Release -> $OutputDir/cathet-v$ver-$arch.exe
-  [4] Build & Launch Native ($arch) Release Immediately
-  [5] Build Windows x64    -> $OutputDir/cathet-v$ver-x64.exe
-  [6] Build Windows ARM64  -> $OutputDir/cathet-v$ver-arm64.exe
-  [7] Build All Targets    -> x64 and ARM64 (2 versioned binaries)
+  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch.exe
+  [4] Build & Launch Native ($arch) Fast Executable Immediately
+  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe
+  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe
+  [7] Build All Targets Release (Smallest) -> x64 and ARM64 (2 versioned binaries)
   [8] Bump Project Version (Current: v$ver)
   [Q] Exit
 "@ -ForegroundColor Yellow
@@ -178,17 +178,17 @@ function Invoke-Pipeline([hashtable]$opts) {
     $nativeArch = Get-NativeArch
     $compiledBin = $null
     if ($opts.All) {
-        Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe"
-        Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe"
+        Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
+        Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
         $compiledBin = Join-Path $ReleaseDir "cathet-v$ver-$nativeArch.exe"
         Write-Host "`nAll release targets compiled successfully into '$OutputDir/'!" -ForegroundColor Green
     } elseif ($opts.BuildArm64) {
-        $compiledBin = Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe"
+        $compiledBin = Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
     } elseif ($opts.BuildX64) {
-        $compiledBin = Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe"
+        $compiledBin = Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
     } elseif ($opts.Build) {
         $nativeTriple = if ($nativeArch -eq "arm64") { "aarch64-pc-windows-msvc" } else { "x86_64-pc-windows-msvc" }
-        $compiledBin = Invoke-CompileTarget $nativeTriple "Windows $nativeArch" "cathet-v$ver-$nativeArch.exe"
+        $compiledBin = Invoke-CompileTarget $nativeTriple "Windows $nativeArch" "cathet-v$ver-$nativeArch.exe" "fast-release"
     }
 
     if ($compiledBin -and $opts.Run) {
