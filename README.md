@@ -12,7 +12,7 @@
 <br/>
 
 <p align="center">
-  <img src="docs/app-screenshot.png" alt="Cathet Application Screenshot" width="800" style="max-width: 100%; border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.35);" />
+  <img src="https://github.com/user-attachments/assets/4ca0cdb3-a83f-4275-b637-b18981adaf45" alt="Cathet Application Screenshot" width="800" style="max-width: 100%; border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.35);" />
 </p>
 
 *Clean, distraction-free writing that looks right at home on your desktop.*
