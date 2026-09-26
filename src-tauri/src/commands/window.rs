@@ -65,10 +65,8 @@ pub async fn open_settings_window(app_handle: AppHandle) -> Result<(), String> {
         tauri::WebviewUrl::App("settings.html".into()),
     )
     .title("Cathet — Settings & About")
-    .inner_size(350.0, 310.0)
-    .min_inner_size(350.0, 310.0)
-    .max_inner_size(350.0, 310.0)
-    .resizable(true)
+    .inner_size(350.0, 318.0)
+    .resizable(false)
     .maximizable(false)
     .decorations(false)
     .transparent(true)
@@ -78,7 +76,6 @@ pub async fn open_settings_window(app_handle: AppHandle) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     crate::commands::vibrancy::apply_frosted_glass(&win);
-    crate::commands::vibrancy::setup_fixed_size_subclass(&win);
 
     let _ = win.show();
     let _ = win.set_focus();
