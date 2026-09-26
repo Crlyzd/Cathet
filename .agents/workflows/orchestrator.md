@@ -51,12 +51,12 @@ When synthesizing results, summarize what was done per mode and flag anything st
 ---
 
 ## Cathet Project Scope & Modularity Addendum
-- **Enforce Anti-Monolith Standard**: Decompose work such that no single file exceeds 250 lines.
+- **Enforce Anti-Monolith Standard**: Decompose work such that no single file exceeds 250 lines. For complex UI features, plan submodules rather than monolithic container files.
 - **Stack**: Rust + Tauri v2, Vanilla TypeScript/CSS.
 - **Architectural Tenets**:
-  - Persistent acrylic blur in foreground and background.
+  - Persistent acrylic blur via Windows DWM in active state; energy-saving fallback when inactive.
   - Title bar displays document file name.
-  - Markdown toggle with `Ctrl+M`.
-  - Settings dropdown with Theme, Fonts (including Noto Sans & Roboto), and Version 1.0 GitHub updater.
+  - Lossless Markdown toggle with `Ctrl+M`.
+  - Dedicated multi-tabbed Settings window (General, Appearance, Updates, About) with embedded Tutorial guide and Windows file association management.
   - Unified automation via `build.ps1` (Dev, Check, Version Bumping, and Multi-Target Builds).
-  - Dedicated compilation output directory: `release/cathet.exe` (x64 and ARM64).
+  - Dedicated compilation output directory: versioned distribution binaries `release/cathet-v<version>-<arch>.exe`.

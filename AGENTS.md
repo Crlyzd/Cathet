@@ -30,7 +30,10 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
    - Dedicated Settings & About native window with frosted glass backdrop houses:
      - Theme selector (Dark / Light).
      - Font selector (Noto Sans, Roboto, Cascadia Code, Consolas, Segoe UI, Inter, JetBrains Mono, Fira Code, Arial).
-     - Stay on Top pin toggle (`Ctrl+T`).
+     - Stay on Top pin toggle (`Ctrl+T`) and Word Wrap toggle.
+     - Windows default file association (`.txt`, `.md`) and Explorer context menu integration with automatic portable `.exe` self-healing.
+     - In-app interactive offline guide (`tutorial.md`) button with direct markdown preview loader.
+     - Automatic memory trimming on startup and focus loss.
      - Update checker with glowing action indicator.
      - About tab with author profile, donation links (Saweria, PayPal), bug reports, and engine stack attribution.
 7. **GitHub Auto-Updater**:
@@ -45,10 +48,10 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
    - All compiled release binaries are cleanly placed into the dedicated `release/` folder in the project root with versioned architecture naming (`release/cathet-v<version>-x64.exe` and `release/cathet-v<version>-arm64.exe`). Redundant unversioned companion aliases (`cathet.exe`, `cathet-x64.exe`, `cathet-arm64.exe`) are eliminated to keep release output clean and free of duplicates.
 10. **Dual-Window Architecture & Modular Layout**:
    - **Main Editor**: `index.html` mounted by `src-ui/src/main.ts`, powered by `Editor.ts`, `TopBar.ts`, `PopupMenu.ts`, `ContextMenu.ts`, `GlassDialog.ts`, and `DropOverlay.ts`.
-   - **Settings Window**: `settings.html` mounted by `src-ui/src/settingsMain.ts`, powered by `SettingsTabs.ts` and `SettingsMenu.ts`.
-   - **Modular Services**: `fileService.ts`, `fontService.ts`, `themeService.ts`, `updateService.ts`, `windowService.ts`.
-   - **Modular Utilities**: `markdown.ts`, `markdownSanitizer.ts`, `imageOptimizer.ts`, `imagePathResolver.ts`, `base64Fold.ts`, `htmlToMarkdown.ts`, `contextMenuItems.ts`, `shortcuts.ts`, `eventBus.ts`, `monochromeIcons.ts`.
-   - **Modular Backend**: `src-tauri/src/commands/` split into `file.rs`, `migration.rs`, `updater.rs`, `vibrancy.rs`, and `window.rs`.
+   - **Settings Window**: `settings.html` mounted by `src-ui/src/settingsMain.ts`, powered by `SettingsTabs.ts` and its subpanes (`SettingsPane.ts`, `AboutPane.ts`, `FontSelect.ts`), alongside `SettingsMenu.ts`.
+   - **Modular Services**: `associationService.ts`, `dragDropService.ts`, `fileService.ts`, `fontService.ts`, `themeService.ts`, `updateService.ts`, `windowService.ts`.
+   - **Modular Utilities**: `base64Fold.ts`, `brokenImageFallback.ts`, `contextMenuItems.ts`, `editorPasteHandler.ts`, `eventBus.ts`, `htmlToMarkdown.ts`, `imageOptimizer.ts`, `imagePathResolver.ts`, `markdown.ts`, `markdownSanitizer.ts`, `monochromeIcons.ts`, `pathUtils.ts`, `shortcuts.ts`.
+   - **Modular Backend**: `src-tauri/src/commands/` split into `association.rs`, `file.rs`, `memory.rs`, `migration.rs`, `updater.rs`, `vibrancy.rs`, and `window.rs`. State managed via `state.rs`.
 
 ---
 

@@ -34,9 +34,9 @@ You are a Senior Software Architect. Your task is to design technical solutions 
 ---
 
 ## Cathet Project Scope & Modularity Addendum
-- **Anti-Monolith Invariant**: Designs must mandate modular boundaries. Every proposed file must target **under 250 lines**. 1000-line files are strictly forbidden.
+- **Anti-Monolith Invariant**: Designs must mandate modular boundaries. Every proposed file must target **under 250 lines**. 1000-line files are strictly forbidden. Decompose larger components (e.g. settings tab panels) into dedicated submodules.
 - **Architecture Tenets**:
-  - Rust backend commands partitioned into `vibrancy.rs`, `updater.rs`, `migration.rs`, `file.rs`, and `window.rs`.
-  - Frontend partitioned into discrete single-responsibility services (`themeService.ts`, `fontService.ts`, `updateService.ts`, `fileService.ts`) and modular components.
-  - Zero heavy frontend frameworks; keep binary size tiny.
-  - Single-script automation standard: all dev/build/version operations belong exclusively in `build.ps1`, outputting binaries to `release/`.
+  - Rust backend commands partitioned into `association.rs`, `file.rs`, `memory.rs`, `migration.rs`, `updater.rs`, `vibrancy.rs`, and `window.rs`, with state in `state.rs`.
+  - Frontend partitioned into discrete single-responsibility services (`associationService.ts`, `dragDropService.ts`, `fileService.ts`, `fontService.ts`, `themeService.ts`, `updateService.ts`, `windowService.ts`) and modular components.
+  - Zero heavy frontend frameworks; keep binary size tiny (< 4 MB).
+  - Single-script automation standard: all dev/build/version operations belong exclusively in `build.ps1`, outputting versioned binaries to `release/cathet-v<version>-<arch>.exe`.

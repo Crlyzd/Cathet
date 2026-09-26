@@ -29,9 +29,10 @@ You are a highly meticulous Senior Code Reviewer. Your task is not to write code
 ---
 
 ## Cathet Project Scope & Modularity Addendum
-- **Anti-Monolith Invariant**: Mandatory line-count audit. Flag any file exceeding **250 lines** as a critical finding or required refactoring target. Monolithic single files (> 400 lines) will fail review.
+- **Anti-Monolith Invariant**: Mandatory line-count audit. Flag any file exceeding **250 lines** as a critical finding or required refactoring target (e.g., decomposing large components like `SettingsTabs.ts` into individual tab modules). Monolithic single files (> 400 lines) will fail review.
 - **Cathet Audit Priorities**:
   - Memory safety in Rust FFI / Windows DWM composition calls.
   - Absence of memory leaks or hanging threads during self-replacement / update checks.
+  - Verification that RAM trimming logic (`memory.rs` / `trim_memory`) is non-blocking and safe.
   - Strict preservation of native window performance and sub-second startup times.
-  - Automation hygiene: Ensure `build.ps1` stays under 250 lines and no rogue/secondary runner scripts exist.
+  - Automation hygiene: Ensure `build.ps1` stays around 250 lines and no rogue/secondary runner scripts exist.

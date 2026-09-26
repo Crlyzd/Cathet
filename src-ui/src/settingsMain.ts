@@ -6,24 +6,19 @@ import { showGlassDialog } from "./components/GlassDialog";
 import { FontService } from "./services/fontService";
 import { ThemeService } from "./services/themeService";
 import { UpdateService } from "./services/updateService";
-import { AssociationService } from "./services/associationService";
+import { AssociationService, AssociationStatus } from "./services/associationService";
 import { APP_VERSION } from "./version";
 
 class SettingsApp {
-  private fontService: FontService;
-  private themeService: ThemeService;
-  private updateService: UpdateService;
-  private associationService: AssociationService;
+  private fontService = new FontService();
+  private themeService = new ThemeService();
+  private updateService = new UpdateService();
+  private associationService = new AssociationService();
   private tabsComponent: SettingsTabsComponent;
   private currentWindow = getCurrentWindow();
   private isAlwaysOnTop: boolean = false;
 
   constructor() {
-    this.fontService = new FontService();
-    this.themeService = new ThemeService();
-    this.updateService = new UpdateService();
-    this.associationService = new AssociationService();
-
     const root = document.getElementById("settings-root");
     if (!root) throw new Error("Settings root container not found");
 
@@ -59,17 +54,10 @@ class SettingsApp {
     );
 
     this.initListeners();
-
-    // Fetch current always on top state immediately
     this.syncAlwaysOnTop();
-
-    // Query and sync default app association status
     this.syncAssociationStatus();
-
-    // Auto-check for updates silently on launch to ensure synchronization with main window
     this.handleCheckUpdates(false).catch(console.error);
 
-    // Disable default browser context menu in compiled mode
     if (!import.meta.env.DEV) {
       window.addEventListener("contextmenu", (e) => e.preventDefault());
     }
@@ -180,36 +168,28 @@ class SettingsApp {
   }
 
   private async initListeners(): Promise<void> {
-    // Listen for theme changes from main window
     await listen<"dark" | "light">("cathet:theme-change", (event) => {
       this.applyTheme(event.payload);
       this.tabsComponent.updateState({ theme: event.payload });
     });
 
-    // Listen for font changes from main window
     await listen<string>("cathet:font-change", (event) => {
       this.fontService.setFont(event.payload);
       this.tabsComponent.updateState({ fontId: event.payload });
     });
 
-    // Listen for stay-on-top changes from other windows
     await listen<boolean>("cathet:ontop-change", (event) => {
       this.isAlwaysOnTop = event.payload;
       this.tabsComponent.updateState({ isAlwaysOnTop: event.payload });
     });
 
-    // Re-sync when window gains focus or receives show event
-    window.addEventListener("focus", () => {
+    const resync = () => {
       this.syncAlwaysOnTop();
       this.syncAssociationStatus();
-    });
+    };
+    window.addEventListener("focus", resync);
+    await listen("cathet:settings-focused", resync);
 
-    await listen("cathet:settings-focused", () => {
-      this.syncAlwaysOnTop();
-      this.syncAssociationStatus();
-    });
-
-    // Listen for cross-window update status changes
     await listen<any>("cathet:update-status", (event) => {
       const info = event.payload;
       this.tabsComponent.updateState({
@@ -219,26 +199,24 @@ class SettingsApp {
     });
   }
 
+  private applyAssociationStatus(status: AssociationStatus): void {
+    this.tabsComponent.updateState({
+      isRegistered: status.isRegistered,
+      currentExePath: status.currentExePath,
+      registeredExePath: status.registeredExePath,
+    });
+  }
+
   private async syncAssociationStatus(): Promise<void> {
     const status = await this.associationService.getStatus();
-    if (status) {
-      this.tabsComponent.updateState({
-        isRegistered: status.isRegistered,
-        currentExePath: status.currentExePath,
-        registeredExePath: status.registeredExePath,
-      });
-    }
+    if (status) this.applyAssociationStatus(status);
   }
 
   private async handleConfigureDefaultApp(): Promise<void> {
     try {
       const status = await this.associationService.configureDefaultApp();
       if (status) {
-        this.tabsComponent.updateState({
-          isRegistered: status.isRegistered,
-          currentExePath: status.currentExePath,
-          registeredExePath: status.registeredExePath,
-        });
+        this.applyAssociationStatus(status);
         const exeName = status.currentExePath.split(/[/\\]/).pop() || "Cathet";
         await showGlassDialog({
           type: "success",
@@ -259,11 +237,7 @@ class SettingsApp {
     try {
       const status = await this.associationService.unregisterDefaultApp();
       if (status) {
-        this.tabsComponent.updateState({
-          isRegistered: status.isRegistered,
-          currentExePath: status.currentExePath,
-          registeredExePath: status.registeredExePath,
-        });
+        this.applyAssociationStatus(status);
         await showGlassDialog({
           type: "info",
           title: "Associations Removed",
@@ -280,7 +254,6 @@ class SettingsApp {
   }
 }
 
-// Initialize on DOM load
 window.addEventListener("DOMContentLoaded", () => {
   new SettingsApp();
 });

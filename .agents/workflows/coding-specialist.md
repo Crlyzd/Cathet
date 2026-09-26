@@ -33,13 +33,14 @@ You are an expert Senior Software Engineer. Your task is to implement features, 
 ---
 
 ## Cathet Project Scope & Modularity Addendum
-- **Anti-Monolith Invariant**: **Never create or allow 500–1000+ line monolithic files**. Keep files modular and targeted at **100–250 lines max**. Break functionality into dedicated, single-responsibility files.
+- **Anti-Monolith Invariant**: **Never create or allow 500–1000+ line monolithic files**. Keep files modular and targeted at **100–250 lines max**. Break complex components (such as settings panels or editor helpers) into dedicated, single-responsibility files.
 - **Rust Guidelines**:
   - Release profile must optimize for size (`opt-level = "z"`, `lto = true`, `panic = "abort"`, `strip = true`).
-  - Native Windows DWM calls must handle both active and inactive states cleanly.
+  - Native Windows DWM calls must handle both active and inactive states cleanly without legacy SetWindowCompositionAttribute.
+  - Commands split cleanly: `association.rs`, `file.rs`, `memory.rs`, `migration.rs`, `updater.rs`, `vibrancy.rs`, `window.rs`.
 - **Frontend Guidelines**:
   - Vanilla TypeScript & CSS.
-  - State separated into dedicated services (`themeService.ts`, `fontService.ts`, `updateService.ts`).
+  - State and logic separated into dedicated services (`associationService.ts`, `dragDropService.ts`, `fileService.ts`, `fontService.ts`, `themeService.ts`, `updateService.ts`, `windowService.ts`).
   - Zero heavy external bundles.
 - **Automation Guidelines**:
-  - All dev, build, check, and versioning logic belongs in `build.ps1` (<250 lines), cleanly outputting binaries into `release/`.
+  - All dev, build, check, and versioning logic belongs in `build.ps1` (<250 lines), cleanly outputting versioned binaries into `release/cathet-v<version>-<arch>.exe`.
