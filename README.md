@@ -31,8 +31,9 @@ Standard Notepad feels plain and dated, while modern writing apps can feel heavy
 - ⚡ **Instant Launch**: Opens in the blink of an eye with zero loading screens or sluggish startup delays.
 - 🍃 **Featherweight on Memory**: Uses a fraction of the RAM of typical text editors, keeping your PC cool, quiet, and fast.
 - 🎒 **100% Portable**: Just a single `.exe` file! No installer, no setup wizards, and no leftover clutter. Run it from your desktop or a USB drive.
-- 📝 **Everyday Notes or Markdown**: Use it for quick scratchpad thoughts, or press `Ctrl + M` to preview formatted Markdown with headers, bold text, bullet points, and links.
-- 📶 **Works 100% Offline**: All fonts and styles are built right into the app—no internet connection needed.
+- 📝 **Everyday Notes or Markdown**: Use it for quick scratchpad thoughts, or press `Ctrl + M` to preview formatted Markdown with headers, bullet points, checklists, tables, links, and local or remote images.
+- 📷 **Smart In-Memory Images**: Paste screenshots or images directly! Large clips are automatically optimized to WebP, and gigantic Base64 data URIs collapse into clean, interactive frosted glass badges.
+- 📶 **Works 100% Offline**: All fonts, styles, and an interactive tutorial guide are built right into the app—no internet connection needed.
 
 ---
 
@@ -54,8 +55,12 @@ No installation required! You can be up and running in under 10 seconds:
 
 - 📌 **Always on Top (`Ctrl + T`)**: Pin Cathet to stay on top while watching a YouTube video, attending a Zoom call, or browsing the web.
 - 🪟 **Frameless Window Controls**: Clean, built-in Minimize, Maximize, and Close buttons right in the header that look sleek and match Windows 11.
+- 📷 **In-Memory Image Optimization & Base64 Pills**: Paste any screenshot or picture (`Ctrl + V`). Clips over 500 KB are automatically downscaled and converted to WebP in memory, while massive Base64 strings in edit mode collapse into tidy, clickable frosted glass pills (`[ 📷 WEBP ~245 KB ▾ ]`).
+- 🖼️ **Local & Remote Image Streaming**: Preview relative (`./assets/...`), absolute (`C:/...`), and web (`https://...`) images in Markdown with automatic broken-image fallbacks.
+- 📋 **Smart Clipboard Pasting**: Paste formatted HTML from browsers directly as clean Markdown, or paste spreadsheet rows from Excel/Google Sheets as ready-to-use Markdown tables.
+- 📖 **In-App Interactive Tutorial**: Click the **"📖 Open Tutorial"** button in Settings to launch an offline guide with formatting tricks, shortcuts, and interactive examples.
 - 🎨 **Dark & Light Glass Themes**: Easily flip between Dark and Light mode depending on your room lighting or mood.
-- 🔤 **Handpicked Fonts**: Switch between beautiful, easy-to-read fonts (*Inter, Roboto, JetBrains Mono, Fira Code, Cascadia Code, and Segoe UI*).
+- 🔤 **Handpicked Fonts**: Switch between beautiful, easy-to-read fonts (*Inter, Roboto, Cascadia Code, JetBrains Mono, Fira Code, Consolas, Segoe UI, Noto Sans, and Arial*).
 - 🖱️ **Sleek Right-Click Menu**: Custom rounded glass menu with quick shortcuts for Cut, Copy, Paste, and Word Wrap.
 - 🔍 **Instant Web Search (`Ctrl + E`)**: Highlight any word or sentence and press `Ctrl + E` to look it up on Google immediately.
 - 📂 **Drag & Drop Anything**: Drag any `.txt`, `.md`, or code file from your desktop straight into the window to read or edit.
@@ -75,6 +80,7 @@ No installation required! You can be up and running in under 10 seconds:
 | **Open a file** | `Ctrl + O` |
 | **Save your document** | `Ctrl + S` |
 | **Save as a new file** | `Ctrl + Shift + S` |
+| **Paste text, tables, or auto-optimized images** | `Ctrl + V` |
 | **Bold** / *Italic* / <u>Underline</u> | `Ctrl + B` / `Ctrl + I` / `Ctrl + U` |
 | **Quick Google search on selected text** | `Ctrl + E` |
 | **Toggle Word Wrap on / off** | `Alt + W` |
@@ -90,6 +96,7 @@ Click the circular dot (**`●`**) in the top-left corner (or press `Ctrl + ,`) 
 - **Appearance**: Switch between sleek Dark glass and bright Light glass.
 - **Typography**: Choose your favorite font family and preview how it looks.
 - **Window Controls**: Toggle persistent "Always on Top" pinning.
+- **Offline Tutorial**: Click **"Open Tutorial"** to explore markdown formatting and features directly in the editor.
 - **Default Application**: Register Cathet as your default text app with a single click.
 - **Updates**: Check for new releases with one click.
 - **About**: View version information, meet the creator, or send feedback.
@@ -101,7 +108,13 @@ Click the circular dot (**`●`**) in the top-left corner (or press `Ctrl + ,`) 
 <details>
 <summary><b>Does Cathet need an internet connection to work?</b></summary>
 <br/>
-No! Cathet is 100% self-contained. All styling and fonts are built directly into the app, so it works completely offline and never tracks your notes.
+No! Cathet is 100% self-contained. All styling, fonts, and the interactive tutorial are built directly into the app, so it works completely offline and never tracks your notes.
+</details>
+
+<details>
+<summary><b>How does Cathet handle images and screenshots?</b></summary>
+<br/>
+Cathet features a built-in in-memory image engine. When you paste an image or screenshot (`Ctrl + V`), clips larger than 500 KB are automatically downscaled and converted to WebP in memory to keep document sizes small. In Edit mode, long Base64 strings collapse into compact frosted glass pills so your text remains readable. In Preview mode (`Ctrl + M`), Cathet seamlessly renders local relative (`./img.png`), absolute (`C:/...`), and web images.
 </details>
 
 <details>
