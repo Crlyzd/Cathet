@@ -26,14 +26,14 @@ function Get-AppVersion {
 }
 
 function Get-NativeArch {
-    if ($env:PROCESSOR_ARCHITECTURE -match "ARM64") { return "arm64" }
+    if ($env:PROCESSOR_ARCHITECTURE -match "ARM64" -or $env:PROCESSOR_ARCHITEW6432 -match "ARM64") { return "arm64" }
     return "x64"
 }
 
 function Show-HelpGuide {
     $ver = Get-AppVersion
     $arch = Get-NativeArch
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build native fast executable (cathet-v$ver-$arch.exe)`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific distribution release binary (smallest size)`n  .\build.ps1 -All                   -> Build both x64 and ARM64 distribution binaries (2 versioned files)`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build native fast executable (cathet-v$ver-$arch-fast.exe)`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific distribution release binary (smallest size)`n  .\build.ps1 -All                   -> Build both x64 and ARM64 distribution binaries (2 versioned files)`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -48,7 +48,7 @@ function Initialize-Environment {
 
 function Confirm-Target([string]$target) {
     if (-not $target) { return }
-    $installed = rustup target list --installed
+    $installed = @(rustup target list --installed)
     if ($installed -notcontains $target) {
         Write-Host "Adding missing Rust target: $target..." -ForegroundColor Yellow
         rustup target add $target
@@ -155,7 +155,7 @@ function Show-InteractiveMenu {
 Select an action:
   [1] Live Development (Hot Reload) [Default]
   [2] Run Verification Checks (Vite + Cargo)
-  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch.exe
+  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe
   [4] Build & Launch Native ($arch) Fast Executable Immediately
   [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe
   [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe
@@ -188,12 +188,16 @@ function Invoke-Pipeline([hashtable]$opts) {
         $compiledBin = Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
     } elseif ($opts.Build) {
         $nativeTriple = if ($nativeArch -eq "arm64") { "aarch64-pc-windows-msvc" } else { "x86_64-pc-windows-msvc" }
-        $compiledBin = Invoke-CompileTarget $nativeTriple "Windows $nativeArch" "cathet-v$ver-$nativeArch.exe" "fast-release"
+        $compiledBin = Invoke-CompileTarget $nativeTriple "Windows $nativeArch" "cathet-v$ver-$nativeArch-fast.exe" "fast-release"
     }
 
     if ($compiledBin -and $opts.Run) {
-        Write-Host "Launching: $compiledBin" -ForegroundColor Cyan
-        Start-Process -FilePath $compiledBin
+        if ($compiledBin -match "arm64" -and $nativeArch -ne "arm64") {
+            Write-Host "Notice: Cannot launch ARM64 executable on an $nativeArch host." -ForegroundColor Yellow
+        } else {
+            Write-Host "Launching: $compiledBin" -ForegroundColor Cyan
+            Start-Process -FilePath $compiledBin
+        }
     }
 
     if ($opts.Dev -or $opts.Live) {
