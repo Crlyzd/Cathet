@@ -1,6 +1,8 @@
 /**
  * Lightweight, zero-dependency Markdown parser for Cathet.
  */
+import { sanitizeHtml } from "./markdownSanitizer";
+
 export function parseMarkdown(md: string): string {
   if (!md) return "";
 
@@ -8,7 +10,13 @@ export function parseMarkdown(md: string): string {
   const out: string[] = [];
   let inCodeBlock = false;
   let codeBuffer: string[] = [];
-  let inList = false;
+  let inUl = false;
+  let inOl = false;
+
+  const closeLists = () => {
+    if (inUl) { out.push("</ul>"); inUl = false; }
+    if (inOl) { out.push("</ol>"); inOl = false; }
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -20,7 +28,7 @@ export function parseMarkdown(md: string): string {
         codeBuffer = [];
         inCodeBlock = false;
       } else {
-        if (inList) { out.push("</ul>"); inList = false; }
+        closeLists();
         inCodeBlock = true;
       }
       continue;
@@ -35,14 +43,21 @@ export function parseMarkdown(md: string): string {
 
     // Blank line
     if (trimmed === "") {
-      if (inList) { out.push("</ul>"); inList = false; }
+      closeLists();
       out.push('<div class="md-spacer"></div>');
+      continue;
+    }
+
+    // Block HTML containers (e.g. <div>, </div>, <p>, </p>, <br/>, <details>, </details>, <summary>, <img...>)
+    if (/^<\/?(div|p|br|hr|img|details|summary|table|thead|tbody|tr|th|td|blockquote)\b/i.test(trimmed)) {
+      closeLists();
+      out.push(formatInline(trimmed));
       continue;
     }
 
     // Markdown Table: requires header line with '|' and next line as delimiter
     if (trimmed.includes("|") && i + 1 < lines.length && isTableDelimiter(lines[i + 1])) {
-      if (inList) { out.push("</ul>"); inList = false; }
+      closeLists();
       const headerCells = parseTableCells(trimmed);
       const delimiterCells = parseTableCells(lines[i + 1]);
       const alignments = delimiterCells.map(getAlignment);
@@ -77,7 +92,7 @@ export function parseMarkdown(md: string): string {
 
     // Tab-separated Table (TSV / Excel paste)
     if (raw.includes("\t") && i + 1 < lines.length && lines[i + 1].includes("\t")) {
-      if (inList) { out.push("</ul>"); inList = false; }
+      closeLists();
       const headerCells = raw.split("\t").map(c => c.trim());
       let tableHtml = '<div class="md-table-wrapper"><table><thead><tr>';
       for (const h of headerCells) {
@@ -105,7 +120,7 @@ export function parseMarkdown(md: string): string {
 
     // Horizontal Rule
     if (/^(\*{3,}|-{3,}|_{3,})$/.test(trimmed)) {
-      if (inList) { out.push("</ul>"); inList = false; }
+      closeLists();
       out.push("<hr />");
       continue;
     }
@@ -113,7 +128,7 @@ export function parseMarkdown(md: string): string {
     // Headings # .. ######
     const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
     if (headingMatch) {
-      if (inList) { out.push("</ul>"); inList = false; }
+      closeLists();
       const level = headingMatch[1].length;
       out.push(`<h${level}>${formatInline(headingMatch[2])}</h${level}>`);
       continue;
@@ -121,30 +136,38 @@ export function parseMarkdown(md: string): string {
 
     // Blockquote
     if (trimmed.startsWith("> ")) {
-      if (inList) { out.push("</ul>"); inList = false; }
+      closeLists();
       out.push(`<blockquote>${formatInline(trimmed.slice(2))}</blockquote>`);
       continue;
     }
 
     // Unordered List
     if (/^[-*+]\s+/.test(trimmed)) {
-      if (!inList) { out.push("<ul>"); inList = true; }
+      if (inOl) { out.push("</ol>"); inOl = false; }
+      if (!inUl) { out.push("<ul>"); inUl = true; }
       const itemText = trimmed.replace(/^[-*+]\s+/, "");
       out.push(`<li>${formatInline(itemText)}</li>`);
       continue;
     }
 
+    // Ordered List
+    const olMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+    if (olMatch) {
+      if (inUl) { out.push("</ul>"); inUl = false; }
+      if (!inOl) { out.push("<ol>"); inOl = true; }
+      out.push(`<li>${formatInline(olMatch[2])}</li>`);
+      continue;
+    }
+
     // Paragraph
-    if (inList) { out.push("</ul>"); inList = false; }
+    closeLists();
     out.push(`<p>${formatInline(trimmed)}</p>`);
   }
 
   if (inCodeBlock) {
     out.push(`<pre><code>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`);
   }
-  if (inList) {
-    out.push("</ul>");
-  }
+  closeLists();
 
   return out.join("\n");
 }
@@ -181,14 +204,33 @@ function escapeHtml(str: string): string {
 }
 
 function formatInline(text: string): string {
-  let s = escapeHtml(text);
-  // Inline code `code`
-  s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
-  // Bold **bold**
-  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  // Italic *italic*
-  s = s.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-  // Links [text](url)
+  // 1. Temporarily protect inline code blocks
+  const codeSnippets: string[] = [];
+  let s = text.replace(/`([^`]+)`/g, (_, code) => {
+    codeSnippets.push(escapeHtml(code));
+    return `___CODE_SLOT_${codeSnippets.length - 1}___`;
+  });
+
+  // 2. Escape non-whitelisted raw HTML '<' to prevent accidental tags while keeping allowed tags intact
+  s = s.replace(/<(?!\/?([a-zA-Z1-6]+)\b)/g, "&lt;");
+
+  // 3. Linked image badges: [![alt](imgUrl)](linkUrl)
+  s = s.replace(/\[!\[([^\]]*)\]\(([^)]+)\)\]\(([^)]+)\)/g, '<a href="$3" target="_blank" rel="noopener"><img src="$2" alt="$1" loading="lazy" /></a>');
+
+  // 4. Standalone Markdown images: ![alt](imgUrl)
+  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />');
+
+  // 5. Standard Markdown links: [text](linkUrl)
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-  return s;
+
+  // 6. Formatting: Bold, Italic, Strikethrough
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+
+  // 7. Restore inline code
+  s = s.replace(/___CODE_SLOT_(\d+)___/g, (_, idx) => `<code>${codeSnippets[Number(idx)]}</code>`);
+
+  // 8. Sanitize HTML for safety
+  return sanitizeHtml(s);
 }

@@ -51,8 +51,9 @@ export class EditorComponent {
             e.preventDefault();
             const reader = new FileReader();
             reader.onload = (event) => {
-              const imgHtml = `<img src="${event.target?.result}" alt="Pasted Image" />`;
-              document.execCommand("insertHTML", false, imgHtml);
+              const mdImg = `![Pasted Image](${event.target?.result})`;
+              document.execCommand("insertText", false, mdImg);
+              this.rawContent = this.editorEl.innerText;
             };
             reader.readAsDataURL(file);
             return;
@@ -121,11 +122,7 @@ export class EditorComponent {
     if (this.isMarkdownPreview) {
       this.editorEl.innerHTML = parseMarkdown(this.rawContent);
     } else {
-      if (content.includes("<") && content.includes(">")) {
-        this.editorEl.innerHTML = content;
-      } else {
-        this.editorEl.innerText = content;
-      }
+      this.editorEl.innerText = this.rawContent;
     }
   }
 
@@ -136,11 +133,6 @@ export class EditorComponent {
   toggleMarkdownPreview(): boolean {
     if (!this.isMarkdownPreview) {
       // Switch from Edit to Markdown Preview
-      if (isHtmlFormatted(this.editorEl.innerHTML)) {
-        this.rawContent = htmlToMarkdown(this.editorEl.innerHTML);
-      } else {
-        this.rawContent = this.editorEl.innerText;
-      }
       this.editorEl.innerHTML = parseMarkdown(this.rawContent);
       this.editorEl.setAttribute("contenteditable", "false");
       this.editorEl.classList.add("markdown-preview");

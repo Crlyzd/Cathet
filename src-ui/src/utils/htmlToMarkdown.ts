@@ -5,7 +5,7 @@
 
 export function isHtmlFormatted(html: string): boolean {
   if (!html) return false;
-  return /<(table|tr|td|th|pre|code|h[1-6]|ul|ol|li|blockquote|strong|b|em|i|a)\b/i.test(html);
+  return /<(table|tr|td|th|pre|code|h[1-6]|ul|ol|li|blockquote|strong|b|em|i|a|img|div)\b/i.test(html);
 }
 
 export function tsvToMarkdownTable(text: string): string | null {
@@ -142,6 +142,15 @@ function nodeToMarkdown(node: Node): string {
 
     case "hr":
       return "\n---\n\n";
+
+    case "img": {
+      const src = el.getAttribute("src") || "";
+      const alt = el.getAttribute("alt") || "Image";
+      return src ? `![${alt}](${src})` : "";
+    }
+
+    case "div":
+      return `\n${childrenMd().trim()}\n\n`;
 
     default:
       return childrenMd();
