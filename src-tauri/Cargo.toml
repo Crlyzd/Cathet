@@ -1,6 +1,6 @@
 [package]
 name = "cathet"
-version = "3.3.0"
+version = "4.0.0"
 description = "Cathet — Lightweight text & markdown editor"
 authors = ["Cathet Team"]
 edition = "2021"
