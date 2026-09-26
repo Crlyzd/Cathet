@@ -1,9 +1,10 @@
 /**
- * Lightweight, zero-dependency Markdown parser for Cathet.
+ * Lightweight Markdown parser for Cathet.
  */
 import { sanitizeHtml } from "./markdownSanitizer";
+import { resolveImageSrc } from "./imagePathResolver";
 
-export function parseMarkdown(md: string): string {
+export function parseMarkdown(md: string, documentPath?: string | null): string {
   if (!md) return "";
 
   const lines = md.split(/\r?\n/);
@@ -51,7 +52,7 @@ export function parseMarkdown(md: string): string {
     // Block HTML containers (e.g. <div>, </div>, <p>, </p>, <br/>, <details>, </details>, <summary>, <img...>)
     if (/^<\/?(div|p|br|hr|img|details|summary|table|thead|tbody|tr|th|td|blockquote)\b/i.test(trimmed)) {
       closeLists();
-      out.push(formatInline(trimmed));
+      out.push(formatInline(trimmed, documentPath));
       continue;
     }
 
@@ -65,7 +66,7 @@ export function parseMarkdown(md: string): string {
       let tableHtml = '<div class="md-table-wrapper"><table><thead><tr>';
       for (let c = 0; c < headerCells.length; c++) {
         const align = alignments[c] ? ` style="text-align:${alignments[c]}"` : "";
-        tableHtml += `<th${align}>${formatInline(headerCells[c])}</th>`;
+        tableHtml += `<th${align}>${formatInline(headerCells[c], documentPath)}</th>`;
       }
       tableHtml += "</tr></thead><tbody>";
 
@@ -80,7 +81,7 @@ export function parseMarkdown(md: string): string {
         for (let c = 0; c < headerCells.length; c++) {
           const cellText = bodyCells[c] !== undefined ? bodyCells[c] : "";
           const align = alignments[c] ? ` style="text-align:${alignments[c]}"` : "";
-          tableHtml += `<td${align}>${formatInline(cellText)}</td>`;
+          tableHtml += `<td${align}>${formatInline(cellText, documentPath)}</td>`;
         }
         tableHtml += "</tr>";
       }
@@ -96,7 +97,7 @@ export function parseMarkdown(md: string): string {
       const headerCells = raw.split("\t").map(c => c.trim());
       let tableHtml = '<div class="md-table-wrapper"><table><thead><tr>';
       for (const h of headerCells) {
-        tableHtml += `<th>${formatInline(h)}</th>`;
+        tableHtml += `<th>${formatInline(h, documentPath)}</th>`;
       }
       tableHtml += "</tr></thead><tbody>";
 
@@ -108,7 +109,7 @@ export function parseMarkdown(md: string): string {
         tableHtml += "<tr>";
         for (let c = 0; c < headerCells.length; c++) {
           const cellText = bodyCells[c] !== undefined ? bodyCells[c] : "";
-          tableHtml += `<td>${formatInline(cellText)}</td>`;
+          tableHtml += `<td>${formatInline(cellText, documentPath)}</td>`;
         }
         tableHtml += "</tr>";
       }
@@ -130,14 +131,14 @@ export function parseMarkdown(md: string): string {
     if (headingMatch) {
       closeLists();
       const level = headingMatch[1].length;
-      out.push(`<h${level}>${formatInline(headingMatch[2])}</h${level}>`);
+      out.push(`<h${level}>${formatInline(headingMatch[2], documentPath)}</h${level}>`);
       continue;
     }
 
     // Blockquote
     if (trimmed.startsWith("> ")) {
       closeLists();
-      out.push(`<blockquote>${formatInline(trimmed.slice(2))}</blockquote>`);
+      out.push(`<blockquote>${formatInline(trimmed.slice(2), documentPath)}</blockquote>`);
       continue;
     }
 
@@ -146,7 +147,7 @@ export function parseMarkdown(md: string): string {
       if (inOl) { out.push("</ol>"); inOl = false; }
       if (!inUl) { out.push("<ul>"); inUl = true; }
       const itemText = trimmed.replace(/^[-*+]\s+/, "");
-      out.push(`<li>${formatInline(itemText)}</li>`);
+      out.push(`<li>${formatInline(itemText, documentPath)}</li>`);
       continue;
     }
 
@@ -155,13 +156,13 @@ export function parseMarkdown(md: string): string {
     if (olMatch) {
       if (inUl) { out.push("</ul>"); inUl = false; }
       if (!inOl) { out.push("<ol>"); inOl = true; }
-      out.push(`<li>${formatInline(olMatch[2])}</li>`);
+      out.push(`<li>${formatInline(olMatch[2], documentPath)}</li>`);
       continue;
     }
 
     // Paragraph
     closeLists();
-    out.push(`<p>${formatInline(trimmed)}</p>`);
+    out.push(`<p>${formatInline(trimmed, documentPath)}</p>`);
   }
 
   if (inCodeBlock) {
@@ -203,7 +204,7 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function formatInline(text: string): string {
+function formatInline(text: string, documentPath?: string | null): string {
   // 1. Temporarily protect inline code blocks
   const codeSnippets: string[] = [];
   let s = text.replace(/`([^`]+)`/g, (_, code) => {
@@ -215,10 +216,16 @@ function formatInline(text: string): string {
   s = s.replace(/<(?!\/?([a-zA-Z1-6]+)\b)/g, "&lt;");
 
   // 3. Linked image badges: [![alt](imgUrl)](linkUrl)
-  s = s.replace(/\[!\[([^\]]*)\]\(([^)]+)\)\]\(([^)]+)\)/g, '<a href="$3" target="_blank" rel="noopener"><img src="$2" alt="$1" loading="lazy" /></a>');
+  s = s.replace(/\[!\[([^\]]*)\]\(([^)]+)\)\]\(([^)]+)\)/g, (_, alt, imgUrl, linkUrl) => {
+    const resolvedImg = resolveImageSrc(imgUrl, documentPath);
+    return `<a href="${linkUrl}" target="_blank" rel="noopener"><img src="${resolvedImg}" alt="${alt}" loading="lazy" /></a>`;
+  });
 
   // 4. Standalone Markdown images: ![alt](imgUrl)
-  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />');
+  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, imgUrl) => {
+    const resolvedImg = resolveImageSrc(imgUrl, documentPath);
+    return `<img src="${resolvedImg}" alt="${alt}" loading="lazy" />`;
+  });
 
   // 5. Standard Markdown links: [text](linkUrl)
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');

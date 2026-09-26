@@ -284,5 +284,97 @@
   50% { transform: translateY(-4px); }
 }
 
+/* ============================================================
+   Base64 Image Pill Badges (Folded in Edit Mode)
+   ============================================================ */
+.b64-pill-container {
+  display: inline-block;
+  vertical-align: middle;
+  user-select: none;
+  -webkit-user-select: none;
+  margin: 0 3px;
+  cursor: pointer;
+  line-height: normal;
+}
+
+.b64-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--col-border);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--col-text-muted);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.b64-pill-badge:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--col-accent);
+  color: var(--col-text);
+}
+
+[data-theme="light"] .b64-pill-badge {
+  background: rgba(15, 23, 42, 0.05);
+}
+
+[data-theme="light"] .b64-pill-badge:hover {
+  background: rgba(15, 23, 42, 0.09);
+  border-color: var(--col-accent);
+}
+
+.b64-pill-icon {
+  font-size: 11px;
+}
+
+.b64-pill-arrow {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* Expanded State */
+.b64-pill-container.expanded {
+  display: block;
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--col-code-bg);
+  border: 1px solid var(--col-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.b64-pill-expanded-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui, sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--col-accent);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--col-border);
+  cursor: pointer;
+  user-select: none;
+}
+
+.b64-pill-raw-text {
+  display: block;
+  max-height: 120px;
+  overflow-y: auto;
+  word-break: break-all;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--col-text-muted);
+  margin-top: 6px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+
 
 

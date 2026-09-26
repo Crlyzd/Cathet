@@ -197,6 +197,7 @@ class CathetApp {
     this.currentFilePath = path;
     const fileName = path.split(/[/\\]/).pop() || "Untitled";
     this.topBar.setTitle(fileName);
+    this.editor.setDocumentPath(path);
   }
 
   private async loadInitialFile(): Promise<void> {

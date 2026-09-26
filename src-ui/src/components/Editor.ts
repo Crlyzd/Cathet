@@ -1,5 +1,8 @@
 import { parseMarkdown } from "../utils/markdown";
 import { htmlToMarkdown, isHtmlFormatted, tsvToMarkdownTable } from "../utils/htmlToMarkdown";
+import { isImageTooLarge, optimizePastedImage, formatFileSizeMb } from "../utils/imageOptimizer";
+import { createBase64PillHtml, serializeEditorContent, renderEditorTextWithPills, attachPillClickHandler } from "../utils/base64Fold";
+import { showGlassDialog } from "./GlassDialog";
 import { readText } from "@tauri-apps/plugin-clipboard-manager";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
@@ -9,6 +12,7 @@ export class EditorComponent {
   private zoomLevel: number = 100;
   private isMarkdownPreview: boolean = false;
   private rawContent: string = "";
+  private documentPath: string | null = null;
 
   constructor(containerId: string) {
     const el = document.getElementById(containerId);
@@ -29,10 +33,12 @@ export class EditorComponent {
   }
 
   private bindEvents(): void {
+    attachPillClickHandler(this.editorEl);
+
     // Sync raw content on input
     this.editorEl.addEventListener("input", () => {
       if (!this.isMarkdownPreview) {
-        this.rawContent = this.editorEl.innerText;
+        this.rawContent = serializeEditorContent(this.editorEl);
       }
     });
 
@@ -49,13 +55,21 @@ export class EditorComponent {
           const file = items[i].getAsFile();
           if (file) {
             e.preventDefault();
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              const mdImg = `![Pasted Image](${event.target?.result})`;
-              document.execCommand("insertText", false, mdImg);
-              this.rawContent = this.editorEl.innerText;
-            };
-            reader.readAsDataURL(file);
+            if (isImageTooLarge(file)) {
+              showGlassDialog({
+                type: "warning",
+                title: "Image Exceeds Limit",
+                message: `Pasted image is ${formatFileSizeMb(file.size)} MB. The maximum embedded size is 15 MB to keep documents fast. Please link an external file instead.`
+              });
+              return;
+            }
+
+            optimizePastedImage(file).then((dataUrl) => {
+              const pillHtml = createBase64PillHtml(dataUrl);
+              const mdImgHtml = `![Pasted Image](${pillHtml})`;
+              document.execCommand("insertHTML", false, mdImgHtml);
+              this.rawContent = serializeEditorContent(this.editorEl);
+            }).catch(console.error);
             return;
           }
         }
@@ -113,42 +127,47 @@ export class EditorComponent {
     this.editorEl.style.fontSize = `${14 * (this.zoomLevel / 100)}px`;
   }
 
-  setFontFamily(family: string): void {
-    this.editorEl.style.fontFamily = family;
-  }
+  setFontFamily(family: string): void { this.editorEl.style.fontFamily = family; }
+  setDocumentPath(path: string | null): void { this.documentPath = path; }
+  getIsMarkdownPreview(): boolean { return this.isMarkdownPreview; }
 
   setContent(content: string): void {
     this.rawContent = content;
     if (this.isMarkdownPreview) {
-      this.editorEl.innerHTML = parseMarkdown(this.rawContent);
+      this.editorEl.innerHTML = parseMarkdown(this.rawContent, this.documentPath);
     } else {
-      this.editorEl.innerText = this.rawContent;
+      if (this.rawContent.includes("data:image/")) {
+        this.editorEl.innerHTML = renderEditorTextWithPills(this.rawContent);
+      } else {
+        this.editorEl.innerText = this.rawContent;
+      }
     }
   }
 
   getText(): string {
-    return this.isMarkdownPreview ? this.rawContent : this.editorEl.innerText;
+    return this.isMarkdownPreview ? this.rawContent : serializeEditorContent(this.editorEl);
   }
 
   toggleMarkdownPreview(): boolean {
     if (!this.isMarkdownPreview) {
       // Switch from Edit to Markdown Preview
-      this.editorEl.innerHTML = parseMarkdown(this.rawContent);
+      this.rawContent = serializeEditorContent(this.editorEl);
+      this.editorEl.innerHTML = parseMarkdown(this.rawContent, this.documentPath);
       this.editorEl.setAttribute("contenteditable", "false");
       this.editorEl.classList.add("markdown-preview");
       this.isMarkdownPreview = true;
     } else {
       // Switch from Preview to Edit
-      this.editorEl.innerText = this.rawContent;
+      if (this.rawContent.includes("data:image/")) {
+        this.editorEl.innerHTML = renderEditorTextWithPills(this.rawContent);
+      } else {
+        this.editorEl.innerText = this.rawContent;
+      }
       this.editorEl.setAttribute("contenteditable", "true");
       this.editorEl.classList.remove("markdown-preview");
       this.isMarkdownPreview = false;
       this.editorEl.focus();
     }
-    return this.isMarkdownPreview;
-  }
-
-  getIsMarkdownPreview(): boolean {
     return this.isMarkdownPreview;
   }
 
@@ -193,17 +212,9 @@ export class EditorComponent {
     return this.getSelectedText().length > 0;
   }
 
-  undo(): void {
-    if (!this.isMarkdownPreview) document.execCommand("undo", false);
-  }
-
-  redo(): void {
-    if (!this.isMarkdownPreview) document.execCommand("redo", false);
-  }
-
-  cut(): void {
-    if (!this.isMarkdownPreview) document.execCommand("cut", false);
-  }
+  undo(): void { if (!this.isMarkdownPreview) document.execCommand("undo", false); }
+  redo(): void { if (!this.isMarkdownPreview) document.execCommand("redo", false); }
+  cut(): void { if (!this.isMarkdownPreview) document.execCommand("cut", false); }
 
   copy(): void {
     const text = this.getSelectedText();
