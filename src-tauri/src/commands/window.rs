@@ -96,3 +96,14 @@ pub async fn sync_window_theme(app_handle: AppHandle, theme: String) -> Result<(
     }
     Ok(())
 }
+
+#[tauri::command]
+pub async fn focus_main_window(app_handle: AppHandle) -> Result<(), String> {
+    if let Some(main_win) = app_handle.get_webview_window("main") {
+        let _ = main_win.unminimize();
+        let _ = main_win.show();
+        let _ = main_win.set_focus();
+    }
+    Ok(())
+}
+

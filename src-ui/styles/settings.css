@@ -8,8 +8,7 @@
   width: 100vw;
   height: 100vh;
   background-color: transparent;
-  border: 1px solid var(--col-border);
-  border-radius: 10px;
+  border: none;
   overflow: hidden;
   position: relative;
   user-select: none;
@@ -88,6 +87,41 @@
 .settings-close-btn:hover {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
+}
+
+/* Header Action Buttons */
+.settings-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2.5px 7px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 500;
+  background: var(--col-card-bg);
+  border: 1px solid var(--col-card-border);
+  color: var(--col-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.settings-header-btn:hover {
+  background: var(--col-menu-sel);
+  color: #ffffff;
+  border-color: var(--col-menu-sel);
+}
+
+.settings-header-btn svg {
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 
 /* Compact Segmented Tabs */
@@ -697,19 +731,27 @@ input:checked + .switch-track:before {
   height: 12px;
 }
 
-/* Compact Footer Attribution */
-.settings-footer-bar {
-  margin-top: auto;
-  padding: 6px 12px 6px 12px;
-  border-top: 1px solid var(--col-divider-subtle);
+.bug-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* About Pane Engine Attribution */
+.about-engine-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10px;
+  width: 100%;
+  padding: 6px 2px 0 2px;
+  font-size: 9.5px;
   color: var(--col-text-dim);
+  user-select: none;
 }
 
-[data-theme="light"] .settings-footer-bar {
+[data-theme="light"] .about-engine-meta {
   font-weight: 500;
   color: var(--col-text-dim);
 }
+

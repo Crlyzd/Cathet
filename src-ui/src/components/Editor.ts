@@ -204,6 +204,25 @@ export class EditorComponent {
     }
   }
 
+  loadDocument(content: string, path: string | null = null, previewMode: boolean = false): void {
+    this.documentPath = path;
+    this.rawContent = content;
+    this.isMarkdownPreview = previewMode;
+    if (previewMode) {
+      this.editorEl.innerHTML = parseMarkdown(this.rawContent, this.documentPath);
+      this.editorEl.setAttribute("contenteditable", "false");
+      this.editorEl.classList.add("markdown-preview");
+    } else {
+      this.editorEl.classList.remove("markdown-preview");
+      this.editorEl.setAttribute("contenteditable", "true");
+      if (this.rawContent.includes("data:image/")) {
+        this.editorEl.innerHTML = renderEditorTextWithPills(this.rawContent);
+      } else {
+        this.editorEl.innerText = this.rawContent;
+      }
+    }
+  }
+
   getText(): string {
     return this.isMarkdownPreview ? this.rawContent : serializeEditorContent(this.editorEl);
   }

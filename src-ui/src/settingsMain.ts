@@ -53,6 +53,7 @@ class SettingsApp {
         onInstallAndRestart: () => this.handleInstallAndRestart(),
         onConfigureDefaultApp: () => this.handleConfigureDefaultApp(),
         onUnregisterDefaultApp: () => this.handleUnregisterDefaultApp(),
+        onOpenTutorial: () => this.handleOpenTutorial(),
         onClose: () => this.handleClose(),
       }
     );
@@ -165,6 +166,16 @@ class SettingsApp {
       await this.currentWindow.close();
     } catch (e) {
       console.error("Failed to close settings window:", e);
+    }
+  }
+
+  private async handleOpenTutorial(): Promise<void> {
+    try {
+      await emit("cathet:load-tutorial");
+      await invoke("focus_main_window").catch(console.error);
+      await this.handleClose();
+    } catch (err) {
+      console.error("Failed to trigger tutorial:", err);
     }
   }
 

@@ -12,6 +12,7 @@ export interface SettingsTabCallbacks {
   onInstallAndRestart: () => Promise<void>;
   onConfigureDefaultApp: () => Promise<void>;
   onUnregisterDefaultApp: () => Promise<void>;
+  onOpenTutorial: () => void;
   onClose: () => void;
 }
 
@@ -133,9 +134,15 @@ export class SettingsTabsComponent {
               <span class="settings-app-subtitle" data-tauri-drag-region>v${APP_VERSION} (x64)</span>
             </div>
           </div>
-          <button class="settings-close-btn" id="settings-close-btn" title="Close">
-            ${icons.close}
-          </button>
+          <div class="settings-header-actions">
+            <button class="settings-header-btn" id="btn-header-tutorial" title="Open Interactive Tutorial & Shortcuts">
+              ${icons.book}
+              <span>Tutorial</span>
+            </button>
+            <button class="settings-close-btn" id="settings-close-btn" title="Close">
+              ${icons.close}
+            </button>
+          </div>
         </div>
 
         <!-- Segmented Capsule Tab Control -->
@@ -303,15 +310,15 @@ export class SettingsTabsComponent {
                     ${icons.external}
                   </button>
                 </div>
+
+                <!-- Engine Stack Attribution inside About Pane -->
+                <div class="about-engine-meta">
+                  <span>Engine: Tauri v2 • Rust Tokio</span>
+                  <span>Webview2 & TypeScript</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Compact Footer Attribution -->
-        <div class="settings-footer-bar">
-          <span>Engine: Tauri v2 • Rust Tokio</span>
-          <span>Webview2 & TypeScript</span>
         </div>
       </div>
     `;
@@ -324,7 +331,10 @@ export class SettingsTabsComponent {
     const header = this.container.querySelector("#settings-header");
     header?.addEventListener("mousedown", async (e: Event) => {
       const me = e as MouseEvent;
-      if ((me.target as HTMLElement)?.closest("#settings-close-btn")) {
+      if (
+        (me.target as HTMLElement)?.closest("#settings-close-btn") ||
+        (me.target as HTMLElement)?.closest("#btn-header-tutorial")
+      ) {
         return;
       }
       if (me.button === 0) {
@@ -350,6 +360,11 @@ export class SettingsTabsComponent {
     // Close button
     this.container.querySelector("#settings-close-btn")?.addEventListener("click", () => {
       this.callbacks.onClose();
+    });
+
+    // Tutorial button
+    this.container.querySelector("#btn-header-tutorial")?.addEventListener("click", () => {
+      this.callbacks.onOpenTutorial();
     });
 
     // Theme toggles

@@ -16,6 +16,7 @@ import { buildContextMenuItems } from "./utils/contextMenuItems";
 import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import tutorialContent from "./assets/tutorial.md?raw";
 
 class CathetApp {
   private fileService: FileService;
@@ -96,6 +97,10 @@ class CathetApp {
       const info = event.payload;
       this.updateService.setUpdateInfo(info);
       this.topBar.setUpdateAvailable(!!info?.update_available);
+    });
+
+    listen("cathet:load-tutorial", () => {
+      this.loadTutorialDocument();
     });
 
     // Storage event listener for cross-window local storage sync
@@ -251,6 +256,13 @@ class CathetApp {
     const content = this.editor.getText();
     const savedPath = await this.fileService.promptSaveAs(content);
     if (savedPath) this.setDocumentPath(savedPath);
+  }
+
+  private loadTutorialDocument(): void {
+    this.currentFilePath = null;
+    this.topBar.setTitle("Cathet Tutorial.md");
+    this.editor.loadDocument(tutorialContent, null, true);
+    this.editor.setWordWrap(true);
   }
 }
 
