@@ -9,6 +9,68 @@ export const MAX_IMAGE_DIMENSION = 1920;           // Max width/height in px
 export const WEBP_QUALITY = 0.82;                  // High fidelity WebP compression
 
 /**
+ * Whitelist of supported image MIME types.
+ */
+export const SUPPORTED_IMAGE_MIMES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/pjpeg",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+  "image/bmp",
+  "image/x-ms-bmp",
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
+  "image/avif"
+]);
+
+/**
+ * Whitelist of supported image file extensions.
+ */
+export const SUPPORTED_IMAGE_EXTS = new Set([
+  "png", "jpg", "jpeg", "jfif", "webp", "gif", "svg", "bmp", "ico", "avif"
+]);
+
+/**
+ * Common image extensions that are unsupported by the web editor.
+ */
+export const COMMON_UNSUPPORTED_IMAGE_EXTS = new Set([
+  "tif", "tiff", "heic", "heif", "psd", "ai", "eps", "raw", "cr2", "nef", "dng", "xcf"
+]);
+
+/**
+ * Extracts the file extension (lowercase without dot) from a File object.
+ */
+export function getFileExtension(file: File): string {
+  const name = file.name || "";
+  const lastDot = name.lastIndexOf(".");
+  return lastDot !== -1 ? name.slice(lastDot + 1).toLowerCase() : "";
+}
+
+/**
+ * Checks whether a pasted file is in the supported image whitelist.
+ */
+export function isSupportedImage(file: File): boolean {
+  if (file.type && SUPPORTED_IMAGE_MIMES.has(file.type.toLowerCase())) {
+    return true;
+  }
+  const ext = getFileExtension(file);
+  return SUPPORTED_IMAGE_EXTS.has(ext);
+}
+
+/**
+ * Checks whether a pasted file is recognized as an image (supported or unsupported).
+ */
+export function isAnyImageFile(file: File): boolean {
+  if (file.type && file.type.toLowerCase().startsWith("image/")) {
+    return true;
+  }
+  const ext = getFileExtension(file);
+  return SUPPORTED_IMAGE_EXTS.has(ext) || COMMON_UNSUPPORTED_IMAGE_EXTS.has(ext);
+}
+
+/**
  * Returns true if the pasted file exceeds the safety threshold.
  */
 export function isImageTooLarge(file: File): boolean {
@@ -24,11 +86,14 @@ export function formatFileSizeMb(bytes: number): string {
 
 /**
  * Downscales and compresses large images to lightweight WebP data URIs.
- * Small images (<= 500 KB) bypass recompression to preserve 1:1 pixel sharpness.
+ * Small images (<= 500 KB) and GIFs bypass recompression to preserve 1:1 sharpness and animation frames.
  */
 export async function optimizePastedImage(file: File): Promise<string> {
-  // 1. Bypass recompression for small clips, icons, and diagrams
-  if (file.size <= DIRECT_PASTE_MAX_BYTES) {
+  const isGif = file.type === "image/gif" || getFileExtension(file) === "gif";
+
+  // 1. Bypass recompression for small clips, icons, diagrams, and animated GIFs
+  // GIFs must bypass canvas conversion to keep all animation frames intact.
+  if (file.size <= DIRECT_PASTE_MAX_BYTES || isGif) {
     return readRawDataUrl(file);
   }
 

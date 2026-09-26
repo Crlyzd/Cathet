@@ -5,6 +5,8 @@
 
 const DATA_URI_REGEX = /data:image\/([a-zA-Z0-9+.-]+);base64,([A-Za-z0-9+/=]+)/g;
 
+export const CAMERA_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>`;
+
 function getPillInfo(dataUrl: string): { format: string; sizeStr: string } {
   const match = dataUrl.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,/);
   const format = match ? match[1].toUpperCase() : "IMAGE";
@@ -22,27 +24,38 @@ export function createBase64PillHtml(dataUrl: string): string {
   const { format, sizeStr } = getPillInfo(dataUrl);
   const escapedRaw = dataUrl.replace(/"/g, "&quot;");
 
-  return `<span class="b64-pill-container" contenteditable="false" data-raw="${escapedRaw}"><span class="b64-pill-badge" title="Click to view/expand raw Base64 data"><span class="b64-pill-icon">📷</span><span class="b64-pill-meta">${format} ~${sizeStr}</span><span class="b64-pill-arrow">▾</span></span></span>`;
+  return `<span class="b64-pill-container" contenteditable="false" data-raw="${escapedRaw}"><span class="b64-pill-badge" title="Click to view/expand raw Base64 data"><span class="b64-pill-icon">${CAMERA_SVG}</span><span class="b64-pill-meta">${format} ~${sizeStr}</span><span class="b64-pill-arrow">▾</span></span></span>`;
 }
 
 /**
  * Serializes editor DOM back into standard Markdown by replacing pill badges with their data-raw strings.
+ * Preserves all native newlines, <div>, and <br> elements from the active layout engine.
  */
 export function serializeEditorContent(editorEl: HTMLElement): string {
-  if (!editorEl.querySelector(".b64-pill-container")) {
+  const pills = editorEl.querySelectorAll<HTMLElement>(".b64-pill-container");
+  if (pills.length === 0) {
     return editorEl.innerText;
   }
 
-  const clone = editorEl.cloneNode(true) as HTMLElement;
-  const pills = clone.querySelectorAll<HTMLElement>(".b64-pill-container");
-
+  // Temporarily replace pills with their data-raw text nodes in the live DOM.
+  // This allows editorEl.innerText to extract the full markdown while Blink's active layout
+  // engine correctly converts all <div>, <p>, and <br> elements into rendered \n linebreaks.
+  const replacements: Array<{ pill: HTMLElement; placeholder: Text }> = [];
   pills.forEach((pill) => {
     const raw = pill.getAttribute("data-raw") || "";
-    const textNode = document.createTextNode(raw);
-    pill.parentNode?.replaceChild(textNode, pill);
+    const placeholder = document.createTextNode(raw);
+    pill.parentNode?.replaceChild(placeholder, pill);
+    replacements.push({ pill, placeholder });
   });
 
-  return clone.innerText;
+  const text = editorEl.innerText;
+
+  // Restore pills back to the live DOM immediately (synchronous, zero flicker)
+  replacements.forEach(({ pill, placeholder }) => {
+    placeholder.parentNode?.replaceChild(pill, placeholder);
+  });
+
+  return text;
 }
 
 /**
@@ -81,10 +94,11 @@ export function attachPillClickHandler(editorEl: HTMLElement): void {
       // Collapse back to compact badge
       target.classList.remove("expanded");
       target.innerHTML = createBase64PillHtml(raw).replace(/^<span[^>]*>/, "").replace(/<\/span>$/, "");
+    } else {
       // Expand to view raw data
       target.classList.add("expanded");
       const { format, sizeStr } = getPillInfo(raw);
-      target.innerHTML = `<span class="b64-pill-expanded-header" title="Click to collapse"><span class="b64-pill-icon">📷</span><span class="b64-pill-meta">Embedded Image (${format} • ${sizeStr})</span><span class="b64-pill-arrow">▴ (Click to collapse)</span></span><span class="b64-pill-raw-text">${escapeHtml(raw)}</span>`;
+      target.innerHTML = `<span class="b64-pill-expanded-header" title="Click to collapse"><span class="b64-pill-title-group"><span class="b64-pill-icon">${CAMERA_SVG}</span><span class="b64-pill-meta">Embedded Image (${format} • ${sizeStr})</span></span><span class="b64-pill-arrow">▴ (Click to collapse)</span></span><span class="b64-pill-raw-text">${escapeHtml(raw)}</span>`;
     }
   });
 }

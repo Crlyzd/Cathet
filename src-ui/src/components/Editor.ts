@@ -1,7 +1,9 @@
 import { parseMarkdown } from "../utils/markdown";
 import { htmlToMarkdown, isHtmlFormatted, tsvToMarkdownTable } from "../utils/htmlToMarkdown";
-import { isImageTooLarge, optimizePastedImage, formatFileSizeMb } from "../utils/imageOptimizer";
+import { isImageTooLarge, optimizePastedImage, formatFileSizeMb, isSupportedImage, isAnyImageFile, getFileExtension } from "../utils/imageOptimizer";
 import { createBase64PillHtml, serializeEditorContent, renderEditorTextWithPills, attachPillClickHandler } from "../utils/base64Fold";
+import { replaceBrokenImageWithFallback } from "../utils/brokenImageFallback";
+import { isQuotedFilePath, unwrapQuotedPath } from "../utils/pathUtils";
 import { showGlassDialog } from "./GlassDialog";
 import { readText } from "@tauri-apps/plugin-clipboard-manager";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -48,31 +50,60 @@ export class EditorComponent {
       const clipboardData = e.clipboardData;
       if (!clipboardData) return;
 
-      // 1. Image paste
-      const items = clipboardData.items;
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf("image") !== -1) {
-          const file = items[i].getAsFile();
-          if (file) {
-            e.preventDefault();
-            if (isImageTooLarge(file)) {
-              showGlassDialog({
-                type: "warning",
-                title: "Image Exceeds Limit",
-                message: `Pasted image is ${formatFileSizeMb(file.size)} MB. The maximum embedded size is 15 MB to keep documents fast. Please link an external file instead.`
-              });
-              return;
-            }
+      // 1. Image paste (screenshots or image files from Explorer)
+      const items = Array.from(clipboardData.items || []);
+      const files = Array.from(clipboardData.files || []);
 
-            optimizePastedImage(file).then((dataUrl) => {
-              const pillHtml = createBase64PillHtml(dataUrl);
-              const mdImgHtml = `![Pasted Image](${pillHtml})`;
-              document.execCommand("insertHTML", false, mdImgHtml);
-              this.rawContent = serializeEditorContent(this.editorEl);
-            }).catch(console.error);
-            return;
+      let targetFile: File | null = null;
+      for (const item of items) {
+        if (item.kind === "file" || (item.type && item.type.startsWith("image/"))) {
+          const f = item.getAsFile();
+          if (f && isAnyImageFile(f)) {
+            targetFile = f;
+            break;
           }
         }
+      }
+      if (!targetFile && files.length > 0) {
+        for (const f of files) {
+          if (isAnyImageFile(f)) {
+            targetFile = f;
+            break;
+          }
+        }
+      }
+
+      if (targetFile) {
+        e.preventDefault();
+
+        // Reject unsupported image formats with an informative warning dialog
+        if (!isSupportedImage(targetFile)) {
+          const ext = getFileExtension(targetFile) || targetFile.type || "unknown";
+          showGlassDialog({
+            type: "warning",
+            title: "Unsupported Image Format",
+            message: `"${targetFile.name || "Pasted image"}" is in an unsupported format (${ext.toUpperCase()}). Supported formats: PNG, JPEG, WebP, GIF, SVG, BMP, ICO, and AVIF.`
+          });
+          return;
+        }
+
+        // Validate size against hard safety limit
+        if (isImageTooLarge(targetFile)) {
+          showGlassDialog({
+            type: "warning",
+            title: "Image Exceeds Limit",
+            message: `Pasted image is ${formatFileSizeMb(targetFile.size)} MB. The maximum embedded size is 15 MB to keep documents fast. Please link an external file instead.`
+          });
+          return;
+        }
+
+        optimizePastedImage(targetFile).then((dataUrl) => {
+          const pillHtml = createBase64PillHtml(dataUrl);
+          const mdImgHtml = `![Pasted Image](${pillHtml})`;
+          document.execCommand("insertHTML", false, mdImgHtml);
+          this.rawContent = serializeEditorContent(this.editorEl);
+        }).catch(console.error);
+        return;
       }
 
       // 2. Rich HTML paste (convert tables, headings, code to Markdown)
@@ -95,6 +126,15 @@ export class EditorComponent {
           document.execCommand("insertText", false, tableMd);
           return;
         }
+      }
+
+      // 4. Windows "Copy as path" quote unwrapping
+      if (plainText && isQuotedFilePath(plainText)) {
+        e.preventDefault();
+        const isInsideLinkOrImg = this.isCursorInsideLinkOrImage();
+        const cleanedPath = unwrapQuotedPath(plainText, isInsideLinkOrImg);
+        document.execCommand("insertText", false, cleanedPath);
+        return;
       }
     });
 
@@ -120,6 +160,25 @@ export class EditorComponent {
         }
       }
     });
+
+    // Intercept broken or unsupported image load errors in preview (capture phase)
+    this.editorEl.addEventListener("error", (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target && target.tagName === "IMG") {
+        replaceBrokenImageWithFallback(target as HTMLImageElement);
+      }
+    }, true);
+  }
+
+  private isCursorInsideLinkOrImage(): boolean {
+    const sel = window.getSelection();
+    if (!sel || !sel.anchorNode) return false;
+    const text = sel.anchorNode.textContent || "";
+    const offset = sel.anchorOffset;
+    const before = text.slice(Math.max(0, offset - 15), offset);
+    const after = text.slice(offset, Math.min(text.length, offset + 15));
+    return (before.includes("(") && (after.includes(")") || !before.includes(")"))) ||
+           (before.includes("[") && after.includes("]"));
   }
 
   adjustZoom(deltaPercent: number): void {
@@ -136,6 +195,7 @@ export class EditorComponent {
     if (this.isMarkdownPreview) {
       this.editorEl.innerHTML = parseMarkdown(this.rawContent, this.documentPath);
     } else {
+      this.editorEl.classList.remove("markdown-preview");
       if (this.rawContent.includes("data:image/")) {
         this.editorEl.innerHTML = renderEditorTextWithPills(this.rawContent);
       } else {
@@ -157,15 +217,16 @@ export class EditorComponent {
       this.editorEl.classList.add("markdown-preview");
       this.isMarkdownPreview = true;
     } else {
-      // Switch from Preview to Edit
+      // Switch from Preview to Edit: remove preview class first so white-space: pre-wrap is active
+      this.editorEl.classList.remove("markdown-preview");
+      this.editorEl.setAttribute("contenteditable", "true");
+      this.isMarkdownPreview = false;
+
       if (this.rawContent.includes("data:image/")) {
         this.editorEl.innerHTML = renderEditorTextWithPills(this.rawContent);
       } else {
         this.editorEl.innerText = this.rawContent;
       }
-      this.editorEl.setAttribute("contenteditable", "true");
-      this.editorEl.classList.remove("markdown-preview");
-      this.isMarkdownPreview = false;
       this.editorEl.focus();
     }
     return this.isMarkdownPreview;

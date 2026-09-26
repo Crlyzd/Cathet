@@ -9,6 +9,7 @@
   height: 100vh;
   background-color: transparent;
   border: 1px solid var(--col-border);
+  border-radius: 10px;
   overflow: hidden;
   position: relative;
   user-select: none;
@@ -299,6 +300,8 @@
   min-width: 135px;
   max-height: 112px;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   background: var(--col-menu-bg);
   backdrop-filter: blur(28px) saturate(190%);
   -webkit-backdrop-filter: blur(28px) saturate(190%);
@@ -314,24 +317,9 @@
 }
 
 .glass-select-menu::-webkit-scrollbar {
-  width: 4px;
-}
-
-.glass-select-menu::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.glass-select-menu::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-.glass-select-menu::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.22);
-  border-radius: 4px;
-}
-
-[data-theme="light"] .glass-select-menu::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.20);
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .glass-select-menu.open {

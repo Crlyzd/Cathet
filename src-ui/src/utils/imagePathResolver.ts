@@ -7,20 +7,26 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 export function resolveImageSrc(src: string, documentPath?: string | null): string {
   if (!src) return "";
 
-  const trimmed = src.trim();
-
-  // 1. Web links and Base64 data URIs remain unchanged
-  if (/^(https?:|data:image\/)/i.test(trimmed)) {
-    return trimmed;
+  // 1. Strip surrounding quotes (", ') or GFM angle brackets (<...>)
+  let clean = src.trim();
+  if ((clean.startsWith('"') && clean.endsWith('"')) ||
+      (clean.startsWith("'") && clean.endsWith("'")) ||
+      (clean.startsWith("<") && clean.endsWith(">"))) {
+    clean = clean.slice(1, -1).trim();
   }
 
-  // 2. Strip file:/// protocol prefix if present
-  let localPath = trimmed;
+  // 2. Web links and Base64 data URIs remain unchanged
+  if (/^(https?:|data:image\/)/i.test(clean)) {
+    return clean;
+  }
+
+  // 3. Strip file:/// protocol prefix if present
+  let localPath = clean;
   if (/^file:\/\/\/?/i.test(localPath)) {
     localPath = localPath.replace(/^file:\/\/\/?/i, "");
   }
 
-  // 3. Normalize slashes
+  // 4. Normalize slashes
   localPath = localPath.replace(/\\/g, "/");
 
   // 4. Check if path is absolute (e.g. C:/... or /...)
@@ -29,7 +35,7 @@ export function resolveImageSrc(src: string, documentPath?: string | null): stri
   if (!isAbsolute) {
     if (!documentPath) {
       // Document is unsaved (Untitled), cannot resolve relative paths
-      return trimmed;
+      return clean;
     }
 
     // Extract directory of active document
@@ -42,7 +48,7 @@ export function resolveImageSrc(src: string, documentPath?: string | null): stri
     return convertFileSrc(localPath);
   } catch (err) {
     console.warn("Failed to convert local image path:", localPath, err);
-    return trimmed;
+    return clean;
   }
 }
 
