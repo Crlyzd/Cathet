@@ -18,8 +18,13 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
    - The frosted glass effect is implemented via modern Windows DWM system backdrops (`DwmSetWindowAttribute` with `DWMWA_SYSTEMBACKDROP_TYPE` for Acrylic/Mica) and graceful platform vibrancy fallbacks. While active (focused), native hardware-accelerated Acrylic renders translucent frosted glass; when inactive (unfocused), Windows DWM automatically transitions to an energy-saving solid dark/light backdrop to conserve GPU fill-rate. Undocumented legacy `SetWindowCompositionAttribute(BlurBehind)` is deprecated and prohibited as it produces opaque black artifacts and drag flicker on Windows 10 (1903+) and Windows 11.
 4. **Title Bar File Name**:
    - The title bar must strictly display the current document's file name (e.g. `Untitled` when unsaved, or `notes.md` when loaded).
-5. **Markdown Support**:
-   - Support seamless instant toggle (`Ctrl+M`) between raw markdown editing and rendered preview.
+5. **Markdown & Image Subsystem**:
+   - **Lossless Instant Toggle (`Ctrl+M`)**: Seamless toggle between raw markdown editing and rendered preview. Edit mode is strictly plain text (`editorEl.innerText`). Switching between Edit and Preview is 100% lossless and idempotent (never scrape or mutate DOM).
+   - **In-Memory Image Optimization**: Pasted clipboard images (>500 KB) are automatically downscaled (1920px max) and compressed to WebP (0.82 quality) in memory via `imageOptimizer.ts`. Small clips (<=500 KB) bypass recompression to preserve 1:1 pixel sharpness.
+   - **Safety Cutoff**: Images exceeding 15 MB trigger a frosted glass warning dialog (`GlassDialog.ts`) rather than crashing or freezing the WebView.
+   - **Collapsible Base64 Pills**: In Edit mode, long Base64 data URIs are folded into interactive `[ 📷 WEBP ~245 KB ▾ ]` frosted glass pill badges (`base64Fold.ts`). Clicking toggles between compact badge and expanded view; `serializeEditorContent` ensures full fidelity on Save and Preview.
+   - **Local Asset Streaming**: Support web (`https://`), absolute (`C:/...`), and relative (`./...`) image links in Preview mode using `imagePathResolver.ts` and Tauri v2's `convertFileSrc` with `app.security.assetProtocol` enabled.
+   - **Safe HTML Sanitization**: Permitted GFM HTML blocks (`<div>`, `<p>`, `<img>`, `<details>`, `<summary>`) are sanitized via native `DOMParser` (`markdownSanitizer.ts`) to prevent XSS.
 6. **Settings, Themes & About**:
    - Top-bar dot button (`●`) dropdown on the top-left is streamlined for document workflows (`New`, `Open`, `Save`, `Save As`, `Markdown Toggle`, `Settings & About...`, `Quit`).
    - Dedicated Settings & About native window with frosted glass backdrop houses:
@@ -39,9 +44,10 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
    - Proliferating auxiliary `.ps1` or `.bat` runner scripts is strictly prohibited.
    - All compiled release binaries are cleanly placed into the dedicated `release/` folder in the project root with versioned architecture naming (`release/cathet-v<version>-x64.exe` and `release/cathet-v<version>-arm64.exe`). Redundant unversioned companion aliases (`cathet.exe`, `cathet-x64.exe`, `cathet-arm64.exe`) are eliminated to keep release output clean and free of duplicates.
 10. **Dual-Window Architecture & Modular Layout**:
-   - **Main Editor**: `index.html` mounted by `src-ui/src/main.ts`, powered by `Editor.ts`, `TopBar.ts`, and `PopupMenu.ts`.
+   - **Main Editor**: `index.html` mounted by `src-ui/src/main.ts`, powered by `Editor.ts`, `TopBar.ts`, `PopupMenu.ts`, `ContextMenu.ts`, `GlassDialog.ts`, and `DropOverlay.ts`.
    - **Settings Window**: `settings.html` mounted by `src-ui/src/settingsMain.ts`, powered by `SettingsTabs.ts` and `SettingsMenu.ts`.
    - **Modular Services**: `fileService.ts`, `fontService.ts`, `themeService.ts`, `updateService.ts`, `windowService.ts`.
+   - **Modular Utilities**: `markdown.ts`, `markdownSanitizer.ts`, `imageOptimizer.ts`, `imagePathResolver.ts`, `base64Fold.ts`, `htmlToMarkdown.ts`, `contextMenuItems.ts`, `shortcuts.ts`, `eventBus.ts`, `monochromeIcons.ts`.
    - **Modular Backend**: `src-tauri/src/commands/` split into `file.rs`, `migration.rs`, `updater.rs`, `vibrancy.rs`, and `window.rs`.
 
 ---

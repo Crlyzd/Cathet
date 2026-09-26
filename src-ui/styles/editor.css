@@ -295,6 +295,7 @@
   margin: 0 3px;
   cursor: pointer;
   line-height: normal;
+  white-space: normal;
 }
 
 .b64-pill-badge {
@@ -339,12 +340,13 @@
 /* Expanded State */
 .b64-pill-container.expanded {
   display: block;
-  margin: 8px 0;
-  padding: 8px 12px;
+  margin: 4px 0;
+  padding: 6px 10px;
   border-radius: 8px;
   background: var(--col-code-bg);
   border: 1px solid var(--col-border);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  white-space: normal;
 }
 
 .b64-pill-expanded-header {
@@ -352,10 +354,10 @@
   align-items: center;
   gap: 6px;
   font-family: var(--font-ui, sans-serif);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--col-accent);
-  padding-bottom: 6px;
+  padding-bottom: 4px;
   border-bottom: 1px solid var(--col-border);
   cursor: pointer;
   user-select: none;
@@ -366,13 +368,51 @@
   max-height: 120px;
   overflow-y: auto;
   word-break: break-all;
+  white-space: break-spaces;
   font-family: var(--font-mono, monospace);
   font-size: 11px;
   line-height: 1.4;
   color: var(--col-text-muted);
-  margin-top: 6px;
+  margin-top: 5px;
+  padding-right: 6px;
   user-select: text;
   -webkit-user-select: text;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+[data-theme="light"] .b64-pill-raw-text {
+  scrollbar-color: rgba(15, 23, 42, 0.22) transparent;
+}
+
+.b64-pill-raw-text::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.b64-pill-raw-text::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.b64-pill-raw-text::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.b64-pill-raw-text::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.b64-pill-raw-text::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="light"] .b64-pill-raw-text::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.22);
+}
+
+[data-theme="light"] .b64-pill-raw-text::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.35);
 }
 
 

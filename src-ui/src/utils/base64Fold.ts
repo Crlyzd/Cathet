@@ -5,17 +5,21 @@
 
 const DATA_URI_REGEX = /data:image\/([a-zA-Z0-9+.-]+);base64,([A-Za-z0-9+/=]+)/g;
 
-/**
- * Creates an interactive pill badge HTML for a Base64 data URI.
- */
-export function createBase64PillHtml(dataUrl: string): string {
+function getPillInfo(dataUrl: string): { format: string; sizeStr: string } {
   const match = dataUrl.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,/);
   const format = match ? match[1].toUpperCase() : "IMAGE";
   const bytes = Math.round(dataUrl.length * 0.75);
   const sizeStr = bytes > 1024 * 1024
     ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
     : `${Math.round(bytes / 1024)} KB`;
+  return { format, sizeStr };
+}
 
+/**
+ * Creates an interactive pill badge HTML for a Base64 data URI.
+ */
+export function createBase64PillHtml(dataUrl: string): string {
+  const { format, sizeStr } = getPillInfo(dataUrl);
   const escapedRaw = dataUrl.replace(/"/g, "&quot;");
 
   return `<span class="b64-pill-container" contenteditable="false" data-raw="${escapedRaw}"><span class="b64-pill-badge" title="Click to view/expand raw Base64 data"><span class="b64-pill-icon">📷</span><span class="b64-pill-meta">${format} ~${sizeStr}</span><span class="b64-pill-arrow">▾</span></span></span>`;
@@ -77,17 +81,10 @@ export function attachPillClickHandler(editorEl: HTMLElement): void {
       // Collapse back to compact badge
       target.classList.remove("expanded");
       target.innerHTML = createBase64PillHtml(raw).replace(/^<span[^>]*>/, "").replace(/<\/span>$/, "");
-    } else {
       // Expand to view raw data
       target.classList.add("expanded");
-      target.innerHTML = `
-        <span class="b64-pill-expanded-header" title="Click to collapse">
-          <span class="b64-pill-icon">📷</span>
-          <span class="b64-pill-meta">Raw Data URI (${Math.round(raw.length * 0.75 / 1024)} KB)</span>
-          <span class="b64-pill-arrow">▴ (Click to collapse)</span>
-        </span>
-        <span class="b64-pill-raw-text">${escapeHtml(raw)}</span>
-      `;
+      const { format, sizeStr } = getPillInfo(raw);
+      target.innerHTML = `<span class="b64-pill-expanded-header" title="Click to collapse"><span class="b64-pill-icon">📷</span><span class="b64-pill-meta">Embedded Image (${format} • ${sizeStr})</span><span class="b64-pill-arrow">▴ (Click to collapse)</span></span><span class="b64-pill-raw-text">${escapeHtml(raw)}</span>`;
     }
   });
 }
