@@ -67,6 +67,11 @@ export class ContextMenuComponent {
     menuEl.style.left = `${clampedX}px`;
     menuEl.style.top = `${clampedY}px`;
 
+    // Prevent context menu from stealing focus and collapsing editor selection
+    menuEl.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+    });
+
     // Click outside handler
     overlay.addEventListener("mousedown", (e) => {
       if (e.target === overlay) {
@@ -88,13 +93,15 @@ export class ContextMenuComponent {
       });
     });
 
-    // Escape key handler
+    // Escape key handler: capture phase prevents global shortcuts from quitting app
     this.escHandler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
         this.hide();
       }
     };
-    window.addEventListener("keydown", this.escHandler, { once: true });
+    window.addEventListener("keydown", this.escHandler, true);
   }
 
   hide(): void {
@@ -102,7 +109,7 @@ export class ContextMenuComponent {
     this.container.innerHTML = "";
     this.isVisible = false;
     if (this.escHandler) {
-      window.removeEventListener("keydown", this.escHandler);
+      window.removeEventListener("keydown", this.escHandler, true);
       this.escHandler = null;
     }
   }

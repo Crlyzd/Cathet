@@ -3,7 +3,7 @@ import { tsvToMarkdownTable } from "../utils/htmlToMarkdown";
 import { serializeEditorContent, renderEditorTextWithPills, attachPillClickHandler } from "../utils/base64Fold";
 import { replaceBrokenImageWithFallback } from "../utils/brokenImageFallback";
 import { handleEditorPaste } from "../utils/editorPasteHandler";
-import { readText } from "@tauri-apps/plugin-clipboard-manager";
+import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 export class EditorComponent {
@@ -157,6 +157,7 @@ export class EditorComponent {
       selection.removeAllRanges();
       selection.addRange(range);
     }
+    this.editorEl.focus();
   }
 
   setWordWrap(enabled: boolean): void {
@@ -186,18 +187,35 @@ export class EditorComponent {
     return this.getSelectedText().length > 0;
   }
 
-  undo(): void { if (!this.isMarkdownPreview) document.execCommand("undo", false); }
-  redo(): void { if (!this.isMarkdownPreview) document.execCommand("redo", false); }
-  cut(): void { if (!this.isMarkdownPreview) document.execCommand("cut", false); }
+  syncCaretToPoint(x: number, y: number): void {
+    if (this.isMarkdownPreview) return;
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.toString().trim().length > 0) return;
+    const range = document.caretRangeFromPoint?.(x, y);
+    if (range && this.editorEl.contains(range.startContainer)) {
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      this.editorEl.focus();
+    }
+  }
 
-  copy(): void {
+  undo(): void { if (!this.isMarkdownPreview) { this.editorEl.focus(); document.execCommand("undo", false); } }
+  redo(): void { if (!this.isMarkdownPreview) { this.editorEl.focus(); document.execCommand("redo", false); } }
+
+  async cut(): Promise<void> {
+    if (this.isMarkdownPreview) return;
     const text = this.getSelectedText();
-    if (text && navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).catch(() => {
-        document.execCommand("copy", false);
-      });
-    } else {
-      document.execCommand("copy", false);
+    if (text) {
+      try { await writeText(text); } catch (_) {}
+      this.editorEl.focus();
+      document.execCommand("delete", false);
+    }
+  }
+
+  async copy(): Promise<void> {
+    const text = this.getSelectedText();
+    if (text) {
+      try { await writeText(text); } catch (_) {}
     }
   }
 

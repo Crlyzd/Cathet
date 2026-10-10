@@ -55,6 +55,8 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
 11. **Release Notes Scoping & Tag Isolation**:
    - When drafting release notes for any release, agents must **never** include features, bug fixes, or architectural changes that were already released and documented in prior release notes/tags.
    - Release notes must strictly reflect only the exact git diff between the immediate prior release tag and the target tag (`git log <prev-tag>..<target-tag>`).
+12. **Architect Plan Artifact Standard**:
+   - When operating as `/architect` (or generating architectural plans and change strategies), full detailed step-by-step plans must ALWAYS be written to a dedicated artifact file in the artifacts directory (`<appDataDir>\brain\<conversation-id>\...`) rather than dumped directly into the chat window. Chat responses must remain concise, summarizing the core findings and linking directly to the artifact.
 
 ---
 

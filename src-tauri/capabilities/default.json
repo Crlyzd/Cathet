@@ -14,7 +14,8 @@
     "core:window:allow-close",
     "dialog:default",
     "fs:default",
-    "clipboard-manager:default",
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text",
     "opener:default"
   ]
 }

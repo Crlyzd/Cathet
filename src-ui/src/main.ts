@@ -145,6 +145,8 @@ class CathetApp {
     window.addEventListener("contextmenu", (e) => {
       if (!import.meta.env.DEV || e.altKey) {
         e.preventDefault();
+        this.editor.syncCaretToPoint(e.clientX, e.clientY);
+        this.popupMenu.hide();
         this.contextMenu.show(e.clientX, e.clientY, buildContextMenuItems(this.editor));
       }
     });
@@ -172,6 +174,7 @@ class CathetApp {
   }
 
   private openMainMenu(x: number, y: number): void {
+    this.contextMenu.hide();
     const isMd = this.editor.getIsMarkdownPreview();
     const hasUpdate = this.updateService.hasUpdate();
 
