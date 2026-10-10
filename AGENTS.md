@@ -52,6 +52,9 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
    - **Modular Services**: `associationService.ts`, `dragDropService.ts`, `fileService.ts`, `fontService.ts`, `themeService.ts`, `updateService.ts`, `windowService.ts`.
    - **Modular Utilities**: `base64Fold.ts`, `brokenImageFallback.ts`, `contextMenuItems.ts`, `editorPasteHandler.ts`, `eventBus.ts`, `htmlToMarkdown.ts`, `imageOptimizer.ts`, `imagePathResolver.ts`, `markdown.ts`, `markdownSanitizer.ts`, `monochromeIcons.ts`, `pathUtils.ts`, `shortcuts.ts`.
    - **Modular Backend**: `src-tauri/src/commands/` split into `association.rs`, `file.rs`, `memory.rs`, `migration.rs`, `updater.rs`, `vibrancy.rs`, and `window.rs`. State managed via `state.rs`.
+11. **Release Notes Scoping & Tag Isolation**:
+   - When drafting release notes for any release, agents must **never** include features, bug fixes, or architectural changes that were already released and documented in prior release notes/tags.
+   - Release notes must strictly reflect only the exact git diff between the immediate prior release tag and the target tag (`git log <prev-tag>..<target-tag>`).
 
 ---
 
