@@ -35,13 +35,6 @@ export class EditorComponent {
   private bindEvents(): void {
     attachPillClickHandler(this.editorEl);
 
-    // Sync raw content on input
-    this.editorEl.addEventListener("input", () => {
-      if (!this.isMarkdownPreview) {
-        this.rawContent = serializeEditorContent(this.editorEl);
-      }
-    });
-
     // Handle paste: images, rich HTML (tables/code), TSV, and quoted paths
     this.editorEl.addEventListener("paste", (e: ClipboardEvent) => {
       if (this.isMarkdownPreview) return;

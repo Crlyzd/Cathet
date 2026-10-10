@@ -30,6 +30,7 @@ export function createBase64PillHtml(dataUrl: string): string {
 /**
  * Serializes editor DOM back into standard Markdown by replacing pill badges with their data-raw strings.
  * Preserves all native newlines, <div>, and <br> elements from the active layout engine.
+ * Uses lightweight token placeholders during live layout extraction to eliminate lag from text-shaping massive Base64 strings.
  */
 export function serializeEditorContent(editorEl: HTMLElement): string {
   const pills = editorEl.querySelectorAll<HTMLElement>(".b64-pill-container");
@@ -37,13 +38,16 @@ export function serializeEditorContent(editorEl: HTMLElement): string {
     return editorEl.innerText;
   }
 
-  // Temporarily replace pills with their data-raw text nodes in the live DOM.
-  // This allows editorEl.innerText to extract the full markdown while Blink's active layout
-  // engine correctly converts all <div>, <p>, and <br> elements into rendered \n linebreaks.
+  // Temporarily replace pills with lightweight token placeholders in the live DOM.
+  // Using compact tokens instead of massive raw data URIs prevents the Chromium layout engine
+  // from text-shaping hundreds of thousands of Base64 characters during innerText extraction.
+  const tokenPrefix = `__CATHET_B64_${Date.now()}_`;
+  const rawMap: string[] = [];
   const replacements: Array<{ pill: HTMLElement; placeholder: Text }> = [];
-  pills.forEach((pill) => {
-    const raw = pill.getAttribute("data-raw") || "";
-    const placeholder = document.createTextNode(raw);
+
+  pills.forEach((pill, idx) => {
+    rawMap.push(pill.getAttribute("data-raw") || "");
+    const placeholder = document.createTextNode(`${tokenPrefix}${idx}__`);
     pill.parentNode?.replaceChild(placeholder, pill);
     replacements.push({ pill, placeholder });
   });
@@ -55,7 +59,12 @@ export function serializeEditorContent(editorEl: HTMLElement): string {
     placeholder.parentNode?.replaceChild(pill, placeholder);
   });
 
-  return text;
+  // Re-substitute compact tokens with original raw Base64 data URIs
+  const tokenRegex = new RegExp(`${tokenPrefix}(\\d+)__`, "g");
+  return text.replace(tokenRegex, (_, idxStr) => {
+    const idx = Number(idxStr);
+    return rawMap[idx] !== undefined ? rawMap[idx] : "";
+  });
 }
 
 /**
