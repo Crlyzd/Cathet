@@ -1,4 +1,5 @@
 pub mod commands;
+pub mod encoding;
 pub mod state;
 
 use commands::association::{

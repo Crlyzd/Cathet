@@ -25,17 +25,14 @@ const FILTER_DATA_CONFIG: &[&str] = &["json", "yaml", "yml", "toml", "xml", "ini
 const FILTER_CODE: &[&str] = &["js", "ts", "rs", "py", "html", "htm", "css", "sql", "sh", "bat", "ps1", "c", "cpp", "h"];
 const FILTER_ALL: &[&str] = &["*"];
 
+use crate::encoding::decode_text_bytes;
+
 #[tauri::command]
 pub async fn read_text_file(path: String) -> Result<FilePayload, String> {
     let path_buf = PathBuf::from(&path);
     let metadata = fs::metadata(&path_buf).map_err(|e| e.to_string())?;
-    let content = fs::read_to_string(&path_buf).map_err(|e| {
-        if e.kind() == std::io::ErrorKind::InvalidData {
-            "This file contains binary data or an unsupported encoding. Cathet supports UTF-8 plain text and markdown documents.".to_string()
-        } else {
-            e.to_string()
-        }
-    })?;
+    let raw_bytes = fs::read(&path_buf).map_err(|e| e.to_string())?;
+    let content = decode_text_bytes(&raw_bytes)?;
 
     Ok(FilePayload {
         path,
