@@ -11,7 +11,7 @@ export class FontSelectComponent {
   private currentFontId: string;
   private onSelect: (fontId: string) => void;
   private outsideClickHandler: ((e: MouseEvent) => void) | null = null;
-  private scrollCloseHandler: (() => void) | null = null;
+  private scrollCloseHandler: ((e: Event) => void) | null = null;
 
   constructor(
     container: HTMLElement,
@@ -67,6 +67,10 @@ export class FontSelectComponent {
       const isOpen = menu?.classList.contains("open");
       menu?.classList.toggle("open", !isOpen);
       trigger.classList.toggle("open", !isOpen);
+      if (!isOpen) {
+        const selected = menu?.querySelector(".glass-select-option.selected") as HTMLElement | null;
+        selected?.scrollIntoView({ block: "nearest" });
+      }
     });
 
     if (this.outsideClickHandler) {
@@ -80,7 +84,10 @@ export class FontSelectComponent {
     };
     document.addEventListener("click", this.outsideClickHandler);
 
-    this.scrollCloseHandler = () => {
+    this.scrollCloseHandler = (e: Event) => {
+      if (menu && (e.target === menu || menu.contains(e.target as Node))) {
+        return;
+      }
       if (menu?.classList.contains("open")) {
         menu.classList.remove("open");
         trigger?.classList.remove("open");

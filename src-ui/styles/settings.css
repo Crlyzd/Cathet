@@ -367,10 +367,11 @@
   top: calc(100% + 4px);
   right: 0;
   min-width: 135px;
-  max-height: 112px;
+  max-height: 152px;
   overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
   background: var(--col-menu-bg);
   backdrop-filter: blur(28px) saturate(190%);
   -webkit-backdrop-filter: blur(28px) saturate(190%);
@@ -386,9 +387,25 @@
 }
 
 .glass-select-menu::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+  display: block;
+  width: 4px;
+}
+
+.glass-select-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-select-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+}
+
+[data-theme="light"] .glass-select-menu {
+  scrollbar-color: rgba(15, 23, 42, 0.2) transparent;
+}
+
+[data-theme="light"] .glass-select-menu::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.2);
 }
 
 .glass-select-menu.open {
