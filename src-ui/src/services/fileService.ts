@@ -98,4 +98,15 @@ export class FileService {
       return null;
     }
   }
+
+  /**
+   * Checks if a file on disk has the Windows read-only attribute.
+   */
+  async isFileReadonly(path: string): Promise<boolean> {
+    try {
+      return await invoke<boolean>("is_file_readonly", { path });
+    } catch {
+      return false;
+    }
+  }
 }

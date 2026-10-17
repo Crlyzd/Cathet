@@ -14,6 +14,7 @@ export class EditorComponent {
   private zoomLevel: number = 100;
   private isMarkdownPreview: boolean = false;
   private rawContent: string = "";
+  private savedContent: string = "";
   private documentPath: string | null = null;
   private wheelHandler = (e: WheelEvent) => {
     if (e.ctrlKey) {
@@ -92,6 +93,7 @@ export class EditorComponent {
 
   setContent(content: string): void {
     this.rawContent = content;
+    this.savedContent = content;
     if (this.isMarkdownPreview) {
       this.editorEl.innerHTML = parseMarkdown(this.rawContent, this.documentPath);
     } else {
@@ -107,6 +109,7 @@ export class EditorComponent {
   loadDocument(content: string, path: string | null = null, previewMode: boolean = false): void {
     this.documentPath = path;
     this.rawContent = content;
+    this.savedContent = content;
     this.isMarkdownPreview = previewMode;
     if (previewMode) {
       this.editorEl.innerHTML = parseMarkdown(this.rawContent, this.documentPath);
@@ -155,9 +158,9 @@ export class EditorComponent {
     return this.isMarkdownPreview;
   }
 
-  toggleBold(): void { if (!this.isMarkdownPreview) document.execCommand("bold", false); }
-  toggleItalic(): void { if (!this.isMarkdownPreview) document.execCommand("italic", false); }
-  toggleUnderline(): void { if (!this.isMarkdownPreview) document.execCommand("underline", false); }
+  isModified(): boolean { return this.getText() !== this.savedContent; }
+  markSaved(): void { this.savedContent = this.getText(); }
+  toggleBold(): void { if (!this.isMarkdownPreview) document.execCommand("bold", false); } toggleItalic(): void { if (!this.isMarkdownPreview) document.execCommand("italic", false); } toggleUnderline(): void { if (!this.isMarkdownPreview) document.execCommand("underline", false); }
 
   selectAllClean(): void {
     const range = document.createRange();

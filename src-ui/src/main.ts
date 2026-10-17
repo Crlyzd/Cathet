@@ -57,18 +57,12 @@ class CathetApp {
     globalEventBus.on("update:statusChanged", (i: any) => this.topBar.setUpdateAvailable(!!i?.update_available));
 
     registerWindowSyncListeners({
-      themeService: this.themeService,
-      fontService: this.fontService,
-      updateService: this.updateService,
-      previewService: this.previewService,
+      themeService: this.themeService, fontService: this.fontService, updateService: this.updateService, previewService: this.previewService,
       onFontChanged: (f) => { this.editor.setFontFamily(f); this.dualPaneView?.getEditorRight()?.setFontFamily(f); },
-      onAlwaysOnTopChanged: (state) => { this.isAlwaysOnTop = state; },
-      onUpdateAvailable: (available) => { this.topBar.setUpdateAvailable(available); },
+      onAlwaysOnTopChanged: (s) => { this.isAlwaysOnTop = s; },
+      onUpdateAvailable: (a) => { this.topBar.setUpdateAvailable(a); },
       onLoadTutorial: () => this.loadTutorialDocument(),
-      onSnapScrollChanged: (state) => {
-        this.dualPaneService.setSnapScroll(state);
-        this.dualPaneView?.setSnapScroll(state);
-      },
+      onSnapScrollChanged: (s) => { this.dualPaneService.setSnapScroll(s); this.dualPaneView?.setSnapScroll(s); },
     });
 
     this.registerShortcuts();
@@ -80,18 +74,12 @@ class CathetApp {
   private registerShortcuts(): void {
     registerShortcuts({
       onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
-      onSave: () => this.saveDocument(false),
-      onSaveAs: () => this.saveDocument(true),
-      onNewWindow: () => this.windowService.openNewInstance(),
-      onSettings: () => this.windowService.openSettingsWindow(),
+      onSave: () => this.saveDocument(false), onSaveAs: () => this.saveDocument(true),
+      onNewWindow: () => this.windowService.openNewInstance(), onSettings: () => this.windowService.openSettingsWindow(),
       onToggleAlwaysOnTop: async () => { await emit("cathet:ontop-change", (this.isAlwaysOnTop = await this.windowService.toggleAlwaysOnTop())); },
-      onToggleDualPane: () => this.toggleDualPane(),
-      onToggleMarkdown: () => this.toggleMarkdown(),
-      onToggleBold: () => this.getActiveEditor().toggleBold(),
-      onToggleItalic: () => this.getActiveEditor().toggleItalic(),
-      onToggleUnderline: () => this.getActiveEditor().toggleUnderline(),
-      onSelectAll: () => this.getActiveEditor().selectAllClean(),
-      onToggleWordWrap: () => this.getActiveEditor().toggleWordWrap(),
+      onToggleDualPane: () => this.toggleDualPane(), onToggleMarkdown: () => this.toggleMarkdown(),
+      onToggleBold: () => this.getActiveEditor().toggleBold(), onToggleItalic: () => this.getActiveEditor().toggleItalic(), onToggleUnderline: () => this.getActiveEditor().toggleUnderline(),
+      onSelectAll: () => this.getActiveEditor().selectAllClean(), onToggleWordWrap: () => this.getActiveEditor().toggleWordWrap(),
       onSearchWeb: () => { const t = this.getActiveEditor().getSelectedText().trim(); if (t) openUrl(`https://www.google.com/search?q=${encodeURIComponent(t)}`).catch(console.error); },
       onQuit: () => this.windowService.close(),
     });
@@ -131,10 +119,12 @@ class CathetApp {
 
   private openMainMenu(x: number, y: number): void {
     this.contextMenu.hide();
+    const ed = this.getActiveEditor();
     this.popupMenu.toggle(x, y, buildMainMenuItems({
-      isMarkdownPreview: this.getActiveEditor().getIsMarkdownPreview(),
+      isMarkdownPreview: ed.getIsMarkdownPreview(),
       isDualPane: this.dualPaneService.isDualPane(),
       hasUpdate: this.updateService.hasUpdate(),
+      isUpToDate: !ed.isModified(),
       onNewWindow: () => this.windowService.openNewInstance(), onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
       onSave: () => this.saveDocument(false), onSaveAs: () => this.saveDocument(true),
       onToggleDualPane: () => this.toggleDualPane(), onToggleMarkdown: () => this.toggleMarkdown(),
@@ -219,9 +209,16 @@ class CathetApp {
   private async saveDocument(asNew: boolean): Promise<void> {
     const isRight = this.dualPaneView && this.dualPaneService.getActivePane() === "right";
     const curPath = isRight ? this.dualPaneService.getRightPath() : this.currentFilePath;
-    const text = this.getActiveEditor().getText();
+    const ed = this.getActiveEditor();
+    if (!asNew && !ed.isModified()) return;
+    if (!asNew && curPath && await this.fileService.isFileReadonly(curPath)) {
+      showGlassDialog({ type: "warning", title: "Read-Only File", message: 'This file is marked as read-only by Windows. Please use "Save As..." to save to a different file.' });
+      return;
+    }
+    const text = ed.getText();
     const saved = asNew ? await this.fileService.promptSaveAs(text) : await this.fileService.saveFile(curPath, text);
     if (saved) {
+      ed.markSaved();
       const name = saved.split(/[/\\]/).pop() || "Untitled";
       if (isRight && this.dualPaneView) {
         this.dualPaneService.setRightPath(saved);
