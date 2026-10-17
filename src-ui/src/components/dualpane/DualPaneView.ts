@@ -147,6 +147,7 @@ export class DualPaneView {
 
   setSnapScroll(enabled: boolean): void {
     this.scrollSync.setSnapScroll(enabled);
+    this.splitter.setSnapScroll(enabled);
   }
 
   toggleLeftPreview(): void {

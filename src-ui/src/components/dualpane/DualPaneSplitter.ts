@@ -10,6 +10,8 @@ export class DualPaneSplitter {
   private onToggleSync: () => boolean;
   private isDragging: boolean = false;
   private container: HTMLElement;
+  private isLocked: boolean;
+  private snapScroll: boolean = false;
 
   constructor(
     container: HTMLElement,
@@ -20,6 +22,7 @@ export class DualPaneSplitter {
     this.container = container;
     this.onResize = onResize;
     this.onToggleSync = onToggleSync;
+    this.isLocked = initialSyncLocked;
 
     this.element = document.createElement("div");
     this.element.className = "dualpane-splitter";
@@ -39,10 +42,21 @@ export class DualPaneSplitter {
     return this.element;
   }
 
+  private updateVisualState(): void {
+    this.syncBtn.classList.toggle("active", this.isLocked);
+    this.syncBtn.classList.toggle("blue-galaxy", this.isLocked && this.snapScroll);
+    this.syncBtn.innerHTML = `<span class="sync-icon">${this.isLocked ? icons.link : icons.unlink}</span>`;
+    this.syncBtn.title = this.isLocked ? "Sync Scroll: Locked (Click to pause sync)" : "Sync Scroll: Paused (Click to lock sync)";
+  }
+
   setSyncLocked(locked: boolean): void {
-    this.syncBtn.classList.toggle("active", locked);
-    this.syncBtn.innerHTML = `<span class="sync-icon">${locked ? icons.link : icons.unlink}</span>`;
-    this.syncBtn.title = locked ? "Sync Scroll: Locked (Click to pause sync)" : "Sync Scroll: Paused (Click to lock sync)";
+    this.isLocked = locked;
+    this.updateVisualState();
+  }
+
+  setSnapScroll(enabled: boolean): void {
+    this.snapScroll = enabled;
+    this.updateVisualState();
   }
 
   private bindEvents(): void {

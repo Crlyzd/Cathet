@@ -24,8 +24,8 @@ export class DualPaneEmptyDropzone {
         <span class="dualpane-empty-desc">Drop a text or markdown file here, or choose an existing document.</span>
         <div class="dualpane-empty-actions">
           <button class="dualpane-empty-btn dualpane-empty-btn-primary" id="dualpane-empty-new-btn" title="New Document">
-            <span class="dualpane-empty-btn-full">+ New Document</span>
-            <span class="dualpane-empty-btn-compact">+ New</span>
+            <span class="dualpane-empty-btn-full">New Document</span>
+            <span class="dualpane-empty-btn-compact">New</span>
           </button>
           <button class="dualpane-empty-btn dualpane-empty-btn-secondary" id="dualpane-empty-browse-btn" title="Open Document...">
             <span class="dualpane-empty-btn-full">Open Document...</span>
