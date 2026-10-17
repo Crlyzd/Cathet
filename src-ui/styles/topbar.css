@@ -25,9 +25,10 @@
 /* Drag Region displaying File Name */
 .topbar-drag-area {
   flex: 1;
+  min-width: 0;
   height: 100%;
-  display: flex;
-  align-items: center;
+  display: block;
+  line-height: var(--top-bar-height);
   padding-left: 8px;
   font-size: 12px;
   font-weight: 550;
@@ -35,6 +36,9 @@
   user-select: none;
   letter-spacing: 0.2px;
   cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Dot Menu Button (●) */
