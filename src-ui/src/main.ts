@@ -10,6 +10,7 @@ import { ThemeService } from "./services/themeService";
 import { FontService } from "./services/fontService";
 import { UpdateService } from "./services/updateService";
 import { DragDropService } from "./services/dragDropService";
+import { PreviewService } from "./services/previewService";
 import { globalEventBus } from "./utils/eventBus";
 import { registerShortcuts } from "./utils/shortcuts";
 import { buildContextMenuItems } from "./utils/contextMenuItems";
@@ -25,6 +26,7 @@ class CathetApp {
   private fontService: FontService;
   private updateService: UpdateService;
   private dragDropService: DragDropService;
+  private previewService: PreviewService;
 
   private topBar: TopBarComponent;
   private popupMenu: PopupMenuComponent;
@@ -42,6 +44,7 @@ class CathetApp {
     this.fontService = new FontService();
     this.updateService = new UpdateService();
     this.dragDropService = new DragDropService();
+    this.previewService = new PreviewService();
 
     this.topBar = new TopBarComponent("topbar-container", this.windowService);
     this.popupMenu = new PopupMenuComponent("popup-container");
@@ -93,6 +96,10 @@ class CathetApp {
       this.isAlwaysOnTop = event.payload;
     });
 
+    listen<boolean>("cathet:always-preview-change", (event) => {
+      this.previewService.setAlwaysPreview(event.payload);
+    });
+
     listen<any>("cathet:update-status", (event) => {
       const info = event.payload;
       this.updateService.setUpdateInfo(info);
@@ -111,6 +118,8 @@ class CathetApp {
           this.updateService.setUpdateInfo(info);
           this.topBar.setUpdateAvailable(!!info?.update_available);
         } catch (_) {}
+      } else if (e.key === "cathet_always_preview" && e.newValue !== null) {
+        this.previewService.setAlwaysPreview(e.newValue === "true");
       }
     });
 
@@ -196,7 +205,8 @@ class CathetApp {
 
   private applyLoadedFile(result: FilePayload): void {
     this.setDocumentPath(result.path);
-    this.editor.setContent(result.content);
+    const shouldPreview = this.previewService.shouldOpenInPreview(result.path);
+    this.editor.loadDocument(result.content, result.path, shouldPreview);
     const size = result.fileSize ?? result.file_size ?? 0;
     this.editor.setWordWrap(size <= 3 * 1024 * 1024);
   }
