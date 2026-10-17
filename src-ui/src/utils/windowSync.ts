@@ -14,6 +14,7 @@ export interface WindowSyncContext {
   onAlwaysOnTopChanged: (state: boolean) => void;
   onUpdateAvailable: (available: boolean) => void;
   onLoadTutorial: () => void;
+  onSnapScrollChanged?: (enabled: boolean) => void;
 }
 
 /**
@@ -36,6 +37,10 @@ export function registerWindowSyncListeners(ctx: WindowSyncContext): void {
 
   listen<boolean>("cathet:always-preview-change", (e) => {
     ctx.previewService.setAlwaysPreview(e.payload);
+  });
+
+  listen<boolean>("cathet:snap-scroll-change", (e) => {
+    ctx.onSnapScrollChanged?.(e.payload);
   });
 
   listen<any>("cathet:update-status", (e) => {

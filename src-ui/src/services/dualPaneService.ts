@@ -6,6 +6,20 @@ export class DualPaneService {
   private leftPath: string | null = null;
   private rightPath: string | null = null;
   private activePane: "left" | "right" = "left";
+  private snapScroll: boolean = false;
+
+  constructor() {
+    this.snapScroll = localStorage.getItem("cathet_snap_scroll") === "true";
+  }
+
+  getSnapScroll(): boolean {
+    return this.snapScroll;
+  }
+
+  setSnapScroll(enabled: boolean): void {
+    this.snapScroll = enabled;
+    localStorage.setItem("cathet_snap_scroll", String(enabled));
+  }
 
   isDualPane(): boolean {
     return this.active;

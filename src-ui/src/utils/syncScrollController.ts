@@ -9,6 +9,8 @@ export class SyncScrollController {
   private leftEl: HTMLElement | null = null;
   private rightEl: HTMLElement | null = null;
   private locked: boolean = true;
+  private snapScroll: boolean = false;
+  private ratioOffset: number = 0;
   private isSyncing: boolean = false;
   private activeDriver: "left" | "right" | null = null;
   private driverTimer: number | null = null;
@@ -25,6 +27,17 @@ export class SyncScrollController {
     this.detach();
     this.leftEl = leftEl;
     this.rightEl = rightEl;
+
+    if (this.locked) {
+      if (this.snapScroll) {
+        this.ratioOffset = 0;
+        this.resync("left");
+      } else {
+        const rLeft = captureScrollRatio(this.leftEl);
+        const rRight = captureScrollRatio(this.rightEl);
+        this.ratioOffset = rRight - rLeft;
+      }
+    }
 
     this.leftEl.addEventListener("scroll", this.onLeftScroll, { passive: true });
     this.rightEl.addEventListener("scroll", this.onRightScroll, { passive: true });
@@ -50,12 +63,27 @@ export class SyncScrollController {
   setLocked(locked: boolean): void {
     this.locked = locked;
     if (this.locked && this.leftEl && this.rightEl) {
-      this.resync("left");
+      if (this.snapScroll) {
+        this.ratioOffset = 0;
+        this.resync("left");
+      } else {
+        const rLeft = captureScrollRatio(this.leftEl);
+        const rRight = captureScrollRatio(this.rightEl);
+        this.ratioOffset = rRight - rLeft;
+      }
     }
   }
 
   isLocked(): boolean {
     return this.locked;
+  }
+
+  setSnapScroll(enabled: boolean): void {
+    this.snapScroll = enabled;
+  }
+
+  getSnapScroll(): boolean {
+    return this.snapScroll;
   }
 
   toggleLock(): boolean {
@@ -69,7 +97,11 @@ export class SyncScrollController {
     const targetEl = source === "left" ? this.rightEl : this.leftEl;
 
     const ratio = captureScrollRatio(sourceEl);
-    this.applyRatio(targetEl, ratio);
+    const targetRatio = source === "left"
+      ? Math.max(0, Math.min(1, ratio + this.ratioOffset))
+      : Math.max(0, Math.min(1, ratio - this.ratioOffset));
+
+    this.applyRatio(targetEl, targetRatio);
   }
 
   private handleScroll(source: "left" | "right"): void {
@@ -82,7 +114,12 @@ export class SyncScrollController {
 
     const ratio = captureScrollRatio(sourceEl);
     this.isSyncing = true;
-    this.applyRatio(targetEl, ratio);
+
+    const targetRatio = source === "left"
+      ? Math.max(0, Math.min(1, ratio + this.ratioOffset))
+      : Math.max(0, Math.min(1, ratio - this.ratioOffset));
+
+    this.applyRatio(targetEl, targetRatio);
 
     requestAnimationFrame(() => {
       this.isSyncing = false;
