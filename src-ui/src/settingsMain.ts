@@ -7,6 +7,7 @@ import { FontService } from "./services/fontService";
 import { ThemeService } from "./services/themeService";
 import { UpdateService } from "./services/updateService";
 import { AssociationService, AssociationStatus } from "./services/associationService";
+import { PreviewService } from "./services/previewService";
 import { APP_VERSION } from "./version";
 
 class SettingsApp {
@@ -14,6 +15,7 @@ class SettingsApp {
   private themeService = new ThemeService();
   private updateService = new UpdateService();
   private associationService = new AssociationService();
+  private previewService = new PreviewService();
   private tabsComponent: SettingsTabsComponent;
   private currentWindow = getCurrentWindow();
   private isAlwaysOnTop: boolean = false;
@@ -35,6 +37,7 @@ class SettingsApp {
         theme: currentTheme,
         fontId: currentFont.id,
         isAlwaysOnTop: this.isAlwaysOnTop,
+        alwaysPreview: this.previewService.getAlwaysPreview(),
         fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
         updateAvailable: !!updateInfo?.update_available,
         latestVersion: updateInfo?.latest_version,
@@ -43,6 +46,7 @@ class SettingsApp {
         onThemeChange: (theme) => this.handleThemeChange(theme),
         onFontChange: (fontId) => this.handleFontChange(fontId),
         onAlwaysOnTopChange: (enabled) => this.handleAlwaysOnTopChange(enabled),
+        onAlwaysPreviewChange: (enabled) => this.handleAlwaysPreviewChange(enabled),
         onCheckUpdates: () => this.handleCheckUpdates(true),
         onStartDownload: () => this.handleStartDownload(),
         onInstallAndRestart: () => this.handleInstallAndRestart(),
@@ -89,6 +93,12 @@ class SettingsApp {
     this.tabsComponent.updateState({ isAlwaysOnTop: enabled });
     await invoke("set_always_on_top", { enabled }).catch(console.error);
     await emit("cathet:ontop-change", enabled);
+  }
+
+  private async handleAlwaysPreviewChange(enabled: boolean): Promise<void> {
+    this.previewService.setAlwaysPreview(enabled);
+    this.tabsComponent.updateState({ alwaysPreview: enabled });
+    await emit("cathet:always-preview-change", enabled);
   }
 
   private async syncAlwaysOnTop(): Promise<void> {
@@ -181,6 +191,11 @@ class SettingsApp {
     await listen<boolean>("cathet:ontop-change", (event) => {
       this.isAlwaysOnTop = event.payload;
       this.tabsComponent.updateState({ isAlwaysOnTop: event.payload });
+    });
+
+    await listen<boolean>("cathet:always-preview-change", (event) => {
+      this.previewService.setAlwaysPreview(event.payload);
+      this.tabsComponent.updateState({ alwaysPreview: event.payload });
     });
 
     const resync = () => {

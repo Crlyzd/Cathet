@@ -18,6 +18,7 @@ export interface SettingsInitialState {
   theme: "dark" | "light";
   fontId: string;
   isAlwaysOnTop: boolean;
+  alwaysPreview: boolean;
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;

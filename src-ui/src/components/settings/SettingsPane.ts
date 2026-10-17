@@ -6,6 +6,7 @@ export interface SettingsPaneCallbacks {
   onThemeChange: (theme: "dark" | "light") => void;
   onFontChange: (fontId: string) => void;
   onAlwaysOnTopChange: (enabled: boolean) => void;
+  onAlwaysPreviewChange: (enabled: boolean) => void;
   onConfigureDefaultApp: () => Promise<void>;
   onUnregisterDefaultApp: () => Promise<void>;
   onCheckUpdates: () => Promise<void>;
@@ -17,6 +18,7 @@ export interface SettingsPaneState {
   theme: "dark" | "light";
   fontId: string;
   isAlwaysOnTop: boolean;
+  alwaysPreview: boolean;
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;
@@ -33,11 +35,7 @@ export class SettingsPaneComponent {
   private callbacks: SettingsPaneCallbacks;
   private fontSelect: FontSelectComponent | null = null;
 
-  constructor(
-    container: HTMLElement,
-    state: SettingsPaneState,
-    callbacks: SettingsPaneCallbacks
-  ) {
+  constructor(container: HTMLElement, state: SettingsPaneState, callbacks: SettingsPaneCallbacks) {
     this.container = container;
     this.state = state;
     this.callbacks = callbacks;
@@ -57,34 +55,29 @@ export class SettingsPaneComponent {
     this.render();
   }
 
-  private render(): void {
-    if (this.fontSelect) {
-      this.fontSelect.destroy();
-      this.fontSelect = null;
-    }
-
-    let updateActionHtml = "";
+  private getUpdateHtml(): string {
     if (this.state.downloadState === "downloading") {
-      updateActionHtml = `
+      return `
         <div class="update-progress-wrap">
           <div class="update-progress-track">
             <div class="update-progress-fill" style="width: ${this.state.downloadPercent}%"></div>
           </div>
           <span class="update-progress-info">${this.state.downloadPercent.toFixed(0)}%</span>
-        </div>
-      `;
-    } else if (this.state.downloadState === "ready") {
-      updateActionHtml = `
-        <button class="glass-btn update-ready" id="btn-restart-install">Restart & Install</button>
-      `;
-    } else if (this.state.updateAvailable) {
-      updateActionHtml = `
-        <button class="glass-btn update-ready" id="btn-start-download">Download Update</button>
-      `;
-    } else {
-      updateActionHtml = `
-        <button class="glass-btn" id="btn-check-updates">Check Updates</button>
-      `;
+        </div>`;
+    }
+    if (this.state.downloadState === "ready") {
+      return `<button class="glass-btn update-ready" id="btn-restart-install">Restart & Install</button>`;
+    }
+    if (this.state.updateAvailable) {
+      return `<button class="glass-btn update-ready" id="btn-start-download">Download Update</button>`;
+    }
+    return `<button class="glass-btn" id="btn-check-updates">Check Updates</button>`;
+  }
+
+  private render(): void {
+    if (this.fontSelect) {
+      this.fontSelect.destroy();
+      this.fontSelect = null;
     }
 
     const activePath = this.state.registeredExePath || this.state.currentExePath || "";
@@ -102,12 +95,10 @@ export class SettingsPaneComponent {
           </div>
           <div class="pill-toggle-group">
             <button class="pill-toggle-btn ${this.state.theme === "dark" ? "active" : ""}" id="btn-theme-dark">
-              ${icons.moon}
-              <span>Dark</span>
+              ${icons.moon}<span>Dark</span>
             </button>
             <button class="pill-toggle-btn ${this.state.theme === "light" ? "active" : ""}" id="btn-theme-light">
-              ${icons.sun}
-              <span>Light</span>
+              ${icons.sun}<span>Light</span>
             </button>
           </div>
         </div>
@@ -129,6 +120,18 @@ export class SettingsPaneComponent {
           </div>
           <label class="switch-control">
             <input type="checkbox" id="ontop-checkbox" ${this.state.isAlwaysOnTop ? "checked" : ""} />
+            <span class="switch-track"></span>
+          </label>
+        </div>
+
+        <!-- Markdown Preview Row -->
+        <div class="setting-item">
+          <div class="setting-meta">
+            <span class="setting-title">Markdown Preview</span>
+            <span class="setting-subtext">Always open in preview mode</span>
+          </div>
+          <label class="switch-control">
+            <input type="checkbox" id="always-preview-checkbox" ${this.state.alwaysPreview ? "checked" : ""} />
             <span class="switch-track"></span>
           </label>
         </div>
@@ -166,12 +169,11 @@ export class SettingsPaneComponent {
               }
             </span>
           </div>
-          ${updateActionHtml}
+          ${this.getUpdateHtml()}
         </div>
       </div>
     `;
 
-    // Mount FontSelect component
     const fontMount = this.container.querySelector("#font-select-mount") as HTMLElement | null;
     if (fontMount) {
       this.fontSelect = new FontSelectComponent(
@@ -199,43 +201,29 @@ export class SettingsPaneComponent {
       this.callbacks.onAlwaysOnTopChange(ontopCheckbox.checked);
     });
 
-    this.container.querySelector("#btn-set-default-app")?.addEventListener("click", async () => {
-      const btn = this.container.querySelector("#btn-set-default-app") as HTMLButtonElement | null;
-      if (btn) btn.disabled = true;
-      try {
-        await this.callbacks.onConfigureDefaultApp();
-      } finally {
-        if (btn) btn.disabled = false;
-      }
+    const previewCheckbox = this.container.querySelector("#always-preview-checkbox") as HTMLInputElement | null;
+    previewCheckbox?.addEventListener("change", () => {
+      this.callbacks.onAlwaysPreviewChange(previewCheckbox.checked);
     });
 
-    this.container.querySelector("#btn-unregister-default-app")?.addEventListener("click", async () => {
-      const btn = this.container.querySelector("#btn-unregister-default-app") as HTMLButtonElement | null;
-      if (btn) btn.disabled = true;
-      try {
-        await this.callbacks.onUnregisterDefaultApp();
-      } finally {
-        if (btn) btn.disabled = false;
-      }
-    });
+    const bindAsyncBtn = (id: string, action: () => Promise<void>) => {
+      this.container.querySelector(id)?.addEventListener("click", async (e) => {
+        const btn = e.currentTarget as HTMLButtonElement | null;
+        if (btn) btn.disabled = true;
+        try {
+          await action();
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      });
+    };
 
-    this.container.querySelector("#btn-check-updates")?.addEventListener("click", async () => {
-      const btn = this.container.querySelector("#btn-check-updates") as HTMLButtonElement | null;
-      if (btn) btn.disabled = true;
-      try {
-        await this.callbacks.onCheckUpdates();
-      } finally {
-        if (btn) btn.disabled = false;
-      }
-    });
+    bindAsyncBtn("#btn-set-default-app", () => this.callbacks.onConfigureDefaultApp());
+    bindAsyncBtn("#btn-unregister-default-app", () => this.callbacks.onUnregisterDefaultApp());
+    bindAsyncBtn("#btn-check-updates", () => this.callbacks.onCheckUpdates());
 
-    this.container.querySelector("#btn-start-download")?.addEventListener("click", async () => {
-      await this.callbacks.onStartDownload();
-    });
-
-    this.container.querySelector("#btn-restart-install")?.addEventListener("click", async () => {
-      await this.callbacks.onInstallAndRestart();
-    });
+    this.container.querySelector("#btn-start-download")?.addEventListener("click", () => this.callbacks.onStartDownload());
+    this.container.querySelector("#btn-restart-install")?.addEventListener("click", () => this.callbacks.onInstallAndRestart());
   }
 
   public destroy(): void {
