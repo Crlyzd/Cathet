@@ -104,3 +104,25 @@ pub async fn focus_main_window(app_handle: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+pub async fn set_window_min_size(
+    window: WebviewWindow,
+    width: f64,
+    height: f64,
+) -> Result<(), String> {
+    window
+        .set_min_size(Some(tauri::LogicalSize::new(width, height)))
+        .map_err(|e| e.to_string())?;
+
+    if let (Ok(current_size), Ok(scale_factor)) = (window.inner_size(), window.scale_factor()) {
+        let logical_current = current_size.to_logical::<f64>(scale_factor);
+        if logical_current.width < width || logical_current.height < height {
+            let new_w = logical_current.width.max(width);
+            let new_h = logical_current.height.max(height);
+            let _ = window.set_size(tauri::LogicalSize::new(new_w, new_h));
+        }
+    }
+    Ok(())
+}
+
+
