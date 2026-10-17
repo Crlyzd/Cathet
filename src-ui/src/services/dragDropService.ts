@@ -2,7 +2,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { UnlistenFn } from "@tauri-apps/api/event";
 
 export interface DragDropHandlers {
-  onFileDrop: (filePath: string) => void;
+  onFileDrop: (filePath: string, position?: { x: number; y: number }) => void;
   onDragStateChange?: (isDragging: boolean) => void;
 }
 
@@ -33,7 +33,7 @@ export class DragDropService {
           handlers.onDragStateChange?.(false);
           const paths = payload.paths;
           if (paths && paths.length > 0) {
-            handlers.onFileDrop(paths[0]);
+            handlers.onFileDrop(paths[0], (payload as any).position);
           }
         } else {
           // 'leave'

@@ -13,6 +13,7 @@ export interface ShortcutHandlers {
   onSettings?: () => void;
   onToggleWordWrap?: () => void;
   onSearchWeb?: () => void;
+  onToggleDualPane?: () => void;
 }
 
 export function registerShortcuts(handlers: ShortcutHandlers): () => void {
@@ -54,6 +55,10 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
     }
 
     switch (key) {
+      case "D":
+        e.preventDefault();
+        handlers.onToggleDualPane?.();
+        break;
       case "S":
         e.preventDefault();
         handlers.onSave();
