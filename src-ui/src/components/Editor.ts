@@ -3,11 +3,13 @@ import { tsvToMarkdownTable } from "../utils/htmlToMarkdown";
 import { serializeEditorContent, renderEditorTextWithPills, attachPillClickHandler } from "../utils/base64Fold";
 import { replaceBrokenImageWithFallback } from "../utils/brokenImageFallback";
 import { handleEditorPaste } from "../utils/editorPasteHandler";
+import { captureScrollRatio, restoreScrollRatio } from "../utils/scrollSync";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 export class EditorComponent {
   private container: HTMLElement;
+  private wrapperEl!: HTMLElement;
   private editorEl!: HTMLElement;
   private zoomLevel: number = 100;
   private isMarkdownPreview: boolean = false;
@@ -28,6 +30,7 @@ export class EditorComponent {
       </div>
     `;
 
+    this.wrapperEl = document.getElementById("editor-wrapper")!;
     this.editorEl = document.getElementById("cathet-editor")!;
     this.bindEvents();
   }
@@ -122,6 +125,8 @@ export class EditorComponent {
   }
 
   toggleMarkdownPreview(): boolean {
+    const scrollRatio = captureScrollRatio(this.wrapperEl);
+
     if (!this.isMarkdownPreview) {
       // Switch from Edit to Markdown Preview
       this.rawContent = serializeEditorContent(this.editorEl);
@@ -140,8 +145,10 @@ export class EditorComponent {
       } else {
         this.editorEl.innerText = this.rawContent;
       }
-      this.editorEl.focus();
+      this.editorEl.focus({ preventScroll: true });
     }
+
+    restoreScrollRatio(this.wrapperEl, scrollRatio);
     return this.isMarkdownPreview;
   }
 
