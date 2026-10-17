@@ -156,4 +156,72 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/styles/topbar.css`: Prevented multi-line file title wrapping on narrow viewports (128 lines).
   - `src-ui/styles/dualpane.css`: Sized SVG folder, styled redesigned `.dualpane-sync-badge`, added flex ellipsis rules, and container queries for badge hiding (340 lines).
 
+### 2026-10-18: Dual Pane Secondary Island Edge Clearance When Squished & Splitter Sync Badge Repositioning
+- **Summary**: Resolved visual clipping defect where the empty placeholder island (`.dualpane-empty-card`) in the secondary pane touched the splitter and window edges when squished horizontally. Enforced strict flexbox constraints (`min-width: 0`, `box-sizing: border-box`, fluid width) and introduced responsive container queries (`@container (max-width: 240px)` and `@container (max-width: 175px)`). Guaranteed minimum >= 10px breathing room / moat around the island, scaled card padding from 64px down to 20px, preserved continuous dashed borders and 8px-12px rounded corners, and added dual-label button transitions (`Open Document...` -> `Open...`) to prevent button line wrapping. Additionally anchored the top splitter line to 52px so the sync scroll lock button sits in the upper section of the divider, completely clear of the secondary placeholder island.
+- **Files Modified**:
+  - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`: Structured browse button with dual-label spans (`.dualpane-empty-btn-full` and `.dualpane-empty-btn-compact`) (47 lines).
+  - `src-ui/styles/dualpane.css`: Anchored top splitter line to 52px (`.dualpane-splitter-line:first-child`), applied fluid width constraints, dynamic container padding, typography scaling, and container query breakpoints (410 lines).
+
+### 2026-10-18: Dual Pane Secondary Island Drop Shadow & Hover Elevation
+- **Summary**: Implemented theme-adaptive layered frosted glass drop shadow on `.dualpane-empty-card` for enhanced physical depth and elevation above the acrylic/mica window backdrop. Added subtle hover elevation with accent-colored dashed border highlighting, tuned soft shadow falloff in light theme, and scaled the shadow radius down in squished mode (`@container (max-width: 175px)`) to prevent container clipping.
+- **Files Modified**:
+  - `src-ui/styles/dualpane.css`: Added layered `box-shadow`, `cursor: pointer`, hover states, light theme overrides, and squished container query shadow scaling (430 lines).
+
+### 2026-10-18: Dual Pane Sync Scroll Button Redesign & Bottom Anchoring
+- **Summary**: Redesigned the sync scroll lock toggle button: anchored it to the bottom of the window divider (`.dualpane-splitter-line:first-child { flex: 1 }` and `:last-child { flex: 0 0 8px }`) to completely eliminate any collisions with document headers or the secondary placeholder island. Reshaped the button into a modern squircle (`border-radius: 4px`), and applied a cosmic galaxy nebula gradient (`linear-gradient(135deg, #4f46e5 0%, #7c3aed 45%, #c026d3 75%, #ec4899 100%)`) with white starlight icon and radiant violet/magenta glow when selected/active.
+
+### 2026-10-18: Dual Mode Spatial Drop UI & Extreme Squish Resolution
+- **Summary**: Implemented spatially aware drag & drop overlay targeting in Dual Pane mode: tracked live cursor coordinates across DOM dragover and native OLE events, dynamically bound the frosted drop overlay to the hovered pane (`Drop in Left Pane` vs `Drop in Right Pane`), and added smooth 0.12s slide transitions between panes while leaving the non-hovered document visible. Resolved extreme window squishing (220px × 200px) by changing compact button copy from `Open...` to `Open` (eliminating `O...` ellipsis truncation), reserving a 34px protected bottom zone for the sync button, and introducing `@container (max-width: 140px)` ultra-compact sizing to keep the island card completely unclipped with full corner and dashed border integrity.
+- **Files Modified**:
+  - `src-ui/src/components/DropOverlay.ts`: Added `updateSpatialTarget()` and contextual pane titles (57 lines).
+  - `src-ui/src/services/dragDropService.ts`: Added `onDragOver` cursor position tracking across DOM and Tauri events (67 lines).
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Added `getSplitterPosition()` accessor (224 lines).
+  - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`: Updated compact button label to `Open` (47 lines).
+  - `src-ui/src/main.ts`: Forwarded live drag coordinates to spatial drop overlay while preserving file length under 250 lines (249 lines).
+  - `src-ui/styles/editor.css`: Added smooth positional slide transitions for `.cathet-drop-overlay` (545 lines).
+  - `src-ui/styles/dualpane.css`: Added bottom sync reservation (34px) and `@container (max-width: 140px)` ultra-compact sizing (520 lines).
+
+### 2026-10-18: Dual Pane Secondary Island Center Alignment & Button Slicing Prevention
+- **Summary**: Corrected vertical and horizontal centering of the secondary document placeholder island (`.dualpane-empty-card`) when squished in Dual Pane mode. Restored symmetric vertical padding (`10px` top/bottom for <=175px, `8px` top/bottom for <=140px and <=280px height) and unconstrained `max-height: 100%` on the card without `overflow: hidden`, completely eliminating upward vertical displacement and horizontal slicing of the "Open" button. Removed WebView2 scrollbar gutter via `.dualpane-empty::-webkit-scrollbar { display: none }`, and maintained symmetric `12px–14px` horizontal padding for equal breathing room and clearance on both sides.
+- **Files Modified**:
+  - `src-ui/styles/dualpane.css`: Replaced asymmetric bottom padding with symmetric insets, removed scrollbar gutter, set `max-height: 100%`, and adjusted compact container queries (526 lines).
+
+### 2026-10-18: Dual Drop Zones, Window Constraints (200x300), Secondary Island New Document, and Font Dropdown Scrolling
+- **Summary**: Delivered a major usability and ergonomics update across Dual Pane mode, window resizing, and the Settings window:
+  1. **Simultaneous Dual Drop Targets**: Replaced the one-sided single drop overlay with simultaneous dual-zone drop targets in Dual Pane mode (`.drop-zone-left` and `.drop-zone-right`). Both panes are clearly presented to the user during file dragging, with live cursor tracking dynamically lighting up the hovered pane with radiant accent glow (`.active-target`) while keeping the non-hovered pane visible as an idle drop target (`.idle-target`). Replaced the solid white curtain with a translucent frosted glass backdrop (`rgba(..., 0.45-0.55)` with `backdrop-filter: blur(16px)`).
+  2. **Window Minimum Drag/Resize Constraints (200 × 300)**: Configured `"minWidth": 200, "minHeight": 300` in `tauri.conf.json`, guaranteeing at least 240px of vertical editor height below the topbar and headers to permanently eliminate vertical squishing or button slicing.
+  3. **Secondary Island "New Document" & Card Close**: Added a primary `[ + New Document ]` (compact `[ + New ]`) action alongside `[ 📂 Open Document... ]` (compact `[ Open ]`) to allow instant side-by-side note-taking and scratchpad editing without an existing file on disk. Added a card-level frosted circular close button (`✕`) to easily dismiss Dual Mode directly from the island.
+  4. **Settings Typography Font Dropdown Scrolling**: Fixed `scrollCloseHandler` in `FontSelect.ts` to inspect `e.target` and ignore scroll events within `#font-select-menu`, preventing the menu from collapsing when scrolled. Added `overscroll-behavior: contain`, increased `max-height` to 152px, enabled a sleek 3px micro-scrollbar thumb, and auto-scrolled the active font into view upon opening.
+- **Files Modified**:
+  - `src-tauri/tauri.conf.json`: Set `"minWidth": 200` and `"minHeight": 300` (49 lines).
+  - `src-ui/src/components/DropOverlay.ts`: Refactored to support simultaneous dual-zone drop targets with dynamic hover highlight (87 lines).
+  - `src-ui/styles/editor.css`: Styled translucent frosted drop backdrop, dual-zone side-by-side bounds, and active/idle states (596 lines).
+  - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`: Added "New Document", "Open Document...", and card close button (68 lines).
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Forwarded `onNewRight` callback to dropzone (228 lines).
+  - `src-ui/src/main.ts`: Wired `onNewRight` to mount untitled editor and set focus (249 lines).
+  - `src-ui/src/components/Editor.ts`: Exposed `focus()` method (243 lines).
+  - `src-ui/styles/dualpane.css`: Styled island button group, primary/secondary variants, and frosted close button (588 lines).
+  - `src-ui/src/components/settings/FontSelect.ts`: Filtered internal scroll events and added auto-scroll to active font (146 lines).
+  - `src-ui/styles/settings.css`: Added `max-height: 152px`, `overscroll-behavior: contain`, and 3px micro-scrollbar (940 lines).
+
+### 2026-10-18: Secondary Island Close Removal, Dual Mode 350x350 Window Floor, and File Drop Island Transparency
+- **Summary**: Implemented user refinements for Dual Pane mode and file drag-and-drop:
+  1. **Removed Island ✕ Close Button**: Eliminated the circular close button from `.dualpane-empty-card` in `DualPaneEmptyDropzone.ts` and `dualpane.css`, keeping the card focused purely on document creation and file opening while relying on the secondary pane header's `✕` button for Dual Mode exit.
+  2. **Enforced 350 × 350 Minimum Window Size in Dual Mode**: Implemented `set_window_min_size` in `src-tauri/src/commands/window.rs` and `src-ui/src/services/windowService.ts`. When activating Dual Mode, Cathet locks the OS-level DWM minimum window size to `350 × 350` and automatically expands the window if width or height is below 350px. When exiting Dual Mode, the window floor is cleanly restored to the single-pane minimum (`200 × 300`).
+  3. **File Drop Island Transparency**: In `DropOverlay.ts`, toggled `document.body.classList.add("is-dragging")` on drag entrance and removed it on completion/cancellation. Styled `body.is-dragging .dualpane-empty` with `opacity: 0; visibility: hidden; pointer-events: none;`, completely hiding the underlying placeholder island during file dragging and eliminating ghost text collisions with the frosted drop target card.
+- **Files Modified**:
+  - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`: Removed close button and click listener (61 lines).
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Removed `onClose` pass-through to dropzone (227 lines).
+  - `src-tauri/src/commands/window.rs`: Added `set_window_min_size` with auto-expansion logic (128 lines).
+  - `src-tauri/src/lib.rs`: Registered `set_window_min_size` in Tauri invoke handler (94 lines).
+  - `src-ui/src/services/windowService.ts`: Added `setMinSize(width, height)` wrapper (124 lines).
+  - `src-ui/src/main.ts`: Called `setMinSize(350, 350)` on Dual Mode enter and `(200, 300)` on exit (247 lines).
+  - `src-ui/src/components/DropOverlay.ts`: Toggled `is-dragging` class on `document.body` (89 lines).
+  - `src-ui/styles/dualpane.css`: Added `body.is-dragging .dualpane-empty` fade-out and removed `.dualpane-empty-close` (572 lines).
+
+
+
+
+
+
 
