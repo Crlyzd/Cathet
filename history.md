@@ -217,7 +217,43 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/src/services/windowService.ts`: Added `setMinSize(width, height)` wrapper (124 lines).
   - `src-ui/src/main.ts`: Called `setMinSize(350, 350)` on Dual Mode enter and `(200, 300)` on exit (247 lines).
   - `src-ui/src/components/DropOverlay.ts`: Toggled `is-dragging` class on `document.body` (89 lines).
-  - `src-ui/styles/dualpane.css`: Added `body.is-dragging .dualpane-empty` fade-out and removed `.dualpane-empty-close` (572 lines).
+### 2026-10-18: Active Menu Highlights, Blue Galaxy Sync Glow, Save Disabled State & Read-Only Guard
+- **Summary**: Implemented four integrated user experience and data safety enhancements:
+  1. **Active Dropdown Menu Highlights**: Added `isActive` support to `MenuItem` and styled `.popup-menu-item.active` in `popup.css` with an accent inset border, subtle background tint, and highlighted text. In `mainMenuItems.ts`, marked "Exit Dual Pane" active when in Dual Mode and "Markdown: Preview" active when in Preview mode.
+  2. **Blue Galaxy Scroll Sync Glow**: Enhanced `DualPaneSplitter.ts` with `snapScroll` tracking via `setSnapScroll(enabled)`. When both sync scroll is locked and snap scroll is active, toggles `.blue-galaxy` on the sync badge in `dualpane.css`, shifting the glow from cosmic magenta/violet galaxy to radiant blue galaxy (navy/sapphire/cyan gradient with electric blue glow).
+  3. **Save Grayed Out When Up-to-Date**: Integrated baseline content tracking in `EditorComponent` (`isModified()`, `markSaved()`). In `mainMenuItems.ts`, set `disabled: ctx.isUpToDate` on Save, styled `.popup-menu-item.disabled` with `opacity: 0.42` and `pointer-events: none`, and guarded `saveDocument` and `Ctrl+S` from executing redundant saves when unmodified.
+  4. **Windows Read-Only Attribute Warning**: Added `is_file_readonly` in `src-tauri/src/commands/file.rs` and registered it in `lib.rs`. In `fileService.ts` and `main.ts`, intercepted save attempts on files with the Windows Read-Only attribute, preventing permission errors and showing a frosted glass warning dialog (`showGlassDialog`) directing the user to "Save As...".
+- **Files Modified**:
+  - `src-tauri/src/commands/file.rs`: Added `is_file_readonly` command (173 lines).
+  - `src-tauri/src/lib.rs`: Registered `is_file_readonly` in invoke handler (95 lines).
+  - `src-ui/src/services/fileService.ts`: Added `isFileReadonly` helper (113 lines).
+  - `src-ui/src/components/Editor.ts`: Added `isModified()` and `markSaved()` dirty tracking (247 lines).
+  - `src-ui/src/components/PopupMenu.ts`: Added `isActive` and `disabled` support (89 lines).
+  - `src-ui/src/utils/mainMenuItems.ts`: Wired `isActive` for mode toggles and `disabled` for up-to-date save (48 lines).
+  - `src-ui/styles/popup.css`: Added `.popup-menu-item.active` and `.disabled` styles (148 lines).
+  - `src-ui/src/components/dualpane/DualPaneSplitter.ts`: Added `snapScroll` tracking and `.blue-galaxy` toggle (124 lines).
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Forwarded `setSnapScroll` to splitter (229 lines).
+  - `src-ui/styles/dualpane.css`: Added `.dualpane-sync-badge.active.blue-galaxy` gradient and glow (589 lines).
+  - `src-ui/src/main.ts`: Wired `isUpToDate` to menu, read-only guard dialog to save, and markSaved on success (245 lines).
+
+### 2026-10-18: Secondary Document Placeholder Boundary Masking & Ellipsis
+- **Summary**: Resolved visual defect where "Secondary Document" text wrapped and bled past the right dashed border of `.dualpane-empty-card` on squished viewports (<= 140px). Enforced container boundary masking (`overflow: hidden;`) on `.dualpane-empty-card` so all content slips cleanly behind the card edge, added `box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; text-align: center;` to `.dualpane-empty-title`, and enforced `white-space: nowrap;` within `@container (max-width: 175px)` and `@container (max-width: 140px)` so the title truncates gracefully with ellipsis (`Secondary...`) strictly within the inner card margins.
+- **Files Modified**:
+  - `src-ui/styles/dualpane.css`: Added card boundary masking and responsive title ellipsis (595 lines).
+
+### 2026-10-18: Secondary Island Action Button Border Box Sizing & Symmetric Margins
+- **Summary**: Resolved visual defect where secondary action buttons (`.dualpane-empty-btn`) collided with and touched the right dashed border when squished to ultra-compact widths (<= 140px). Root-caused default `box-sizing: content-box` which added +14px of padding and border beyond `width: 100%`. Applied `box-sizing: border-box;` and `min-width: 0;` to `.dualpane-empty-btn` and `.dualpane-empty-actions`, ensuring `width: 100%` calculates precisely against the card's inner content box. Restored perfectly equal, symmetric 10px spacing on both the left and right flanks.
+- **Files Modified**:
+  - `src-ui/styles/dualpane.css`: Added `box-sizing: border-box` and `min-width: 0` to actions and buttons (600 lines).
+
+### 2026-10-18: Secondary Document Island Button Clean Typography
+- **Summary**: Removed the `+` prefix symbol from the secondary pane empty card primary action button (`+ New Document` -> `New Document`, and compact `+ New` -> `New`), creating cleaner, more cohesive typography alongside `Open Document...`.
+- **Files Modified**:
+  - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`: Updated button labels (62 lines).
+
+
+
+
 
 
 
