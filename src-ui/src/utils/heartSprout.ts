@@ -1,9 +1,10 @@
+import { invoke } from "@tauri-apps/api/core";
 import { icons } from "./monochromeIcons";
 
 /**
  * heartSprout.ts — Spammable Sprouting Heart Particle Controller
  * Spawns dynamic clusters of 1 to 3 multi-colored floating heart particles per click.
- * Features arc-based trajectory dispersion, organic micro-staggering, and guaranteed DOM cleanup.
+ * Features arc-based trajectory dispersion, FIFO active particle ceiling, and idle memory compaction.
  */
 const HEART_PALETTE = [
   "#ef4444", // Crimson Red
@@ -19,6 +20,32 @@ const HEART_PALETTE = [
   "#fbbf24", // Golden Yellow
 ];
 
+const MAX_ACTIVE_PARTICLES = 24;
+const activeParticles: HTMLElement[] = [];
+let cachedHeartTemplate: HTMLElement | null = null;
+let idleTrimTimer: number | null = null;
+
+function getHeartTemplate(): HTMLElement {
+  if (!cachedHeartTemplate) {
+    cachedHeartTemplate = document.createElement("span");
+    cachedHeartTemplate.className = "sprouting-heart-particle";
+    cachedHeartTemplate.innerHTML = icons.heart;
+  }
+  return cachedHeartTemplate;
+}
+
+function scheduleIdleTrim(): void {
+  if (idleTrimTimer !== null) {
+    window.clearTimeout(idleTrimTimer);
+  }
+  idleTrimTimer = window.setTimeout(() => {
+    if (activeParticles.length === 0) {
+      invoke("trim_memory").catch(() => {});
+    }
+    idleTrimTimer = null;
+  }, 1500);
+}
+
 function spawnSingleHeart(
   containerEl: HTMLElement,
   originX: number,
@@ -26,9 +53,15 @@ function spawnSingleHeart(
   index: number,
   total: number
 ): void {
-  const particle = document.createElement("span");
-  particle.className = "sprouting-heart-particle";
-  particle.innerHTML = icons.heart;
+  // Enforce FIFO ceiling: retire oldest particle if spamming exceeds cap
+  if (activeParticles.length >= MAX_ACTIVE_PARTICLES) {
+    const oldest = activeParticles.shift();
+    if (oldest && oldest.parentElement) {
+      oldest.remove();
+    }
+  }
+
+  const particle = getHeartTemplate().cloneNode(true) as HTMLElement;
 
   // Arc-based trajectory dispersion so multi-particle bursts fan out gracefully
   let driftX: number;
@@ -62,12 +95,18 @@ function spawnSingleHeart(
   particle.style.setProperty("--sprout-glow-col", color);
 
   containerEl.appendChild(particle);
+  activeParticles.push(particle);
 
   const cleanup = () => {
     particle.removeEventListener("animationend", cleanup);
+    const idx = activeParticles.indexOf(particle);
+    if (idx !== -1) {
+      activeParticles.splice(idx, 1);
+    }
     if (particle.parentElement) {
       particle.remove();
     }
+    scheduleIdleTrim();
   };
 
   particle.addEventListener("animationend", cleanup);
