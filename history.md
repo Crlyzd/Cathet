@@ -99,3 +99,16 @@ This document serves as the living project documentation and institutional memor
 - **Summary**: Upgraded heart sprout controller to dynamically spawn a randomized burst of 1, 2, or 3 hearts per click. Implemented arc-based trajectory dispersion (left bias, center fountain, and right bias) and 40ms organic micro-staggering so multi-particle clusters blossom outward like a bouquet without clumping.
 - **Files Modified**:
   - `src-ui/src/utils/heartSprout.ts`: Refactored to `spawnSingleHeart` with arc-based trajectory dispersion and micro-staggered loop over 1 to 3 random particles (kept at 117 lines, < 250 limit).
+
+### 2026-10-17: Universal Window Lifecycle Memory Compaction & Particle GPU Optimization
+- **Summary**: Extended background working set compaction to all windows on blur, automated memory compaction upon Settings window closure, added a FIFO active particle ceiling (24) with pre-parsed template cloning in `heartSprout.ts`, added debounced idle memory compaction after burst animations, and promoted heart particles to isolated GPU compositor layers (`will-change`, `contain: layout style`) with optimized glow radius in CSS.
+- **Files Modified**:
+  - `src-tauri/src/lib.rs`: Broadened `on_window_event` `Focused(false)` to compact memory on any window blur; added 250ms delayed memory trimming upon Settings window destruction.
+  - `src-ui/src/utils/heartSprout.ts`: Added template element caching, FIFO particle ceiling (`MAX_ACTIVE_PARTICLES = 24`), and debounced 1.5s idle memory trimming hook (`invoke("trim_memory")`) after particle bursts.
+  - `src-ui/styles/settings.css`: Added `will-change: transform, opacity;`, `contain: layout style;`, `backface-visibility: hidden;`, and optimized `drop-shadow` blur from 5px to 3px to eliminate redundant GPU rasterization passes.
+
+### 2026-10-17: Bidirectional Markdown Edit/Preview Scroll Position Preservation
+- **Summary**: Resolved viewport jump to top on `Ctrl+M` toggle by implementing proportional scroll ratio synchronization. Created modular `scrollSync.ts` to capture and restore normalized scroll ratios across mode switches with immediate and `requestAnimationFrame` passes, and applied non-scrolling focus (`focus({ preventScroll: true })`) in Edit mode.
+- **Files Modified / Added**:
+  - `src-ui/src/utils/scrollSync.ts`: Created utility for bidirectional scroll ratio capture and restoration (27 lines).
+  - `src-ui/src/components/Editor.ts`: Integrated scroll capture/restoration and non-scrolling focus in `toggleMarkdownPreview()` (preserved at 248 lines, strictly adhering to < 250 limit).
