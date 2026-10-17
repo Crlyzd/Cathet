@@ -31,6 +31,7 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
      - Theme selector (Dark / Light).
      - Font selector (Noto Sans, Roboto, Cascadia Code, Consolas, Segoe UI, Inter, JetBrains Mono, Fira Code, Arial).
      - Stay on Top pin toggle (`Ctrl+T`) and Word Wrap toggle.
+     - Markdown Preview default toggle (`previewService.ts`) to open documents directly in rendered preview mode, while keeping blank scratchpads in immediate edit mode.
      - Windows default file association (`.txt`, `.md`) and Explorer context menu integration with automatic portable `.exe` self-healing.
      - In-app interactive offline guide (`tutorial.md`) button with direct markdown preview loader.
      - Automatic memory trimming on startup and focus loss.
@@ -49,14 +50,37 @@ Welcome to **Cathet** (formerly CleanPad), a sleek, ultra-lightweight, portable 
 10. **Dual-Window Architecture & Modular Layout**:
    - **Main Editor**: `index.html` mounted by `src-ui/src/main.ts`, powered by `Editor.ts`, `TopBar.ts`, `PopupMenu.ts`, `ContextMenu.ts`, `GlassDialog.ts`, and `DropOverlay.ts`.
    - **Settings Window**: `settings.html` mounted by `src-ui/src/settingsMain.ts`, powered by `SettingsTabs.ts` and its subpanes (`SettingsPane.ts`, `AboutPane.ts`, `FontSelect.ts`), alongside `SettingsMenu.ts`.
-   - **Modular Services**: `associationService.ts`, `dragDropService.ts`, `fileService.ts`, `fontService.ts`, `themeService.ts`, `updateService.ts`, `windowService.ts`.
+   - **Modular Services**: `associationService.ts`, `dragDropService.ts`, `fileService.ts`, `fontService.ts`, `previewService.ts`, `themeService.ts`, `updateService.ts`, `windowService.ts`.
    - **Modular Utilities**: `base64Fold.ts`, `brokenImageFallback.ts`, `contextMenuItems.ts`, `editorPasteHandler.ts`, `eventBus.ts`, `htmlToMarkdown.ts`, `imageOptimizer.ts`, `imagePathResolver.ts`, `markdown.ts`, `markdownSanitizer.ts`, `monochromeIcons.ts`, `pathUtils.ts`, `shortcuts.ts`.
    - **Modular Backend**: `src-tauri/src/commands/` split into `association.rs`, `file.rs`, `memory.rs`, `migration.rs`, `updater.rs`, `vibrancy.rs`, and `window.rs`. State managed via `state.rs`.
-11. **Release Notes Scoping & Tag Isolation**:
-   - When drafting release notes for any release, agents must **never** include features, bug fixes, or architectural changes that were already released and documented in prior release notes/tags.
-   - Release notes must strictly reflect only the exact git diff between the immediate prior release tag and the target tag (`git log <prev-tag>..<target-tag>`).
+11. **Release Notes Standard**:
+   - **Storage Location**: NEVER write release notes inside the project repository folder. ALWAYS write them to a dedicated markdown artifact in the conversation artifacts directory (`<appDataDir>\brain\<conversation-id>\...`).
+   - **Styling Restrictions**:
+     - NEVER use `>` blockquote formatting anywhere in release notes.
+     - NEVER use emojis anywhere in release notes.
+   - **Scope Isolation**: NEVER include any changes, bug fixes, or features already covered in previous release notes. Strictly isolate changes to the exact git diff between the immediate prior release tag and the target tag (`git log <prev-tag>..<target-tag>`).
+   - **Tone & Content**: Use objective, highly professional language without marketing hype. Technical depth and comprehensive detail are preferred. Do NOT include download links.
+   - **Mandatory Format**:
+     - Title
+     - Target of the change / release note
+     - Summary of the change
+     - Detailed breakdown: what changed, why the change was made, bug fixing (if any), technical details, and the list of git commits covered by the release note.
 12. **Architect Plan Artifact Standard**:
    - When operating as `/architect` (or generating architectural plans and change strategies), full detailed step-by-step plans must ALWAYS be written to a dedicated artifact file in the artifacts directory (`<appDataDir>\brain\<conversation-id>\...`) rather than dumped directly into the chat window. Chat responses must remain concise, summarizing the core findings and linking directly to the artifact.
+13. **Project History & Mistake Prevention Log (`history.md`)**:
+   - `history.md` located in the project root serves as the authoritative project changelog and institutional memory.
+   - **Code Change Logging**: Every time agents change code, agents MUST append an entry to `history.md` summarizing the gist of what was changed and the affected files.
+   - **Mistake Logging**: When an agent makes a mistake or receives user corrective feedback (e.g. "don't do this", "this isn't what I expected", "I never told you to do this", or similar corrections), the agent MUST immediately log the mistake in `history.md` tagged as `[Mistake]` documenting the context, user feedback, and concrete corrective guardrail to prevent recurrence.
+   - **Mandatory Pre-Planning Check**: Every time agents formulate an implementation plan (`/architect`, `/orchestrator`, or any task planning), agents MUST read `history.md` first to integrate past lessons and avoid known pitfalls.
+14. **Grouped & Staged Git Commits Standard**:
+   - When the user asks for commit messages or to commit changes:
+     1. Inspect the waiting list / untracked / modified files using `git status` and `git diff`.
+     2. Categorize and group files by similarity / logical subsystem (e.g., UI components, backend commands, services/state, configuration).
+     3. Stage each group independently using `git add <files>`.
+     4. Compose a structured commit message for each group:
+        - Granular bullet points documenting each change in each file in the group (`- adjust UI bla bla`).
+        - A broader summary message describing the overall batch intent at that specific time.
+     5. Execute the `git commit` command directly so the user does not have to type it manually. The user inspects the commits after execution.
 
 ---
 
