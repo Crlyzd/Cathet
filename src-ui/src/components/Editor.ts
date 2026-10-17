@@ -15,23 +15,29 @@ export class EditorComponent {
   private isMarkdownPreview: boolean = false;
   private rawContent: string = "";
   private documentPath: string | null = null;
+  private wheelHandler = (e: WheelEvent) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      this.adjustZoom(e.deltaY < 0 ? 10 : -10);
+    }
+  };
 
-  constructor(containerId: string) {
-    const el = document.getElementById(containerId);
-    if (!el) throw new Error(`Container #${containerId} not found.`);
+  constructor(container: string | HTMLElement) {
+    const el = typeof container === "string" ? document.getElementById(container) : container;
+    if (!el) throw new Error(`Container ${container} not found.`);
     this.container = el;
     this.render();
   }
 
   private render(): void {
     this.container.innerHTML = `
-      <div class="editor-wrapper" id="editor-wrapper">
-        <div class="editor-content" id="cathet-editor" contenteditable="true" spellcheck="false"></div>
+      <div class="editor-wrapper">
+        <div class="editor-content" contenteditable="true" spellcheck="false"></div>
       </div>
     `;
 
-    this.wrapperEl = document.getElementById("editor-wrapper")!;
-    this.editorEl = document.getElementById("cathet-editor")!;
+    this.wrapperEl = this.container.querySelector(".editor-wrapper")!;
+    this.editorEl = this.container.querySelector(".editor-content")!;
     this.bindEvents();
   }
 
@@ -47,13 +53,7 @@ export class EditorComponent {
     });
 
     // Ctrl + MouseWheel Zooming
-    window.addEventListener("wheel", (e: WheelEvent) => {
-      if (e.ctrlKey) {
-        e.preventDefault();
-        const delta = e.deltaY < 0 ? 10 : -10;
-        this.adjustZoom(delta);
-      }
-    }, { passive: false });
+    window.addEventListener("wheel", this.wheelHandler, { passive: false });
 
     // Click on links in Markdown preview
     this.editorEl.addEventListener("click", (e: MouseEvent) => {
@@ -83,6 +83,9 @@ export class EditorComponent {
     this.editorEl.style.fontSize = `${14 * (this.zoomLevel / 100)}px`;
   }
 
+  getWrapperEl(): HTMLElement { return this.wrapperEl; }
+  getEditorEl(): HTMLElement { return this.editorEl; }
+  destroy(): void { window.removeEventListener("wheel", this.wheelHandler); }
   setFontFamily(family: string): void { this.editorEl.style.fontFamily = family; }
   setDocumentPath(path: string | null): void { this.documentPath = path; }
   getIsMarkdownPreview(): boolean { return this.isMarkdownPreview; }
@@ -167,18 +170,8 @@ export class EditorComponent {
     this.editorEl.focus();
   }
 
-  setWordWrap(enabled: boolean): void {
-    if (enabled) {
-      this.editorEl.classList.remove("no-wrap");
-    } else {
-      this.editorEl.classList.add("no-wrap");
-    }
-  }
-
-  isWordWrapEnabled(): boolean {
-    return !this.editorEl.classList.contains("no-wrap");
-  }
-
+  setWordWrap(enabled: boolean): void { this.editorEl.classList.toggle("no-wrap", !enabled); }
+  isWordWrapEnabled(): boolean { return !this.editorEl.classList.contains("no-wrap"); }
   toggleWordWrap(): boolean {
     const newState = !this.isWordWrapEnabled();
     this.setWordWrap(newState);

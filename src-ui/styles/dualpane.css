@@ -1,0 +1,306 @@
+/* ============================================================
+   dualpane.css — Dual Pane Side-by-Side Frosted Glass Layout
+   ============================================================ */
+
+.dualpane-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: calc(100vh - var(--top-bar-height));
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  background: transparent;
+}
+
+/* Individual Pane Containers */
+.dualpane-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.dualpane-pane-left {
+  flex: 0 0 50%;
+}
+
+.dualpane-pane-right {
+  flex: 1 1 0%;
+}
+
+/* Pane Header Strip */
+.dualpane-header {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--col-divider-subtle);
+  background: var(--col-card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 11.5px;
+  user-select: none;
+  -webkit-user-select: none;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.dualpane-pane.active-pane .dualpane-header {
+  border-bottom-color: var(--col-accent);
+}
+
+.dualpane-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dualpane-title {
+  color: var(--col-text-muted);
+  font-weight: 550;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.2px;
+}
+
+.dualpane-pane.active-pane .dualpane-title {
+  color: var(--col-text);
+}
+
+.dualpane-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--col-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+[data-theme="light"] .dualpane-badge {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+/* Header Action Buttons */
+.dualpane-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.dualpane-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 2px 7px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--col-border);
+  color: var(--col-text-muted);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 10.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.dualpane-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--col-text);
+  border-color: var(--col-accent);
+}
+
+.dualpane-btn.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--col-accent);
+  color: var(--col-accent);
+}
+
+.dualpane-btn.btn-close:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+[data-theme="light"] .dualpane-btn {
+  background: rgba(15, 23, 42, 0.05);
+}
+
+[data-theme="light"] .dualpane-btn:hover {
+  background: rgba(15, 23, 42, 0.09);
+}
+
+/* Editor Host in Dual Pane */
+.dualpane-editor-host {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.dualpane-editor-host .editor-wrapper {
+  height: 100%;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Frosted Draggable Splitter */
+.dualpane-splitter {
+  width: 10px;
+  margin: 0 -4px;
+  cursor: col-resize;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 50;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.dualpane-splitter:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+  z-index: 1;
+}
+
+.dualpane-splitter-line {
+  width: 1px;
+  flex: 1;
+  background: var(--col-divider-subtle);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dualpane-splitter:hover .dualpane-splitter-line,
+.dualpane-splitter.dragging .dualpane-splitter-line {
+  background: var(--col-accent);
+  box-shadow: 0 0 6px var(--col-accent);
+}
+
+/* Sync Scroll Lock Badge on Splitter */
+.dualpane-sync-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--col-menu-bg);
+  border: 1px solid var(--col-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: var(--col-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: all 0.15s ease;
+  outline: none;
+  padding: 0;
+}
+
+.dualpane-sync-badge:hover {
+  transform: scale(1.12);
+  border-color: var(--col-accent);
+  color: var(--col-text);
+}
+
+.dualpane-sync-badge.active {
+  border-color: var(--col-accent);
+  color: var(--col-accent);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+}
+
+/* Empty Pane Dropzone Placeholder */
+.dualpane-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  user-select: none;
+}
+
+.dualpane-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 32px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--col-border);
+  background: var(--col-card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  max-width: 260px;
+}
+
+.dualpane-empty-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--col-text-muted);
+}
+
+.dualpane-empty-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--col-text);
+}
+
+.dualpane-empty-desc {
+  font-size: 11px;
+  color: var(--col-text-muted);
+  line-height: 1.4;
+}
+
+.dualpane-empty-btn {
+  margin-top: 4px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  background: var(--col-menu-sel);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.dualpane-empty-btn:hover {
+  filter: brightness(1.15);
+}
+
+.dualpane-empty-btn:active {
+  transform: scale(0.97);
+}
