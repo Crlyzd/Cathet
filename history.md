@@ -131,3 +131,29 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/src/main.ts`: Wired `DualPaneService` and `DualPaneView` with spatial drop routing (250 lines).
   - `index.html`: Linked `dualpane.css` stylesheet (33 lines).
 
+### 2026-10-18: Dual Pane UI Refinements, Monochrome Icons & Offset Scroll Sync
+- **Summary**: Refined Dual Pane mode based on user testing and UI feedback:
+  1. Replaced OS folder emoji with theme-adaptive monochrome SVG folder icon (`currentColor`).
+  2. Removed appended checkmark (`✓`) on the Markdown Preview toggle button while retaining active state styling.
+  3. Redesigned scroll sync lock toggle with frosted glass pill badge and monochrome SVG `link`/`unlink` icons instead of emojis.
+  4. Implemented offset-based scroll sync with a user-configurable "Dual Pane Snap Scroll" toggle in Settings:
+     - When OFF (default): re-locking preserves current scroll positions and synchronizes proportionally with relative ratio offset ($\Delta \text{ratio}$).
+     - When ON: re-locking snaps the follower pane back to a 1:1 match with the driver pane.
+  5. Fixed Pane 1 preview button highlight bug on initial open when "Markdown Preview" default toggle is enabled.
+  6. Resolved squished-window layout wrapping in TopBar drag area and added container queries to hide header pills on narrow widths.
+- **Files Modified**:
+  - `src-ui/src/utils/monochromeIcons.ts`: Added SVG `folder`, `link`, and `unlink` icons (149 lines).
+  - `src-ui/src/components/dualpane/DualPaneHeader.ts`: Replaced folder emoji with monochrome SVG, removed `✓` from preview button (81 lines).
+  - `src-ui/src/components/dualpane/DualPaneSplitter.ts`: Integrated SVG link/unlink icons with active state classes (109 lines).
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Synchronized initial Left Pane preview active state, exposed `setLeftPreviewActive` and `setSnapScroll` (219 lines).
+  - `src-ui/src/utils/syncScrollController.ts`: Added ratio offset calculation, `snapScroll` mode, and continuous offset-preserved scroll synchronization (140 lines).
+  - `src-ui/src/services/dualPaneService.ts`: Added `snapScroll` state and `localStorage` persistence (76 lines).
+  - `src-ui/src/components/settings/SettingsPane.ts`: Added "Dual Pane Snap Scroll" setting toggle and event bindings (241 lines).
+  - `src-ui/src/components/SettingsTabs.ts`: Passed `snapScroll` through initial state and callbacks (193 lines).
+  - `src-ui/src/settingsMain.ts`: Wired `snapScroll` state synchronization and cross-window event emissions (270 lines).
+  - `src-ui/src/utils/windowSync.ts`: Added `onSnapScrollChanged` event listener (54 lines).
+  - `src-ui/src/main.ts`: Subscribed to `snapScroll` cross-window updates and synchronized Left Pane preview highlight on file load (248 lines).
+  - `src-ui/styles/topbar.css`: Prevented multi-line file title wrapping on narrow viewports (128 lines).
+  - `src-ui/styles/dualpane.css`: Sized SVG folder, styled redesigned `.dualpane-sync-badge`, added flex ellipsis rules, and container queries for badge hiding (340 lines).
+
+
