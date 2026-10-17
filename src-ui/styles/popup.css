@@ -104,6 +104,43 @@
   color: #ffffff;
 }
 
+/* Active mode items (Dual Pane, Markdown Preview) */
+.popup-menu-item.active {
+  font-weight: 550;
+  color: var(--col-accent);
+  background: rgba(56, 189, 248, 0.12);
+  box-shadow: inset 3px 0 0 var(--col-accent);
+}
+
+[data-theme="light"] .popup-menu-item.active {
+  color: var(--col-accent);
+  background: rgba(2, 132, 199, 0.08);
+  box-shadow: inset 3px 0 0 var(--col-accent);
+}
+
+.popup-menu-item.active .shortcut-hint {
+  color: var(--col-accent);
+  opacity: 0.85;
+}
+
+.popup-menu-item.active:hover {
+  background: var(--col-menu-sel);
+  color: #ffffff;
+}
+
+.popup-menu-item.active:hover .shortcut-hint {
+  color: rgba(255, 255, 255, 0.85);
+  opacity: 1;
+}
+
+/* Disabled items (e.g. Save when up-to-date) */
+.popup-menu-item.disabled {
+  opacity: 0.42;
+  cursor: default;
+  pointer-events: none;
+  color: var(--col-text-muted);
+}
+
 .popup-divider {
   height: 1px;
   background-color: var(--col-border);

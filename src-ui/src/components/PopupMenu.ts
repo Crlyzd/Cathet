@@ -4,6 +4,8 @@ export interface MenuItem {
   shortcut?: string;
   badge?: string;
   isGlowing?: boolean;
+  isActive?: boolean;
+  disabled?: boolean;
   isDivider?: boolean;
   action?: () => void;
 }
@@ -32,8 +34,10 @@ export class PopupMenuComponent {
                 return '<div class="popup-divider"></div>';
               }
               const glowClass = item.isGlowing ? " glow-update" : "";
+              const activeClass = item.isActive ? " active" : "";
+              const disabledClass = item.disabled ? " disabled" : "";
               return `
-                <div class="popup-menu-item${glowClass}" data-id="${item.id}">
+                <div class="popup-menu-item${glowClass}${activeClass}${disabledClass}" data-id="${item.id}">
                   <span class="item-label">${item.label}</span>
                   ${item.badge ? `<span class="badge-tag">${item.badge}</span>` : ""}
                   ${item.shortcut ? `<span class="shortcut-hint">${item.shortcut}</span>` : ""}
@@ -56,6 +60,7 @@ export class PopupMenuComponent {
         e.stopPropagation();
         const id = (el as HTMLElement).dataset.id;
         const matched = items.find((i) => i.id === id);
+        if (matched?.disabled) return;
         if (matched?.action) {
           matched.action();
         }
