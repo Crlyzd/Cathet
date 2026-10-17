@@ -186,6 +186,7 @@ export class SettingsTabsComponent {
   public destroy(): void {
     this.settingsPane?.destroy();
     this.settingsPane = null;
+    this.aboutPane?.destroy();
     this.aboutPane = null;
   }
 }

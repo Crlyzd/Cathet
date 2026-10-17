@@ -185,6 +185,11 @@ export class SettingsPaneComponent {
     }
 
     this.bindEvents();
+    if (this.state.updateAvailable || this.state.downloadState === "ready") {
+      requestAnimationFrame(() => {
+        this.container.scrollTo({ top: this.container.scrollHeight, behavior: "smooth" });
+      });
+    }
   }
 
   private bindEvents(): void {
