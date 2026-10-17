@@ -238,4 +238,6 @@ export class EditorComponent {
       console.error("Failed to read native clipboard:", err);
     }
   }
+
+  focus(): void { this.editorEl.focus(); }
 }

@@ -7,6 +7,7 @@ import { SyncScrollController } from "../../utils/syncScrollController";
 export interface DualPaneCallbacks {
   onOpenLeft: () => void;
   onOpenRight: () => void;
+  onNewRight?: () => void;
   onCloseDualPane: () => void;
   onActivePaneChange: (pane: "left" | "right") => void;
   onTitleChange: () => void;
@@ -171,7 +172,10 @@ export class DualPaneView {
     this.headerRight.setTitle("Empty");
     this.headerRight.setPreviewActive(false);
 
-    this.emptyDropzone = new DualPaneEmptyDropzone(() => this.callbacks.onOpenRight());
+    this.emptyDropzone = new DualPaneEmptyDropzone({
+      onOpen: () => this.callbacks.onOpenRight(),
+      onNew: () => this.callbacks.onNewRight?.(),
+    });
     this.rightHostEl.appendChild(this.emptyDropzone.getElement());
   }
 
@@ -202,6 +206,10 @@ export class DualPaneView {
     }
     const splitterRect = this.splitter.getElement().getBoundingClientRect();
     return position.x < splitterRect.left ? "left" : "right";
+  }
+
+  getSplitterPosition(): number {
+    return this.splitter.getElement().getBoundingClientRect().left;
   }
 
   destroy(): void {

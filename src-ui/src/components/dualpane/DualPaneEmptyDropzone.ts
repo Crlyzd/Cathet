@@ -1,10 +1,15 @@
+export interface DualPaneEmptyCallbacks {
+  onOpen: () => void;
+  onNew: () => void;
+}
+
 /**
  * DualPaneEmptyDropzone — Placeholder view when the secondary pane is empty.
  */
 export class DualPaneEmptyDropzone {
   private element: HTMLElement;
 
-  constructor(onOpen: () => void) {
+  constructor(callbacks: DualPaneEmptyCallbacks) {
     this.element = document.createElement("div");
     this.element.className = "dualpane-empty";
     this.element.innerHTML = `
@@ -17,19 +22,32 @@ export class DualPaneEmptyDropzone {
         </svg>
         <span class="dualpane-empty-title">Secondary Document</span>
         <span class="dualpane-empty-desc">Drop a text or markdown file here, or choose an existing document.</span>
-        <button class="dualpane-empty-btn" id="dualpane-empty-browse-btn">Open Document...</button>
+        <div class="dualpane-empty-actions">
+          <button class="dualpane-empty-btn dualpane-empty-btn-primary" id="dualpane-empty-new-btn" title="New Document">
+            <span class="dualpane-empty-btn-full">+ New Document</span>
+            <span class="dualpane-empty-btn-compact">+ New</span>
+          </button>
+          <button class="dualpane-empty-btn dualpane-empty-btn-secondary" id="dualpane-empty-browse-btn" title="Open Document...">
+            <span class="dualpane-empty-btn-full">Open Document...</span>
+            <span class="dualpane-empty-btn-compact">Open</span>
+          </button>
+        </div>
       </div>
     `;
 
-    const browseBtn = this.element.querySelector("#dualpane-empty-browse-btn");
-    browseBtn?.addEventListener("click", (e) => {
+    this.element.querySelector("#dualpane-empty-new-btn")?.addEventListener("click", (e) => {
       e.stopPropagation();
-      onOpen();
+      callbacks.onNew();
+    });
+
+    this.element.querySelector("#dualpane-empty-browse-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      callbacks.onOpen();
     });
 
     this.element.addEventListener("click", (e) => {
-      if ((e.target as HTMLElement).closest("#dualpane-empty-browse-btn")) return;
-      onOpen();
+      if ((e.target as HTMLElement).closest(".dualpane-empty-btn")) return;
+      callbacks.onNew();
     });
   }
 

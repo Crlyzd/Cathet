@@ -107,6 +107,18 @@ export class WindowService {
       console.error("Failed to close window:", err);
     }
   }
+
+  /**
+   * Enforces minimum window dimensions and auto-expands if currently smaller.
+   */
+  async setMinSize(width: number, height: number): Promise<void> {
+    try {
+      await invoke("set_window_min_size", { width, height });
+    } catch (err) {
+      console.error("Failed to set window min size:", err);
+    }
+  }
 }
+
 
 

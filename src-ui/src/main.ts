@@ -84,9 +84,7 @@ class CathetApp {
       onSaveAs: () => this.saveDocument(true),
       onNewWindow: () => this.windowService.openNewInstance(),
       onSettings: () => this.windowService.openSettingsWindow(),
-      onToggleAlwaysOnTop: async () => {
-        await emit("cathet:ontop-change", (this.isAlwaysOnTop = await this.windowService.toggleAlwaysOnTop()));
-      },
+      onToggleAlwaysOnTop: async () => { await emit("cathet:ontop-change", (this.isAlwaysOnTop = await this.windowService.toggleAlwaysOnTop())); },
       onToggleDualPane: () => this.toggleDualPane(),
       onToggleMarkdown: () => this.toggleMarkdown(),
       onToggleBold: () => this.getActiveEditor().toggleBold(),
@@ -94,10 +92,7 @@ class CathetApp {
       onToggleUnderline: () => this.getActiveEditor().toggleUnderline(),
       onSelectAll: () => this.getActiveEditor().selectAllClean(),
       onToggleWordWrap: () => this.getActiveEditor().toggleWordWrap(),
-      onSearchWeb: () => {
-        const t = this.getActiveEditor().getSelectedText().trim();
-        if (t) openUrl(`https://www.google.com/search?q=${encodeURIComponent(t)}`).catch(console.error);
-      },
+      onSearchWeb: () => { const t = this.getActiveEditor().getSelectedText().trim(); if (t) openUrl(`https://www.google.com/search?q=${encodeURIComponent(t)}`).catch(console.error); },
       onQuit: () => this.windowService.close(),
     });
 
@@ -113,11 +108,16 @@ class CathetApp {
   }
 
   private initDragDrop(): void {
+    const updateOverlay = (pos?: { x: number; y: number }) => {
+      if (!this.dualPaneView || !pos) this.dropOverlay.updateSpatialTarget(false);
+      else this.dropOverlay.updateSpatialTarget(true, this.dualPaneView.getSplitterPosition(), pos.x, window.innerWidth);
+    };
     this.dragDropService.init({
-      onDragStateChange: (dragging) => {
-        if (dragging) this.dropOverlay.show();
+      onDragStateChange: (dragging, pos) => {
+        if (dragging) { updateOverlay(pos); this.dropOverlay.show(); }
         else this.dropOverlay.hide();
       },
+      onDragOver: (pos) => updateOverlay(pos),
       onFileDrop: (filePath, pos) => {
         this.dropOverlay.hide();
         const pane = this.dualPaneView ? this.dualPaneView.handleSpatialDrop(pos) : "left";
@@ -135,14 +135,10 @@ class CathetApp {
       isMarkdownPreview: this.getActiveEditor().getIsMarkdownPreview(),
       isDualPane: this.dualPaneService.isDualPane(),
       hasUpdate: this.updateService.hasUpdate(),
-      onNewWindow: () => this.windowService.openNewInstance(),
-      onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
-      onSave: () => this.saveDocument(false),
-      onSaveAs: () => this.saveDocument(true),
-      onToggleDualPane: () => this.toggleDualPane(),
-      onToggleMarkdown: () => this.toggleMarkdown(),
-      onOpenSettings: () => this.windowService.openSettingsWindow(),
-      onQuit: () => this.windowService.close(),
+      onNewWindow: () => this.windowService.openNewInstance(), onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
+      onSave: () => this.saveDocument(false), onSaveAs: () => this.saveDocument(true),
+      onToggleDualPane: () => this.toggleDualPane(), onToggleMarkdown: () => this.toggleMarkdown(),
+      onOpenSettings: () => this.windowService.openSettingsWindow(), onQuit: () => this.windowService.close(),
     }));
   }
 
@@ -155,12 +151,14 @@ class CathetApp {
       this.dualPaneView = new DualPaneView(host, this.editor, {
         onOpenLeft: () => this.fetchAndApply(() => this.fileService.promptOpen(), "left"),
         onOpenRight: () => this.fetchAndApply(() => this.fileService.promptOpen(), "right"),
+        onNewRight: () => { this.dualPaneService.setRightPath(null); this.dualPaneView?.mountRightEditor("", null, false, this.fontService.getCurrentFont().family).focus(); this.topBar.setTitle(this.dualPaneService.getFormattedTitle()); },
         onCloseDualPane: () => this.toggleDualPane(),
         onActivePaneChange: (p) => this.dualPaneService.setActivePane(p),
         onTitleChange: () => this.topBar.setTitle(this.dualPaneService.getFormattedTitle()),
       });
       this.dualPaneView.setLeftTitle(this.currentFilePath?.split(/[/\\]/).pop() || "Untitled");
       this.dualPaneView.setSnapScroll(this.dualPaneService.getSnapScroll());
+      this.windowService.setMinSize(350, 350);
     } else {
       this.dualPaneService.setDualPane(false);
       this.dualPaneService.setRightPath(null);
@@ -169,6 +167,7 @@ class CathetApp {
       this.dualPaneView = null;
       host.innerHTML = "";
       host.appendChild(this.editor.getWrapperEl());
+      this.windowService.setMinSize(200, 300);
     }
     this.topBar.setTitle(this.dualPaneService.getFormattedTitle());
   }
