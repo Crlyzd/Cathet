@@ -6,8 +6,8 @@ use commands::association::{
     configure_default_app, get_association_status, self_heal_if_moved, unregister_default_app,
 };
 use commands::file::{
-    get_initial_file, init_cli_file, read_text_file, show_open_dialog, show_save_dialog,
-    write_text_file,
+    get_initial_file, init_cli_file, is_file_readonly, read_text_file, show_open_dialog,
+    show_save_dialog, write_text_file,
 };
 use commands::memory::trim_memory;
 use commands::updater::{
@@ -68,6 +68,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             read_text_file,
             write_text_file,
+            is_file_readonly,
             show_open_dialog,
             show_save_dialog,
             get_initial_file,

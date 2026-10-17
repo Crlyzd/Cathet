@@ -47,6 +47,12 @@ pub async fn write_text_file(path: String, content: String) -> Result<(), String
 }
 
 #[tauri::command]
+pub async fn is_file_readonly(path: String) -> Result<bool, String> {
+    let metadata = fs::metadata(&path).map_err(|e| e.to_string())?;
+    Ok(metadata.permissions().readonly())
+}
+
+#[tauri::command]
 pub async fn show_open_dialog(app_handle: AppHandle) -> Result<Option<FilePayload>, String> {
     let (tx, rx) = tokio::sync::oneshot::channel();
 
