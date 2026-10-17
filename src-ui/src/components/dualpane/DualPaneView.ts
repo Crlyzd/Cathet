@@ -54,6 +54,7 @@ export class DualPaneView {
       onTogglePreview: () => this.toggleLeftPreview(),
       onOpen: () => this.callbacks.onOpenLeft(),
     });
+    this.headerLeft.setPreviewActive(this.editorLeft.getIsMarkdownPreview());
     this.leftHostEl = document.createElement("div");
     this.leftHostEl.className = "dualpane-editor-host";
     this.leftPaneEl.appendChild(this.headerLeft.getElement());
@@ -137,6 +138,14 @@ export class DualPaneView {
 
   setRightTitle(title: string): void {
     this.headerRight.setTitle(title);
+  }
+
+  setLeftPreviewActive(active: boolean): void {
+    this.headerLeft.setPreviewActive(active);
+  }
+
+  setSnapScroll(enabled: boolean): void {
+    this.scrollSync.setSnapScroll(enabled);
   }
 
   toggleLeftPreview(): void {

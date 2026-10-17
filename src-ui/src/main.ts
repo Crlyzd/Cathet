@@ -61,13 +61,14 @@ class CathetApp {
       fontService: this.fontService,
       updateService: this.updateService,
       previewService: this.previewService,
-      onFontChanged: (font) => {
-        this.editor.setFontFamily(font);
-        this.dualPaneView?.getEditorRight()?.setFontFamily(font);
-      },
+      onFontChanged: (f) => { this.editor.setFontFamily(f); this.dualPaneView?.getEditorRight()?.setFontFamily(f); },
       onAlwaysOnTopChanged: (state) => { this.isAlwaysOnTop = state; },
       onUpdateAvailable: (available) => { this.topBar.setUpdateAvailable(available); },
       onLoadTutorial: () => this.loadTutorialDocument(),
+      onSnapScrollChanged: (state) => {
+        this.dualPaneService.setSnapScroll(state);
+        this.dualPaneView?.setSnapScroll(state);
+      },
     });
 
     this.registerShortcuts();
@@ -125,13 +126,8 @@ class CathetApp {
     });
   }
 
-  private targetPane(): "left" | "right" {
-    return this.dualPaneView ? this.dualPaneService.getActivePane() : "left";
-  }
-
-  private getActiveEditor(): EditorComponent {
-    return this.dualPaneView ? this.dualPaneView.getActiveEditor() : this.editor;
-  }
+  private targetPane(): "left" | "right" { return this.dualPaneView ? this.dualPaneService.getActivePane() : "left"; }
+  private getActiveEditor(): EditorComponent { return this.dualPaneView ? this.dualPaneView.getActiveEditor() : this.editor; }
 
   private openMainMenu(x: number, y: number): void {
     this.contextMenu.hide();
@@ -164,6 +160,7 @@ class CathetApp {
         onTitleChange: () => this.topBar.setTitle(this.dualPaneService.getFormattedTitle()),
       });
       this.dualPaneView.setLeftTitle(this.currentFilePath?.split(/[/\\]/).pop() || "Untitled");
+      this.dualPaneView.setSnapScroll(this.dualPaneService.getSnapScroll());
     } else {
       this.dualPaneService.setDualPane(false);
       this.dualPaneService.setRightPath(null);
@@ -200,6 +197,7 @@ class CathetApp {
       this.editor.loadDocument(res.content, res.path, preview);
       this.editor.setWordWrap(isWrap);
       this.dualPaneView?.setLeftTitle(name);
+      this.dualPaneView?.setLeftPreviewActive(preview);
     }
     this.topBar.setTitle(this.dualPaneService.getFormattedTitle());
   }
@@ -243,6 +241,7 @@ class CathetApp {
     this.dualPaneService.setLeftPath(null);
     this.editor.loadDocument(tutorialContent, null, true);
     this.editor.setWordWrap(true);
+    this.dualPaneView?.setLeftPreviewActive(true);
     this.topBar.setTitle("Cathet Tutorial.md");
   }
 }

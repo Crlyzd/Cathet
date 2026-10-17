@@ -1,3 +1,5 @@
+import { icons } from "../../utils/monochromeIcons";
+
 /**
  * DualPaneSplitter — Draggable frosted glass divider with sync scroll toggle button.
  */
@@ -24,7 +26,7 @@ export class DualPaneSplitter {
     this.element.innerHTML = `
       <div class="dualpane-splitter-line"></div>
       <button class="dualpane-sync-badge${initialSyncLocked ? " active" : ""}" title="Toggle Synchronized Scrolling">
-        <span class="sync-icon">${initialSyncLocked ? "🔗" : "🔓"}</span>
+        <span class="sync-icon">${initialSyncLocked ? icons.link : icons.unlink}</span>
       </button>
       <div class="dualpane-splitter-line"></div>
     `;
@@ -39,8 +41,8 @@ export class DualPaneSplitter {
 
   setSyncLocked(locked: boolean): void {
     this.syncBtn.classList.toggle("active", locked);
-    this.syncBtn.innerHTML = `<span class="sync-icon">${locked ? "🔗" : "🔓"}</span>`;
-    this.syncBtn.title = locked ? "Sync Scroll: Locked (Click to unlock)" : "Sync Scroll: Paused (Click to lock)";
+    this.syncBtn.innerHTML = `<span class="sync-icon">${locked ? icons.link : icons.unlink}</span>`;
+    this.syncBtn.title = locked ? "Sync Scroll: Locked (Click to pause sync)" : "Sync Scroll: Paused (Click to lock sync)";
   }
 
   private bindEvents(): void {

@@ -1,3 +1,5 @@
+import { icons } from "../../utils/monochromeIcons";
+
 export interface DualPaneHeaderOptions {
   title: string;
   badgeText?: string;
@@ -27,7 +29,7 @@ export class DualPaneHeader {
       </div>
       <div class="dualpane-actions">
         <button class="dualpane-btn btn-preview" title="Toggle Preview (Ctrl+M)">Preview</button>
-        <button class="dualpane-btn btn-open" title="Open Document...">📂</button>
+        <button class="dualpane-btn btn-open" title="Open Document...">${icons.folder}</button>
         ${options.showCloseBtn ? `<button class="dualpane-btn btn-close" title="Exit Dual Pane">✕</button>` : ""}
       </div>
     `;
@@ -52,7 +54,6 @@ export class DualPaneHeader {
 
   setPreviewActive(active: boolean): void {
     this.previewBtn.classList.toggle("active", active);
-    this.previewBtn.textContent = active ? "Preview ✓" : "Preview";
   }
 
   private bindEvents(options: DualPaneHeaderOptions): void {
