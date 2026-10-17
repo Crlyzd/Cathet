@@ -251,6 +251,11 @@ This document serves as the living project documentation and institutional memor
 - **Files Modified**:
   - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`: Updated button labels (62 lines).
 
+### 2026-10-18: README.md Documentation Synchronization for v5.0.0
+- **Summary**: Synchronized project README with the v5.0.0 feature set. Added Dual Pane side-by-side mode (`Ctrl+D`) to introductory highlights and fun features, inserted `Ctrl+D` into the shortcut cheat sheet, documented simultaneous dual drop targets with spatial targeting, added Windows Read-Only file protection details, and updated the Settings section with Markdown Preview default and Dual Pane Snap Scroll options.
+- **Files Modified**:
+  - `README.md`: Updated feature lists, shortcut cheat sheet, and settings descriptions (207 lines).
+
 
 
 

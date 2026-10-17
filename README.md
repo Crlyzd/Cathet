@@ -32,6 +32,7 @@ Standard Notepad feels plain and dated, while modern writing apps can feel heavy
 - 🍃 **Featherweight on Memory**: Uses a fraction of the RAM of typical text editors, keeping your PC cool, quiet, and fast.
 - 🎒 **100% Portable**: Just a single `.exe` file! No installer, no setup wizards, and no leftover clutter. Run it from your desktop or a USB drive.
 - 📝 **Everyday Notes or Markdown**: Use it for quick scratchpad thoughts, or press `Ctrl + M` to preview formatted Markdown with headers, bullet points, checklists, tables, links, and local or remote images.
+- 👥 **Dual Pane Side-by-Side (`Ctrl + D`)**: Work on two notes or markdown documents at once with proportional scroll synchronization, independent preview modes, and a draggable frosted glass splitter.
 - 📷 **Smart In-Memory Images**: Paste screenshots or images directly! Large clips are automatically optimized to WebP, and gigantic Base64 data URIs collapse into clean, interactive frosted glass badges.
 - 📶 **Works 100% Offline**: All fonts, styles, and an interactive tutorial guide are built right into the app—no internet connection needed.
 
@@ -53,6 +54,7 @@ No installation required! You can be up and running in under 10 seconds:
 
 ## 🌟 Fun Features You'll Actually Use
 
+- 👥 **Dual Pane Mode (`Ctrl + D`)**: Split your window into two side-by-side panes to compare notes, write drafts, or reference files simultaneously. Features proportional bidirectional scroll synchronization (preserving relative scroll offsets or snapping 1:1), independent Markdown preview toggles, and an interactive draggable splitter.
 - 📌 **Always on Top (`Ctrl + T`)**: Pin Cathet to stay on top while watching a YouTube video, attending a Zoom call, or browsing the web.
 - 🪟 **Frameless Window Controls**: Clean, built-in Minimize, Maximize, and Close buttons right in the header that look sleek and match Windows 11.
 - 📷 **In-Memory Image Optimization & Base64 Pills**: Paste any screenshot or picture (`Ctrl + V`). Clips over 500 KB are automatically downscaled and converted to WebP in memory, while massive Base64 strings in edit mode collapse into tidy, clickable frosted glass pills (`[ 📷 WEBP ~245 KB ▾ ]`).
@@ -63,7 +65,8 @@ No installation required! You can be up and running in under 10 seconds:
 - 🔤 **Handpicked Fonts**: Switch between beautiful, easy-to-read fonts (*Inter, Roboto, Cascadia Code, JetBrains Mono, Fira Code, Consolas, Segoe UI, Noto Sans, and Arial*).
 - 🖱️ **Sleek Right-Click Menu**: Custom rounded glass menu with quick shortcuts for Cut, Copy, Paste, and Word Wrap.
 - 🔍 **Instant Web Search (`Ctrl + E`)**: Highlight any word or sentence and press `Ctrl + E` to look it up on Google immediately.
-- 📂 **Drag & Drop Anything**: Drag any `.txt`, `.md`, or code file from your desktop straight into the window to read or edit.
+- 📂 **Drag & Drop Anything**: Drag any `.txt`, `.md`, or code file from your desktop straight into the window to read or edit. In Dual Pane mode, simultaneous dual drop targets light up beneath your cursor to show exactly which pane receives the file.
+- 🛡️ **Read-Only File Protection**: Automatically warns you if you attempt to save changes to a Windows read-only file, safely guiding you to "Save As..." to protect your work.
 - 🎯 **Set as Default App**: Make Cathet your default notepad with one click in Settings. If you ever move the file to a different folder, it automatically fixes itself!
 - 🔄 **One-Click Updates**: Cathet gently notifies you when a new update is out and updates seamlessly without breaking your shortcuts.
 
@@ -74,6 +77,7 @@ No installation required! You can be up and running in under 10 seconds:
 | What you want to do | Press |
 | :--- | :--- |
 | **Toggle Markdown Preview** | `Ctrl + M` |
+| **Toggle Dual Pane (side-by-side) mode** | `Ctrl + D` |
 | **Pin / Unpin window to stay on top** | `Ctrl + T` |
 | **Open Settings & Personalization** | `Ctrl + ,` *(or click the `●` dot in the top-left)* |
 | **New window** | `Ctrl + N` |
@@ -96,6 +100,8 @@ Click the circular dot (**`●`**) in the top-left corner (or press `Ctrl + ,`) 
 - **Appearance**: Switch between sleek Dark glass and bright Light glass.
 - **Typography**: Choose your favorite font family and preview how it looks.
 - **Window Controls**: Toggle persistent "Always on Top" pinning.
+- **Markdown Preview Default**: Choose whether files open directly in formatted preview mode while keeping blank scratchpads in immediate edit mode.
+- **Dual Pane Snap Scroll**: Choose whether scroll sync snaps to an exact 1:1 match or preserves relative proportional offsets between documents.
 - **Offline Tutorial**: Click **"Open Tutorial"** to explore markdown formatting and features directly in the editor.
 - **Default Application**: Register Cathet as your default text app with a single click.
 - **Updates**: Check for new releases with one click.
