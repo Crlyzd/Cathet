@@ -8,6 +8,7 @@ import { ThemeService } from "./services/themeService";
 import { UpdateService } from "./services/updateService";
 import { AssociationService, AssociationStatus } from "./services/associationService";
 import { PreviewService } from "./services/previewService";
+import { DualPaneService } from "./services/dualPaneService";
 import { APP_VERSION } from "./version";
 
 class SettingsApp {
@@ -16,6 +17,7 @@ class SettingsApp {
   private updateService = new UpdateService();
   private associationService = new AssociationService();
   private previewService = new PreviewService();
+  private dualPaneService = new DualPaneService();
   private tabsComponent: SettingsTabsComponent;
   private currentWindow = getCurrentWindow();
   private isAlwaysOnTop: boolean = false;
@@ -38,6 +40,7 @@ class SettingsApp {
         fontId: currentFont.id,
         isAlwaysOnTop: this.isAlwaysOnTop,
         alwaysPreview: this.previewService.getAlwaysPreview(),
+        snapScroll: this.dualPaneService.getSnapScroll(),
         fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
         updateAvailable: !!updateInfo?.update_available,
         latestVersion: updateInfo?.latest_version,
@@ -47,6 +50,7 @@ class SettingsApp {
         onFontChange: (fontId) => this.handleFontChange(fontId),
         onAlwaysOnTopChange: (enabled) => this.handleAlwaysOnTopChange(enabled),
         onAlwaysPreviewChange: (enabled) => this.handleAlwaysPreviewChange(enabled),
+        onSnapScrollChange: (enabled) => this.handleSnapScrollChange(enabled),
         onCheckUpdates: () => this.handleCheckUpdates(true),
         onStartDownload: () => this.handleStartDownload(),
         onInstallAndRestart: () => this.handleInstallAndRestart(),
@@ -99,6 +103,12 @@ class SettingsApp {
     this.previewService.setAlwaysPreview(enabled);
     this.tabsComponent.updateState({ alwaysPreview: enabled });
     await emit("cathet:always-preview-change", enabled);
+  }
+
+  private async handleSnapScrollChange(enabled: boolean): Promise<void> {
+    this.dualPaneService.setSnapScroll(enabled);
+    this.tabsComponent.updateState({ snapScroll: enabled });
+    await emit("cathet:snap-scroll-change", enabled);
   }
 
   private async syncAlwaysOnTop(): Promise<void> {
@@ -178,25 +188,11 @@ class SettingsApp {
   }
 
   private async initListeners(): Promise<void> {
-    await listen<"dark" | "light">("cathet:theme-change", (event) => {
-      this.applyTheme(event.payload);
-      this.tabsComponent.updateState({ theme: event.payload });
-    });
-
-    await listen<string>("cathet:font-change", (event) => {
-      this.fontService.setFont(event.payload);
-      this.tabsComponent.updateState({ fontId: event.payload });
-    });
-
-    await listen<boolean>("cathet:ontop-change", (event) => {
-      this.isAlwaysOnTop = event.payload;
-      this.tabsComponent.updateState({ isAlwaysOnTop: event.payload });
-    });
-
-    await listen<boolean>("cathet:always-preview-change", (event) => {
-      this.previewService.setAlwaysPreview(event.payload);
-      this.tabsComponent.updateState({ alwaysPreview: event.payload });
-    });
+    await listen<"dark" | "light">("cathet:theme-change", (e) => { this.applyTheme(e.payload); this.tabsComponent.updateState({ theme: e.payload }); });
+    await listen<string>("cathet:font-change", (e) => { this.fontService.setFont(e.payload); this.tabsComponent.updateState({ fontId: e.payload }); });
+    await listen<boolean>("cathet:ontop-change", (e) => { this.tabsComponent.updateState({ isAlwaysOnTop: (this.isAlwaysOnTop = e.payload) }); });
+    await listen<boolean>("cathet:always-preview-change", (e) => { this.previewService.setAlwaysPreview(e.payload); this.tabsComponent.updateState({ alwaysPreview: e.payload }); });
+    await listen<boolean>("cathet:snap-scroll-change", (e) => { this.dualPaneService.setSnapScroll(e.payload); this.tabsComponent.updateState({ snapScroll: e.payload }); });
 
     const resync = () => {
       this.syncAlwaysOnTop();

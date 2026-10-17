@@ -7,6 +7,7 @@ export interface SettingsPaneCallbacks {
   onFontChange: (fontId: string) => void;
   onAlwaysOnTopChange: (enabled: boolean) => void;
   onAlwaysPreviewChange: (enabled: boolean) => void;
+  onSnapScrollChange: (enabled: boolean) => void;
   onConfigureDefaultApp: () => Promise<void>;
   onUnregisterDefaultApp: () => Promise<void>;
   onCheckUpdates: () => Promise<void>;
@@ -19,6 +20,7 @@ export interface SettingsPaneState {
   fontId: string;
   isAlwaysOnTop: boolean;
   alwaysPreview: boolean;
+  snapScroll: boolean;
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;
@@ -57,20 +59,10 @@ export class SettingsPaneComponent {
 
   private getUpdateHtml(): string {
     if (this.state.downloadState === "downloading") {
-      return `
-        <div class="update-progress-wrap">
-          <div class="update-progress-track">
-            <div class="update-progress-fill" style="width: ${this.state.downloadPercent}%"></div>
-          </div>
-          <span class="update-progress-info">${this.state.downloadPercent.toFixed(0)}%</span>
-        </div>`;
+      return `<div class="update-progress-wrap"><div class="update-progress-track"><div class="update-progress-fill" style="width: ${this.state.downloadPercent}%"></div></div><span class="update-progress-info">${this.state.downloadPercent.toFixed(0)}%</span></div>`;
     }
-    if (this.state.downloadState === "ready") {
-      return `<button class="glass-btn update-ready" id="btn-restart-install">Restart & Install</button>`;
-    }
-    if (this.state.updateAvailable) {
-      return `<button class="glass-btn update-ready" id="btn-start-download">Download Update</button>`;
-    }
+    if (this.state.downloadState === "ready") return `<button class="glass-btn update-ready" id="btn-restart-install">Restart & Install</button>`;
+    if (this.state.updateAvailable) return `<button class="glass-btn update-ready" id="btn-start-download">Download Update</button>`;
     return `<button class="glass-btn" id="btn-check-updates">Check Updates</button>`;
   }
 
@@ -132,6 +124,18 @@ export class SettingsPaneComponent {
           </div>
           <label class="switch-control">
             <input type="checkbox" id="always-preview-checkbox" ${this.state.alwaysPreview ? "checked" : ""} />
+            <span class="switch-track"></span>
+          </label>
+        </div>
+
+        <!-- Dual Pane Snap Scroll Row -->
+        <div class="setting-item">
+          <div class="setting-meta">
+            <span class="setting-title">Dual Pane Snap Scroll</span>
+            <span class="setting-subtext">Snap follower pane on re-lock</span>
+          </div>
+          <label class="switch-control">
+            <input type="checkbox" id="snap-scroll-checkbox" ${this.state.snapScroll ? "checked" : ""} />
             <span class="switch-track"></span>
           </label>
         </div>
@@ -201,15 +205,14 @@ export class SettingsPaneComponent {
       if (this.state.theme !== "light") this.callbacks.onThemeChange("light");
     });
 
-    const ontopCheckbox = this.container.querySelector("#ontop-checkbox") as HTMLInputElement | null;
-    ontopCheckbox?.addEventListener("change", () => {
-      this.callbacks.onAlwaysOnTopChange(ontopCheckbox.checked);
-    });
-
-    const previewCheckbox = this.container.querySelector("#always-preview-checkbox") as HTMLInputElement | null;
-    previewCheckbox?.addEventListener("change", () => {
-      this.callbacks.onAlwaysPreviewChange(previewCheckbox.checked);
-    });
+    const bindCheck = (id: string, cb: (v: boolean) => void) => {
+      (this.container.querySelector(id) as HTMLInputElement | null)?.addEventListener("change", (e) => {
+        cb((e.target as HTMLInputElement).checked);
+      });
+    };
+    bindCheck("#ontop-checkbox", this.callbacks.onAlwaysOnTopChange);
+    bindCheck("#always-preview-checkbox", this.callbacks.onAlwaysPreviewChange);
+    bindCheck("#snap-scroll-checkbox", this.callbacks.onSnapScrollChange);
 
     const bindAsyncBtn = (id: string, action: () => Promise<void>) => {
       this.container.querySelector(id)?.addEventListener("click", async (e) => {

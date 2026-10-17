@@ -19,6 +19,7 @@ export interface SettingsInitialState {
   fontId: string;
   isAlwaysOnTop: boolean;
   alwaysPreview: boolean;
+  snapScroll: boolean;
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;
