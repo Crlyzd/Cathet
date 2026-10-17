@@ -296,10 +296,13 @@
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100%;
   display: none;
   align-items: center;
   justify-content: center;
-  background: var(--col-menu-bg);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   z-index: 900;
   opacity: 0;
   pointer-events: none;
@@ -307,12 +310,67 @@
   transform: scale(0.98);
 }
 
+[data-theme="light"] .cathet-drop-overlay {
+  background: rgba(255, 255, 255, 0.55);
+}
+
 .cathet-drop-overlay.active {
   display: flex;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
   opacity: 1;
   transform: scale(1);
+}
+
+.drop-overlay-single {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.drop-overlay-dual {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.drop-zone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 16px;
+  transition: opacity 0.15s ease;
+}
+
+.drop-zone-left {
+  left: 0;
+}
+
+.drop-zone.active-target .drop-overlay-content {
+  border: 1.5px dashed var(--col-accent);
+  background: var(--col-card-bg);
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.3), 0 8px 24px rgba(0, 0, 0, 0.22);
+  transform: scale(1.02);
+  opacity: 1;
+}
+
+.drop-zone.idle-target .drop-overlay-content {
+  border: 1.5px dashed var(--col-border);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: scale(0.95);
+  opacity: 0.55;
+}
+
+[data-theme="light"] .drop-zone.idle-target .drop-overlay-content {
+  background: rgba(15, 23, 42, 0.03);
 }
 
 .drop-overlay-content {
@@ -321,12 +379,15 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 24px 32px;
+  padding: 20px 24px;
   border-radius: 12px;
   border: 1.5px dashed var(--col-accent);
   background: var(--col-card-bg);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   pointer-events: none;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
 }
 
 [data-theme="light"] .drop-overlay-content {
@@ -337,7 +398,8 @@
   stroke: var(--col-accent);
 }
 
-.cathet-drop-overlay.active .drop-overlay-icon {
+.cathet-drop-overlay.active .active-target .drop-overlay-icon,
+.cathet-drop-overlay.active .drop-overlay-single .drop-overlay-icon {
   animation: pulseDrop 1.5s ease-in-out infinite;
 }
 
