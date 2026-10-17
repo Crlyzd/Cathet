@@ -40,6 +40,14 @@ This document serves as the living project documentation and institutional memor
   2. For verification, run fast, targeted synchronous checks (such as `npx tsc --noEmit`, which completes in ~1-2s within `WaitMsBeforeAsync`).
   3. If a command is ever pushed to the background, actively track it with a short-timeout watcher or manage it promptly, and explicitly clean up/kill the task once finished so the agent session releases the UI immediately and never blocks user inputs.
 
+### [Mistake] 2026-10-17: CSS Flexbox `min-height: auto` Blocking Settings Pane Scrolling
+- **Context**: Attempted to implement hidden-scrollbar vertical scrolling in the Settings pane by placing `overflow-y: auto` directly on `.settings-card` while `.settings-content` and `.tab-pane` retained default flex behavior with `overflow: visible`.
+- **User Correction**: *"this was unscroolable bruh"* (with screenshot showing 6th row clipped at window bottom and unscrollable).
+- **Root Cause**: In flexbox column layouts, children default to `min-height: auto`. Without `min-height: 0` on intermediate containers (`.settings-content` and `.tab-pane`), the flex children expand to accommodate all inner content (~264px), preventing `scrollHeight > clientHeight`. The container never overflows internally, so browser wheel scroll events are ignored, and `.settings-window { overflow: hidden }` clips the bottom instead.
+- **Corrective Guardrail**:
+  1. When making flex containers or their children scrollable in CSS, ALWAYS explicitly set `min-height: 0` and `overflow: hidden` on intermediate flex ancestors.
+  2. Put `overflow-y: auto` directly on the tab pane container (`#pane-settings`), allowing the card inside to have natural height (`height: auto; min-height: min-content;`). This guarantees `scrollHeight > clientHeight` and triggers native mouse wheel and touchpad scrolling instantly.
+
 ---
 
 ## Project Changes Log
@@ -62,3 +70,10 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/src/components/SettingsTabs.ts`: Extended `SettingsInitialState` and passed `alwaysPreview` state and callbacks.
   - `src-ui/src/settingsMain.ts`: Wired `PreviewService`, added `handleAlwaysPreviewChange` handler, and broadcast `cathet:always-preview-change` via Tauri events.
   - `src-ui/src/main.ts`: Subscribed to `cathet:always-preview-change` and storage sync; updated `applyLoadedFile` to call `loadDocument(content, path, shouldPreview)`.
+
+### 2026-10-17: Settings Window Compact Sizing, Hidden Scroll, & About Card Symmetry
+- **Summary**: Restored Settings window dimensions to original compact 350x318. Implemented vertical scrolling with hidden scrollbars in the Settings pane, and balanced the About card to eliminate the dead space underneath.
+- **Files Modified / Added**:
+  - `src-tauri/src/commands/window.rs`: Reverted Settings window inner dimensions to `350.0 x 318.0`.
+  - `src-ui/styles/settings.css`: Added hidden-scrollbar scrolling (`scrollbar-width: none`, `-ms-overflow-style: none`, `::-webkit-scrollbar { display: none }`) to `#pane-settings .settings-card`; added `height: 100%` and bottom anchoring (`margin-top: auto`) to `#pane-about .settings-card` and `.about-engine-meta`.
+  - `src-ui/src/components/settings/FontSelect.ts`: Added window/container scroll listener to automatically close open dropdown menus when scrolling.
