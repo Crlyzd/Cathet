@@ -112,3 +112,22 @@ This document serves as the living project documentation and institutional memor
 - **Files Modified / Added**:
   - `src-ui/src/utils/scrollSync.ts`: Created utility for bidirectional scroll ratio capture and restoration (27 lines).
   - `src-ui/src/components/Editor.ts`: Integrated scroll capture/restoration and non-scrolling focus in `toggleMarkdownPreview()` (preserved at 248 lines, strictly adhering to < 250 limit).
+
+### 2026-10-18: Dual Pane Mode with Proportional Bidirectional Scroll Synchronization
+- **Summary**: Implemented Dual Pane side-by-side mode allowing users to open, edit, and navigate two documents simultaneously with proportional bidirectional scroll synchronization. Decoupled `EditorComponent` for container-scoped instantiation, implemented `SyncScrollController` with normalized ratio tracking ($0.0 \to 1.0$) and recursion guard, built draggable frosted glass `DualPaneSplitter` with `🔗` lock toggle, created per-pane headers and placeholder dropzone, and integrated `DualPaneService` with spatial drag & drop and `Ctrl+D` shortcut support. Strictly maintained anti-monolith line limit standards across all files (< 250 lines).
+- **Files Modified / Added**:
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Created dual-pane layout and lifecycle manager (195 lines).
+  - `src-ui/src/components/dualpane/DualPaneSplitter.ts`: Created draggable divider and sync lock toggle component (108 lines).
+  - `src-ui/src/components/dualpane/DualPaneHeader.ts`: Created frosted glass per-pane header strip (82 lines).
+  - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`: Created secondary pane placeholder dropzone (44 lines).
+  - `src-ui/src/services/dualPaneService.ts`: Created dual-pane state and formatted window title service (58 lines).
+  - `src-ui/src/utils/syncScrollController.ts`: Created proportional scroll synchronizer with feedback loop guard (99 lines).
+  - `src-ui/src/utils/mainMenuItems.ts`: Created modular top-bar dot menu item generator (40 lines).
+  - `src-ui/src/utils/windowSync.ts`: Created cross-window synchronization listener utility (49 lines).
+  - `src-ui/styles/dualpane.css`: Created frosted glass styles with flexbox `min-height: 0` constraints (217 lines).
+  - `src-ui/src/components/Editor.ts`: Refactored to container-scoped class queries and accessors (242 lines).
+  - `src-ui/src/services/dragDropService.ts`: Added cursor coordinates support for spatial drop targeting (57 lines).
+  - `src-ui/src/utils/shortcuts.ts`: Added `Ctrl+D` shortcut handler for Dual Pane toggle (108 lines).
+  - `src-ui/src/main.ts`: Wired `DualPaneService` and `DualPaneView` with spatial drop routing (250 lines).
+  - `index.html`: Linked `dualpane.css` stylesheet (33 lines).
+
