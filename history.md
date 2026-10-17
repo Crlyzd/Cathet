@@ -77,3 +77,25 @@ This document serves as the living project documentation and institutional memor
   - `src-tauri/src/commands/window.rs`: Reverted Settings window inner dimensions to `350.0 x 318.0`.
   - `src-ui/styles/settings.css`: Added hidden-scrollbar scrolling (`scrollbar-width: none`, `-ms-overflow-style: none`, `::-webkit-scrollbar { display: none }`) to `#pane-settings .settings-card`; added `height: 100%` and bottom anchoring (`margin-top: auto`) to `#pane-about .settings-card` and `.about-engine-meta`.
   - `src-ui/src/components/settings/FontSelect.ts`: Added window/container scroll listener to automatically close open dropdown menus when scrolling.
+
+### 2026-10-17: Settings & About UI Enhancements
+- **Summary**: Implemented infinite glowing pulse on the update button with conditional auto-jump to bottom only when updates exist, relocated personal website link alongside a new GitHub link in a frosted glass capsule, created a spammable sprouting heart particle effect upon clicking the love icon, and added a neon hover glow on the Cathet brand icon and title in the About pane.
+- **Files Modified / Added**:
+  - `src-ui/src/utils/monochromeIcons.ts`: Added minimalist `github` and `globe` monochrome SVG icons.
+  - `src-ui/src/utils/heartSprout.ts`: Created modular particle spawning utility with drift, scale, and fade animations, plus tactile pop feedback and automatic DOM cleanup.
+  - `src-ui/src/components/settings/AboutPane.ts`: Refactored author row to styled text, added GitHub and Website links capsule, and wired up `attachHeartSprout`.
+  - `src-ui/src/components/settings/SettingsPane.ts`: Added conditional auto-scroll to the bottom triggered only when `updateAvailable` or `downloadState === "ready"` (strictly kept under 250 lines at 239 lines).
+  - `src-ui/src/components/SettingsTabs.ts`: Added proper lifecycle teardown for `aboutPane.destroy()`.
+  - `src-ui/styles/settings.css`: Upgraded update button to continuous `infinite` pulse animation in dark and light modes, added `.about-hero-header:hover` icon and text glow, added heart sprout keyframes, and styled the links capsule.
+
+### 2026-10-17: About Pane Symmetrical Row Alignment & Multi-Color Sprouting Hearts
+- **Summary**: Resolved visual capsule misalignment by restructuring the links and coffee rows with left-aligned labels (`Project Links` and `Buy me a coffee:`) and flush right-aligned frosted glass capsules (`justify-content: space-between`). Differentiated project links with clean neutral text and coffee links with warm amber tones. Upgraded the heart sprout particle system with a vibrant 11-color palette and a wide ±85px (170px total) horizontal spread with matching colored glow auras.
+- **Files Modified**:
+  - `src-ui/src/utils/heartSprout.ts`: Added `HEART_PALETTE`, expanded spread radius to ±85px, randomized upward velocity, and wired dynamic particle glow colors.
+  - `src-ui/src/components/settings/AboutPane.ts`: Refactored to `.about-row-aligned` containing left-aligned labels and flush right-aligned capsules (kept at 139 lines, < 250 limit).
+  - `src-ui/styles/settings.css`: Added `.about-row-aligned`, `.about-row-label`, `.project-icon-wrap`, `.link-project`, and updated `@keyframes sproutFloat`.
+
+### 2026-10-17: Sprouting Heart Cluster Burst (Random 1–3 Particles)
+- **Summary**: Upgraded heart sprout controller to dynamically spawn a randomized burst of 1, 2, or 3 hearts per click. Implemented arc-based trajectory dispersion (left bias, center fountain, and right bias) and 40ms organic micro-staggering so multi-particle clusters blossom outward like a bouquet without clumping.
+- **Files Modified**:
+  - `src-ui/src/utils/heartSprout.ts`: Refactored to `spawnSingleHeart` with arc-based trajectory dispersion and micro-staggered loop over 1 to 3 random particles (kept at 117 lines, < 250 limit).
