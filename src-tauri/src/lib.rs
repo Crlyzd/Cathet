@@ -45,18 +45,24 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            if window.label() == "main" {
-                match event {
-                    tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed => {
+            match event {
+                tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed => {
+                    if window.label() == "main" {
                         if let Some(settings_win) = window.app_handle().get_webview_window("settings") {
                             let _ = settings_win.destroy();
                         }
+                    } else if window.label() == "settings" {
+                        // Compact memory immediately once settings WebView2 resources are released
+                        tauri::async_runtime::spawn(async move {
+                            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+                            trim_memory();
+                        });
                     }
-                    tauri::WindowEvent::Focused(false) => {
-                        trim_memory();
-                    }
-                    _ => {}
                 }
+                tauri::WindowEvent::Focused(false) => {
+                    trim_memory();
+                }
+                _ => {}
             }
         })
         .invoke_handler(tauri::generate_handler![
