@@ -59,48 +59,52 @@ pub async fn show_open_dialog(app_handle: AppHandle) -> Result<Option<FilePayloa
     app_handle
         .dialog()
         .file()
-        .add_filter("Supported Text Files", FILTER_ALL_SUPPORTED)
-        .add_filter("Markdown Documents", FILTER_MARKDOWN)
-        .add_filter("Plain Text & Logs", FILTER_TEXT_LOGS)
-        .add_filter("Data & Config Files", FILTER_DATA_CONFIG)
-        .add_filter("Source Code & Scripts", FILTER_CODE)
-        .add_filter("All Files", FILTER_ALL)
+        .add_filter("All Supported Documents", FILTER_ALL_SUPPORTED)
+        .add_filter("Markdown (*.md)", FILTER_MARKDOWN)
+        .add_filter("Text & Logs (*.txt, *.log)", FILTER_TEXT_LOGS)
+        .add_filter("Data & Config (*.json, *.yaml, *.toml, ...)", FILTER_DATA_CONFIG)
+        .add_filter("Source Code (*.js, *.ts, *.rs, *.py, ...)", FILTER_CODE)
+        .add_filter("All Files (*.*)", FILTER_ALL)
         .pick_file(move |file_path| {
             let _ = tx.send(file_path);
         });
 
     let selected = rx.await.map_err(|e| e.to_string())?;
 
-    if let Some(path_buf) = selected {
-        let path_str = path_buf.to_string();
-        let payload = read_text_file(path_str).await?;
-        Ok(Some(payload))
+    if let Some(path) = selected {
+        let path_str = path.to_string();
+        read_text_file(path_str).await.map(Some)
     } else {
         Ok(None)
     }
 }
 
 #[tauri::command]
-pub async fn show_save_dialog(app_handle: AppHandle) -> Result<Option<String>, String> {
+pub async fn show_save_dialog(
+    app_handle: AppHandle,
+    default_name: Option<String>,
+) -> Result<Option<String>, String> {
     let (tx, rx) = tokio::sync::oneshot::channel();
 
-    app_handle
+    let mut builder = app_handle
         .dialog()
         .file()
-        .add_filter("Supported Text Files", FILTER_ALL_SUPPORTED)
-        .add_filter("Markdown Documents", FILTER_MARKDOWN)
-        .add_filter("Plain Text & Logs", FILTER_TEXT_LOGS)
-        .add_filter("Data & Config Files", FILTER_DATA_CONFIG)
-        .add_filter("Source Code & Scripts", FILTER_CODE)
-        .add_filter("All Files", FILTER_ALL)
-        .save_file(move |file_path| {
-            let _ = tx.send(file_path);
-        });
+        .add_filter("Markdown Document (*.md)", FILTER_MARKDOWN)
+        .add_filter("Plain Text (*.txt)", &["txt"])
+        .add_filter("All Files (*.*)", FILTER_ALL);
+
+    if let Some(name) = default_name {
+        builder = builder.set_file_name(&name);
+    }
+
+    builder.save_file(move |file_path| {
+        let _ = tx.send(file_path);
+    });
 
     let selected = rx.await.map_err(|e| e.to_string())?;
 
-    if let Some(path_buf) = selected {
-        Ok(Some(path_buf.to_string()))
+    if let Some(path) = selected {
+        Ok(Some(path.to_string()))
     } else {
         Ok(None)
     }
@@ -109,14 +113,13 @@ pub async fn show_save_dialog(app_handle: AppHandle) -> Result<Option<String>, S
 #[tauri::command]
 pub async fn get_initial_file(state: State<'_, AppState>) -> Result<Option<FilePayload>, String> {
     let path_opt = {
-        let mut guard = state.current_file_path.lock().map_err(|e| e.to_string())?;
-        guard.take()
+        let guard = state.current_file_path.lock().map_err(|e| e.to_string())?;
+        guard.clone()
     };
 
     if let Some(path_buf) = path_opt {
         let path_str = path_buf.to_string_lossy().to_string();
-        let payload = read_text_file(path_str).await?;
-        Ok(Some(payload))
+        read_text_file(path_str).await.map(Some)
     } else {
         Ok(None)
     }
@@ -157,9 +160,10 @@ pub fn init_cli_file(app: &App) {
         let state = app.state::<AppState>();
         if let Ok(mut guard) = state.current_file_path.lock() {
             *guard = Some(PathBuf::from(first_file));
-        }
+        };
 
-        // If multiple files were passed in a single CLI invocation, spawn companion instances
+        // If multiple files were passed in a single CLI invocation, spawn companion instances (desktop only)
+        #[cfg(desktop)]
         if file_args.len() > 1 {
             if let Ok(exe) = std::env::current_exe() {
                 for extra in &file_args[1..] {
@@ -169,4 +173,3 @@ pub fn init_cli_file(app: &App) {
         }
     }
 }
-

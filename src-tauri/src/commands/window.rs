@@ -1,4 +1,3 @@
-use std::process::Command;
 use std::sync::atomic::Ordering;
 use tauri::{AppHandle, Emitter, Manager, State, WebviewWindow};
 
@@ -12,9 +11,12 @@ pub async fn toggle_always_on_top(
     let current = state.is_always_on_top.load(Ordering::Relaxed);
     let new_state = !current;
 
+    #[cfg(desktop)]
     window
         .set_always_on_top(new_state)
         .map_err(|e| e.to_string())?;
+    #[cfg(not(desktop))]
+    let _ = &window;
 
     state.is_always_on_top.store(new_state, Ordering::Relaxed);
     Ok(new_state)
@@ -31,55 +33,70 @@ pub async fn set_always_on_top(
     state: State<'_, AppState>,
     enabled: bool,
 ) -> Result<bool, String> {
+    #[cfg(desktop)]
     if let Some(main_win) = app_handle.get_webview_window("main") {
         main_win
             .set_always_on_top(enabled)
             .map_err(|e| e.to_string())?;
     }
+    #[cfg(not(desktop))]
+    let _ = &app_handle;
+
     state.is_always_on_top.store(enabled, Ordering::Relaxed);
     Ok(enabled)
 }
 
 #[tauri::command]
 pub async fn open_new_instance(_app_handle: AppHandle) -> Result<(), String> {
-    let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    Command::new(current_exe)
-        .spawn()
-        .map_err(|e| e.to_string())?;
+    #[cfg(desktop)]
+    {
+        let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
+        std::process::Command::new(current_exe)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
 
 #[tauri::command]
 pub async fn open_settings_window(app_handle: AppHandle) -> Result<(), String> {
-    if let Some(win) = app_handle.get_webview_window("settings") {
-        let _ = win.unminimize();
-        let _ = win.show();
-        let _ = win.set_focus();
-        let _ = win.emit("cathet:settings-focused", ());
+    #[cfg(target_os = "android")]
+    {
+        let _ = app_handle.emit("cathet:open-settings-modal", ());
         return Ok(());
     }
+    #[cfg(not(target_os = "android"))]
+    {
+        if let Some(win) = app_handle.get_webview_window("settings") {
+            let _ = win.unminimize();
+            let _ = win.show();
+            let _ = win.set_focus();
+            let _ = win.emit("cathet:settings-focused", ());
+            return Ok(());
+        }
 
-    let win = tauri::WebviewWindowBuilder::new(
-        &app_handle,
-        "settings",
-        tauri::WebviewUrl::App("settings.html".into()),
-    )
-    .title("Cathet — Settings & About")
-    .inner_size(350.0, 318.0)
-    .resizable(false)
-    .maximizable(false)
-    .decorations(false)
-    .transparent(true)
-    .shadow(true)
-    .center()
-    .build()
-    .map_err(|e| e.to_string())?;
+        let win = tauri::WebviewWindowBuilder::new(
+            &app_handle,
+            "settings",
+            tauri::WebviewUrl::App("settings.html".into()),
+        )
+        .title("Cathet — Settings & About")
+        .inner_size(350.0, 318.0)
+        .resizable(false)
+        .maximizable(false)
+        .decorations(false)
+        .transparent(true)
+        .shadow(true)
+        .center()
+        .build()
+        .map_err(|e| e.to_string())?;
 
-    crate::commands::vibrancy::apply_frosted_glass(&win);
+        crate::commands::vibrancy::apply_frosted_glass(&win);
 
-    let _ = win.show();
-    let _ = win.set_focus();
-    Ok(())
+        let _ = win.show();
+        let _ = win.set_focus();
+        Ok(())
+    }
 }
 
 #[tauri::command]
@@ -97,6 +114,7 @@ pub async fn sync_window_theme(app_handle: AppHandle, theme: String) -> Result<(
 #[tauri::command]
 pub async fn focus_main_window(app_handle: AppHandle) -> Result<(), String> {
     if let Some(main_win) = app_handle.get_webview_window("main") {
+        #[cfg(desktop)]
         let _ = main_win.unminimize();
         let _ = main_win.show();
         let _ = main_win.set_focus();
@@ -110,19 +128,24 @@ pub async fn set_window_min_size(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
-    window
-        .set_min_size(Some(tauri::LogicalSize::new(width, height)))
-        .map_err(|e| e.to_string())?;
+    #[cfg(desktop)]
+    {
+        window
+            .set_min_size(Some(tauri::LogicalSize::new(width, height)))
+            .map_err(|e| e.to_string())?;
 
-    if let (Ok(current_size), Ok(scale_factor)) = (window.inner_size(), window.scale_factor()) {
-        let logical_current = current_size.to_logical::<f64>(scale_factor);
-        if logical_current.width < width || logical_current.height < height {
-            let new_w = logical_current.width.max(width);
-            let new_h = logical_current.height.max(height);
-            let _ = window.set_size(tauri::LogicalSize::new(new_w, new_h));
+        if let (Ok(current_size), Ok(scale_factor)) = (window.inner_size(), window.scale_factor()) {
+            let logical_current = current_size.to_logical::<f64>(scale_factor);
+            if logical_current.width < width || logical_current.height < height {
+                let new_w = logical_current.width.max(width);
+                let new_h = logical_current.height.max(height);
+                let _ = window.set_size(tauri::LogicalSize::new(new_w, new_h));
+            }
         }
+    }
+    #[cfg(not(desktop))]
+    {
+        let _ = (window, width, height);
     }
     Ok(())
 }
-
-

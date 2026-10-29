@@ -5,6 +5,10 @@ description = "Cathet — Lightweight text & markdown editor"
 authors = ["Cathet Team"]
 edition = "2021"
 
+[lib]
+name = "cathet"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [build-dependencies]
 tauri-build = { version = "2.0.0", features = [] }
 
@@ -14,10 +18,12 @@ tauri-plugin-dialog = "2.0.0"
 tauri-plugin-fs = "2.0.0"
 tauri-plugin-clipboard-manager = "2.0.0"
 tauri-plugin-opener = "2.0.0"
-window-vibrancy = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.0", features = ["full"] }
+
+[target.'cfg(windows)'.dependencies]
+window-vibrancy = "0.5"
 reqwest = { version = "0.13", default-features = false, features = ["json", "native-tls"] }
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
@@ -29,6 +35,9 @@ windows-sys = { version = "0.59", features = [
     "Win32_System_Diagnostics_ToolHelp",
     "Win32_Globalization",
 ] }
+
+[target.'cfg(not(windows))'.dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 
 [features]
 default = ["custom-protocol"]
@@ -48,4 +57,3 @@ lto = "off"
 codegen-units = 256
 incremental = true
 strip = false
-

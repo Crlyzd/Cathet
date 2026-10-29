@@ -3,8 +3,10 @@ pub mod encoding;
 pub mod state;
 
 use commands::association::{
-    configure_default_app, get_association_status, self_heal_if_moved, unregister_default_app,
+    configure_default_app, get_association_status, unregister_default_app,
 };
+#[cfg(target_os = "windows")]
+use commands::association::self_heal_if_moved;
 use commands::file::{
     get_initial_file, init_cli_file, is_file_readonly, read_text_file, show_open_dialog,
     show_save_dialog, write_text_file,
@@ -13,12 +15,14 @@ use commands::memory::trim_memory;
 use commands::updater::{
     check_for_updates, download_and_install_update, download_update_payload, install_and_restart,
 };
+#[cfg(desktop)]
 use commands::vibrancy::apply_frosted_glass;
 use commands::window::{
     focus_main_window, get_always_on_top, open_new_instance, open_settings_window,
     set_always_on_top, set_window_min_size, sync_window_theme, toggle_always_on_top,
 };
 use state::AppState;
+#[cfg(desktop)]
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -30,13 +34,16 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(AppState::default())
         .setup(|app| {
+            #[cfg(desktop)]
             if let Some(main_window) = app.get_webview_window("main") {
                 apply_frosted_glass(&main_window);
             }
             init_cli_file(app);
+            #[cfg(target_os = "windows")]
             self_heal_if_moved();
 
             // Trim initial startup heap & working set spike once UI stabilizes
+            #[cfg(target_os = "windows")]
             tauri::async_runtime::spawn(async move {
                 tokio::time::sleep(std::time::Duration::from_millis(2200)).await;
                 trim_memory();
@@ -45,6 +52,7 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            #[cfg(desktop)]
             match event {
                 tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed => {
                     if window.label() == "main" {
@@ -52,17 +60,22 @@ pub fn run() {
                             let _ = settings_win.destroy();
                         }
                     } else if window.label() == "settings" {
-                        // Compact memory immediately once settings WebView2 resources are released
+                        #[cfg(target_os = "windows")]
                         tauri::async_runtime::spawn(async move {
                             tokio::time::sleep(std::time::Duration::from_millis(250)).await;
                             trim_memory();
                         });
                     }
                 }
+                #[cfg(target_os = "windows")]
                 tauri::WindowEvent::Focused(false) => {
                     trim_memory();
                 }
                 _ => {}
+            }
+            #[cfg(not(desktop))]
+            {
+                let _ = (window, event);
             }
         })
         .invoke_handler(tauri::generate_handler![

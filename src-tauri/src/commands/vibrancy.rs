@@ -1,4 +1,6 @@
 use tauri::WebviewWindow;
+
+#[cfg(target_os = "windows")]
 use window_vibrancy::{apply_acrylic, apply_blur, apply_mica};
 
 #[cfg(target_os = "windows")]
@@ -57,6 +59,7 @@ fn get_windows_build_number() -> u32 {
 /// Applies native hardware-accelerated frosted glass backdrop.
 /// Uses Windows 11 DWM System Backdrop (Acrylic / Mica) when available,
 /// with graceful fallbacks for earlier Windows versions.
+#[allow(unused_variables)]
 pub fn apply_frosted_glass(window: &WebviewWindow) {
     #[cfg(target_os = "windows")]
     {
@@ -135,6 +138,7 @@ pub fn apply_frosted_glass(window: &WebviewWindow) {
 }
 
 /// Updates Windows DWM immersive dark mode attribute to match the current theme.
+#[allow(unused_variables)]
 pub fn update_window_theme(window: &WebviewWindow, is_dark: bool) {
     #[cfg(target_os = "windows")]
     {
@@ -157,4 +161,3 @@ pub fn update_window_theme(window: &WebviewWindow, is_dark: bool) {
 pub fn refresh_vibrancy_on_focus(_window: &WebviewWindow, _focused: bool) {
     // Windows DWM handles active/inactive backdrop composition natively.
 }
-
