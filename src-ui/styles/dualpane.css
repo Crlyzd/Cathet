@@ -359,14 +359,14 @@ body.is-dragging .dualpane-empty {
   -webkit-backdrop-filter: blur(16px);
   max-height: 100%;
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 8px 30px rgba(0, 0, 0, 0.45);
   cursor: pointer;
   transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease, padding 0.15s ease, gap 0.15s ease, border-radius 0.15s ease;
 }
 
 .dualpane-empty-card:hover {
   border-color: var(--col-accent);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18), 0 12px 30px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.25), 0 12px 36px rgba(0, 0, 0, 0.55);
 }
 
 [data-theme="light"] .dualpane-empty-card {

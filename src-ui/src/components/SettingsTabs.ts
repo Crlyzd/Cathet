@@ -8,6 +8,7 @@ import {
 } from "./settings/SettingsPane";
 import { AboutPaneComponent } from "./settings/AboutPane";
 import { FontOption } from "./settings/FontSelect";
+import { PlatformService } from "../services/platformService";
 
 export interface SettingsTabCallbacks extends SettingsPaneCallbacks {
   onOpenTutorial: () => void;
@@ -70,6 +71,7 @@ export class SettingsTabsComponent {
   }
 
   private render(): void {
+    const archLabel = PlatformService.getInstance().isMobile() ? "Android" : "x64";
     this.container.innerHTML = `
       <div class="settings-window">
         <!-- Compact Draggable Header -->
@@ -80,7 +82,7 @@ export class SettingsTabsComponent {
             </div>
             <div class="settings-app-meta" data-tauri-drag-region>
               <span class="settings-app-title" data-tauri-drag-region>Cathet</span>
-              <span class="settings-app-subtitle" data-tauri-drag-region>v${APP_VERSION} (x64)</span>
+              <span class="settings-app-subtitle" data-tauri-drag-region>v${APP_VERSION} (${archLabel})</span>
             </div>
           </div>
           <div class="settings-header-actions">

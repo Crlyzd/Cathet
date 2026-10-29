@@ -65,9 +65,25 @@ class CathetApp {
 
     this.mobileCoord = new MobileCoordinator({
       onToggleMarkdown: () => this.toggleMarkdown(), onSave: () => this.saveDocument(false),
+      onSaveAs: () => this.saveDocument(true), onNewDocument: () => this.newDocument(),
       onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
       onToggleDualPane: () => this.toggleDualPane(), onOpenTutorial: () => this.loadTutorialDocument(),
       onFontChanged: (f) => { this.editor.setFontFamily(f); this.dualPaneView?.getEditorRight()?.setFontFamily(f); },
+      onToggleSync: (mode) => {
+        if (this.dualPaneView) {
+          if (mode === "locked") {
+            this.dualPaneService.setSnapScroll(false);
+            this.dualPaneView.setSnapScroll(false);
+            this.dualPaneView.setSyncLocked(true);
+          } else if (mode === "snap") {
+            this.dualPaneService.setSnapScroll(true);
+            this.dualPaneView.setSnapScroll(true);
+            this.dualPaneView.setSyncLocked(true);
+          } else {
+            this.dualPaneView.setSyncLocked(false);
+          }
+        }
+      },
     });
 
     this.registerShortcuts();
@@ -125,6 +141,14 @@ class CathetApp {
   private openMainMenu(x: number, y: number): void {
     this.contextMenu.hide();
     const ed = this.getActiveEditor();
+    if (this.mobileCoord?.isMobile()) {
+      this.mobileCoord.openMenu({
+        isMarkdownPreview: ed.getIsMarkdownPreview(),
+        isDualPane: this.dualPaneService.isDualPane(),
+        canSave: ed.isModified(),
+      });
+      return;
+    }
     this.popupMenu.toggle(x, y, buildMainMenuItems({
       isMarkdownPreview: ed.getIsMarkdownPreview(), isDualPane: this.dualPaneService.isDualPane(),
       hasUpdate: this.updateService.hasUpdate(), isUpToDate: !ed.isModified(),
@@ -133,6 +157,22 @@ class CathetApp {
       onToggleDualPane: () => this.toggleDualPane(), onToggleMarkdown: () => this.toggleMarkdown(),
       onOpenSettings: () => this.windowService.openSettingsWindow(), onQuit: () => this.windowService.close(),
     }));
+  }
+
+  private newDocument(): void {
+    const isRight = this.dualPaneView && this.dualPaneService.getActivePane() === "right";
+    if (isRight && this.dualPaneView) {
+      this.dualPaneService.setRightPath(null);
+      this.dualPaneView.mountRightEditor("", null, false, this.fontService.getCurrentFont().family);
+      this.dualPaneView.setRightTitle("Untitled");
+    } else {
+      this.currentFilePath = null;
+      this.dualPaneService.setLeftPath(null);
+      this.editor.loadDocument("", null, false);
+      this.dualPaneView?.setLeftTitle("Untitled");
+    }
+    this.mobileCoord?.setMarkdownState(false);
+    this.topBar.setTitle(this.dualPaneService.getFormattedTitle());
   }
 
   private toggleDualPane(): void {
@@ -147,9 +187,11 @@ class CathetApp {
         onNewRight: () => { this.dualPaneService.setRightPath(null); this.dualPaneView?.mountRightEditor("", null, false, this.fontService.getCurrentFont().family).focus(); this.topBar.setTitle(this.dualPaneService.getFormattedTitle()); },
         onCloseDualPane: () => this.toggleDualPane(), onActivePaneChange: (p) => this.dualPaneService.setActivePane(p),
         onTitleChange: () => this.topBar.setTitle(this.dualPaneService.getFormattedTitle()),
+        onSyncChange: (s) => this.mobileCoord?.setSyncState(s, this.dualPaneService.getSnapScroll()),
       });
       this.dualPaneView.setLeftTitle(this.currentFilePath?.split(/[/\\]/).pop() || "Untitled");
       this.dualPaneView.setSnapScroll(this.dualPaneService.getSnapScroll());
+      this.mobileCoord?.setSyncState(this.dualPaneView.isSyncLocked(), this.dualPaneService.getSnapScroll());
       this.windowService.setMinSize(350, 350);
     } else {
       this.dualPaneService.setDualPane(false);
@@ -178,13 +220,13 @@ class CathetApp {
   private applyLoadedFile(res: FilePayload, pane: "left" | "right"): void {
     const preview = this.previewService.shouldOpenInPreview(res.path);
     const isWrap = (res.fileSize ?? res.file_size ?? 0) <= 3 * 1024 * 1024;
-    const name = res.path.split(/[/\\]/).pop() || "Untitled";
+    const name = res.displayName || (res.path.startsWith("content://") ? (decodeURIComponent(res.path.split("/").pop() || "Untitled")) : (res.path.split(/[/\\]/).pop() || "Untitled"));
     if (pane === "right" && this.dualPaneView) {
-      this.dualPaneService.setRightPath(res.path);
+      this.dualPaneService.setRightPath(res.path, name);
       this.dualPaneView.mountRightEditor(res.content, res.path, preview, this.fontService.getCurrentFont().family).setWordWrap(isWrap);
     } else {
       this.currentFilePath = res.path;
-      this.dualPaneService.setLeftPath(res.path);
+      this.dualPaneService.setLeftPath(res.path, name);
       this.editor.loadDocument(res.content, res.path, preview);
       this.editor.setWordWrap(isWrap);
       this.dualPaneView?.setLeftTitle(name);

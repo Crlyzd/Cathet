@@ -1,6 +1,7 @@
 import { icons } from "../../utils/monochromeIcons";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { attachHeartSprout } from "../../utils/heartSprout";
+import { PlatformService } from "../../services/platformService";
 
 export class AboutPaneComponent {
   private container: HTMLElement;
@@ -13,6 +14,12 @@ export class AboutPaneComponent {
   }
 
   public renderHtml(): string {
+    const isMobile = PlatformService.getInstance().isMobile();
+    const appDesc = isMobile
+      ? "Lightweight, distraction-free text & markdown editor crafted for speed and elegance."
+      : "Lightweight, distraction-free text & markdown editor crafted with native Windows frosted glass.";
+    const webviewStack = isMobile ? "Android WebView & TypeScript" : "Webview2 & TypeScript";
+
     return `
       <div class="settings-card">
         <div class="about-box">
@@ -24,7 +31,7 @@ export class AboutPaneComponent {
 
           <!-- Short App Description -->
           <div class="about-desc">
-            Lightweight, distraction-free text & markdown editor crafted with native Windows frosted glass.
+            ${appDesc}
           </div>
 
           <div class="about-hairline"></div>
@@ -91,7 +98,7 @@ export class AboutPaneComponent {
           <!-- Engine Stack Attribution inside About Pane -->
           <div class="about-engine-meta">
             <span>Engine: Tauri v2 • Rust Tokio</span>
-            <span>Webview2 & TypeScript</span>
+            <span>${webviewStack}</span>
           </div>
         </div>
       </div>

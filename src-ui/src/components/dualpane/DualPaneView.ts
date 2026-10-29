@@ -11,6 +11,7 @@ export interface DualPaneCallbacks {
   onCloseDualPane: () => void;
   onActivePaneChange: (pane: "left" | "right") => void;
   onTitleChange: () => void;
+  onSyncChange?: (isLocked: boolean) => void;
 }
 
 /**
@@ -65,7 +66,11 @@ export class DualPaneView {
     this.splitter = new DualPaneSplitter(
       this.rootEl,
       (pct) => this.setSplitRatio(pct),
-      () => this.scrollSync.toggleLock(),
+      () => {
+        const locked = this.scrollSync.toggleLock();
+        this.callbacks.onSyncChange?.(locked);
+        return locked;
+      },
       this.scrollSync.isLocked()
     );
 
@@ -148,6 +153,25 @@ export class DualPaneView {
   setSnapScroll(enabled: boolean): void {
     this.scrollSync.setSnapScroll(enabled);
     this.splitter.setSnapScroll(enabled);
+  }
+
+  toggleLock(): boolean {
+    const locked = this.scrollSync.toggleLock();
+    this.splitter.setSyncLocked(locked);
+    this.callbacks.onSyncChange?.(locked);
+    return locked;
+  }
+
+  setSyncLocked(locked: boolean): void {
+    if (this.scrollSync.isLocked() !== locked) {
+      this.scrollSync.toggleLock();
+    }
+    this.splitter.setSyncLocked(locked);
+    this.callbacks.onSyncChange?.(locked);
+  }
+
+  isSyncLocked(): boolean {
+    return this.scrollSync.isLocked();
   }
 
   toggleLeftPreview(): void {

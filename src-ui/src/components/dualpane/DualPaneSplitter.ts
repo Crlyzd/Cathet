@@ -87,16 +87,26 @@ export class DualPaneSplitter {
   private startDragging(): void {
     this.isDragging = true;
     this.element.classList.add("dragging");
-    document.body.style.cursor = "col-resize";
+    const isVertical = window.innerWidth <= 600 || window.getComputedStyle(this.container).flexDirection === "column";
+    document.body.style.cursor = isVertical ? "row-resize" : "col-resize";
     document.body.style.userSelect = "none";
 
     const onMove = (e: MouseEvent | TouchEvent) => {
       if (!this.isDragging) return;
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
       const rect = this.container.getBoundingClientRect();
-      if (rect.width <= 0) return;
-      const percentage = ((clientX - rect.left) / rect.width) * 100;
-      const clamped = Math.max(20, Math.min(80, percentage));
+      let percentage = 50;
+
+      if (isVertical) {
+        if (rect.height <= 0) return;
+        const clientY = "touches" in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+        percentage = ((clientY - rect.top) / rect.height) * 100;
+      } else {
+        if (rect.width <= 0) return;
+        const clientX = "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+        percentage = ((clientX - rect.left) / rect.width) * 100;
+      }
+
+      const clamped = Math.max(15, Math.min(85, percentage));
       this.onResize(clamped);
     };
 
@@ -113,7 +123,7 @@ export class DualPaneSplitter {
 
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onEnd);
-    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchmove", onMove);
     window.addEventListener("touchend", onEnd);
   }
 

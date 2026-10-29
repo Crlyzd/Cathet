@@ -1,7 +1,6 @@
-import { SettingsTabsComponent, SettingsInitialState } from "./SettingsTabs";
+import { MobileSettingsView } from "./MobileSettingsView";
 import { FontService } from "../services/fontService";
 import { ThemeService } from "../services/themeService";
-import { UpdateService } from "../services/updateService";
 import { PreviewService } from "../services/previewService";
 import { DualPaneService } from "../services/dualPaneService";
 import { emit } from "@tauri-apps/api/event";
@@ -15,13 +14,12 @@ export interface SettingsModalCallbacks {
 export class SettingsModalComponent {
   private overlay: HTMLElement;
   private contentContainer: HTMLElement;
-  private tabsComponent: SettingsTabsComponent | null = null;
+  private settingsView: MobileSettingsView | null = null;
   private isVisible: boolean = false;
   private callbacks: SettingsModalCallbacks;
 
   private fontService = new FontService();
   private themeService = new ThemeService();
-  private updateService = new UpdateService();
   private previewService = new PreviewService();
   private dualPaneService = new DualPaneService();
 
@@ -60,65 +58,42 @@ export class SettingsModalComponent {
     if (this.isVisible) return;
     this.isVisible = true;
 
-    if (!this.tabsComponent) {
+    if (!this.settingsView) {
       const currentTheme = this.themeService.getTheme();
       const currentFont = this.fontService.getCurrentFont();
-      const updateInfo = this.updateService.getUpdateInfo();
 
-      const initialState: SettingsInitialState = {
-        theme: currentTheme,
-        fontId: currentFont.id,
-        isAlwaysOnTop: false,
-        alwaysPreview: this.previewService.getAlwaysPreview(),
-        snapScroll: this.dualPaneService.getSnapScroll(),
-        fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
-        updateAvailable: !!updateInfo?.update_available,
-        latestVersion: updateInfo?.latest_version,
-      };
-
-      this.tabsComponent = new SettingsTabsComponent(
+      this.settingsView = new MobileSettingsView(
         this.contentContainer,
-        initialState,
+        {
+          theme: currentTheme,
+          fontId: currentFont.id,
+          alwaysPreview: this.previewService.getAlwaysPreview(),
+          snapScroll: this.dualPaneService.getSnapScroll(),
+          fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
+        },
         {
           onThemeChange: async (theme) => {
-            if (this.themeService.getTheme() !== theme) {
-              this.themeService.toggleTheme();
-            }
-            document.documentElement.setAttribute("data-theme", theme);
-            document.body.setAttribute("data-theme", theme);
-            this.tabsComponent?.updateState({ theme });
+            this.themeService.setTheme(theme);
+            this.settingsView?.updateState({ theme });
             await invoke("sync_window_theme", { theme }).catch(console.error);
             await emit("cathet:theme-change", theme);
           },
           onFontChange: async (fontId) => {
             this.fontService.setFont(fontId);
-            this.tabsComponent?.updateState({ fontId });
+            this.settingsView?.updateState({ fontId });
             this.callbacks.onFontChanged?.(this.fontService.getCurrentFont().family);
             await emit("cathet:font-change", fontId);
           },
-          onAlwaysOnTopChange: () => {},
           onAlwaysPreviewChange: async (enabled) => {
             this.previewService.setAlwaysPreview(enabled);
-            this.tabsComponent?.updateState({ alwaysPreview: enabled });
+            this.settingsView?.updateState({ alwaysPreview: enabled });
             await emit("cathet:always-preview-change", enabled);
           },
           onSnapScrollChange: async (enabled) => {
             this.dualPaneService.setSnapScroll(enabled);
-            this.tabsComponent?.updateState({ snapScroll: enabled });
+            this.settingsView?.updateState({ snapScroll: enabled });
             await emit("cathet:snap-scroll-change", enabled);
           },
-          onCheckUpdates: async () => {
-            await this.updateService.checkForUpdates();
-            const info = this.updateService.getUpdateInfo();
-            this.tabsComponent?.updateState({
-              updateAvailable: !!info?.update_available,
-              latestVersion: info?.latest_version,
-            });
-          },
-          onStartDownload: async () => {},
-          onInstallAndRestart: async () => {},
-          onConfigureDefaultApp: async () => {},
-          onUnregisterDefaultApp: async () => {},
           onOpenTutorial: () => {
             this.hide();
             this.callbacks.onOpenTutorial();
@@ -126,6 +101,13 @@ export class SettingsModalComponent {
           onClose: () => this.hide(),
         }
       );
+    } else {
+      this.settingsView.updateState({
+        theme: this.themeService.getTheme(),
+        fontId: this.fontService.getCurrentFont().id,
+        alwaysPreview: this.previewService.getAlwaysPreview(),
+        snapScroll: this.dualPaneService.getSnapScroll(),
+      });
     }
 
     this.overlay.classList.add("visible");
@@ -146,7 +128,7 @@ export class SettingsModalComponent {
   }
 
   destroy(): void {
-    this.tabsComponent?.destroy();
+    this.settingsView?.destroy();
     this.overlay.remove();
   }
 }

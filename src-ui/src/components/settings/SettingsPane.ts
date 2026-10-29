@@ -1,6 +1,7 @@
 import { icons } from "../../utils/monochromeIcons";
 import { APP_VERSION } from "../../version";
 import { FontSelectComponent, FontOption } from "./FontSelect";
+import { PlatformService } from "../../services/platformService";
 
 export interface SettingsPaneCallbacks {
   onThemeChange: (theme: "dark" | "light") => void;
@@ -72,6 +73,8 @@ export class SettingsPaneComponent {
       this.fontSelect = null;
     }
 
+    const isMobile = PlatformService.getInstance().isMobile();
+
     const activePath = this.state.registeredExePath || this.state.currentExePath || "";
     const prefix = this.state.isRegistered ? "Registered: " : "Path: ";
     const truncated = activePath.length > 28 ? "..." + activePath.slice(-25) : activePath;
@@ -104,7 +107,10 @@ export class SettingsPaneComponent {
           <div id="font-select-mount"></div>
         </div>
 
-        <!-- Stay on Top Row -->
+        <!-- Stay on Top Row (Desktop only) -->
+        ${
+          !isMobile
+            ? `
         <div class="setting-item">
           <div class="setting-meta">
             <span class="setting-title">Stay on Top</span>
@@ -115,6 +121,9 @@ export class SettingsPaneComponent {
             <span class="switch-track"></span>
           </label>
         </div>
+        `
+            : ""
+        }
 
         <!-- Markdown Preview Row -->
         <div class="setting-item">
@@ -140,7 +149,10 @@ export class SettingsPaneComponent {
           </label>
         </div>
 
-        <!-- Default Application Row -->
+        <!-- Default Application Row (Desktop only) -->
+        ${
+          !isMobile
+            ? `
         <div class="setting-item">
           <div class="setting-meta">
             <span class="setting-title">Default Application</span>
@@ -156,8 +168,14 @@ export class SettingsPaneComponent {
             }
           </div>
         </div>
+        `
+            : ""
+        }
 
-        <!-- Updates Row -->
+        <!-- Updates Row (Desktop only) -->
+        ${
+          !isMobile
+            ? `
         <div class="setting-item">
           <div class="setting-meta">
             <span class="setting-title">Application Updates</span>
@@ -175,6 +193,9 @@ export class SettingsPaneComponent {
           </div>
           ${this.getUpdateHtml()}
         </div>
+        `
+            : ""
+        }
       </div>
     `;
 
