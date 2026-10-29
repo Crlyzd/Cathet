@@ -130,9 +130,10 @@ function Resolve-CompatibleJavaHome {
         $jExe = Join-Path $c "bin\java.exe"
         if (Test-Path $jExe) {
             $v = (cmd.exe /c "`"$jExe`" -version 2>&1") -join "`n"
-            if ($v -match '"(17|21)\.') {
+            if ($v -match '(17|21)\.') {
                 $env:JAVA_HOME = $c; $env:PATH = "$c\bin;$env:PATH"
-                Write-Host "Using Java runtime ($($Matches[1])): $c" -ForegroundColor Green; return
+                $jVer = $Matches[1]
+                Write-Host "Using Java runtime ($jVer): $c" -ForegroundColor Green; return
             }
         }
     }
@@ -208,51 +209,60 @@ function Invoke-AndroidDev {
     $targetDevId = $null
     if (Get-Command adb -ErrorAction SilentlyContinue) {
         $prevEAP = $ErrorActionPreference; $ErrorActionPreference = 'SilentlyContinue'
-        while ($true) {
-            $raw = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\t(device|emulator|unauthorized)' })
-            if (@($raw | Where-Object { $_ -match '\tunauthorized' }).Count -gt 0) {
-                Write-Host "`n[ALERT] Device connected but UNAUTHORIZED! Unlock phone and tap Allow." -ForegroundColor Yellow
-                $ans = (Read-Host "Press Enter once allowed (or 'q' to skip)").Trim(); if ($ans -in "q", "Q") { break } else { continue }
-            }
-            $ready = @($raw | Where-Object { $_ -match '\t(device|emulator)' })
-            if ($ready.Count -gt 1) {
-                Write-Host "`nMultiple active Android targets found:" -ForegroundColor Cyan
-                for ($i = 0; $i -lt $ready.Count; $i++) {
-                    $did = $ready[$i].Split("`t")[0]; $m = (cmd.exe /c "adb -s $did shell getprop ro.product.model 2>nul").Trim(); Write-Host "  [$($i+1)] $did ($m)"
+        try {
+            while ($true) {
+                $raw = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\t(device|emulator|unauthorized)' })
+                if (@($raw | Where-Object { $_ -match '\tunauthorized' }).Count -gt 0) {
+                    Write-Host "`n[ALERT] Device connected but UNAUTHORIZED! Unlock phone and tap Allow." -ForegroundColor Yellow
+                    $ans = (Read-Host "Press Enter once allowed (or 'q' to skip)").Trim(); if ($ans -in "q", "Q") { break } else { continue }
                 }
-                $sel = (Read-Host "Select target [1-$($ready.Count)] (Default: 1)").Trim()
-                $idx = if ($sel -match '^\d+$' -and [int]$sel -ge 1 -and [int]$sel -le $ready.Count) { [int]$sel - 1 } else { 0 }
-                $targetDevId = $ready[$idx].Split("`t")[0]
-            } elseif ($ready.Count -eq 1) { $targetDevId = $ready[0].Split("`t")[0]
-            } elseif (Get-Command emulator -ErrorAction SilentlyContinue) {
-                $avds = @(cmd.exe /c "emulator -list-avds 2>nul")
-                if ($avds.Count -gt 0) {
-                    $avd = $avds[0]; Write-Host "Starting Android emulator '$avd' with host GPU..." -ForegroundColor Yellow
-                    Start-Process "emulator" -ArgumentList "-avd", "$avd", "-gpu", "host"
-                    Write-Host "Waiting for emulator to complete boot..." -ForegroundColor Yellow
-                    for ($w = 0; $w -lt 60; $w++) {
-                        Start-Sleep -Seconds 2
-                        $b = [string](cmd.exe /c "adb shell getprop sys.boot_completed 2>nul")
-                        if ($b.Trim() -eq "1") { break }
+                $ready = @($raw | Where-Object { $_ -match '\t(device|emulator)' })
+                if ($ready.Count -gt 1) {
+                    Write-Host "`nMultiple active Android targets found:" -ForegroundColor Cyan
+                    for ($i = 0; $i -lt $ready.Count; $i++) {
+                        $did = $ready[$i].Split("`t")[0]
+                        $m = ("" + (cmd.exe /c "adb -s $did shell getprop ro.product.model 2>nul")).Trim()
+                        Write-Host "  [$($i+1)] $did ($m)"
                     }
-                    $readyEmu = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\tdevice' })
-                    if ($readyEmu.Count -gt 0) { $targetDevId = $readyEmu[0].Split("`t")[0] }
-                } else { Write-Host "[Note] Connect phone via USB or create an AVD with avdmanager." -ForegroundColor Yellow }
+                    $sel = (Read-Host "Select target [1-$($ready.Count)] (Default: 1)").Trim()
+                    $idx = if ($sel -match '^\d+$' -and [int]$sel -ge 1 -and [int]$sel -le $ready.Count) { [int]$sel - 1 } else { 0 }
+                    $targetDevId = $ready[$idx].Split("`t")[0]
+                } elseif ($ready.Count -eq 1) {
+                    $targetDevId = $ready[0].Split("`t")[0]
+                } elseif (Get-Command emulator -ErrorAction SilentlyContinue) {
+                    $avds = @(cmd.exe /c "emulator -list-avds 2>nul")
+                    if ($avds.Count -gt 0) {
+                        $avd = $avds[0]; Write-Host "Starting Android emulator '$avd' with host GPU..." -ForegroundColor Yellow
+                        Start-Process "emulator" -ArgumentList "-avd", "$avd", "-gpu", "host"
+                        Write-Host "Waiting for emulator to complete boot..." -ForegroundColor Yellow
+                        cmd.exe /c "adb wait-for-device 2>nul" | Out-Null
+                        for ($w = 0; $w -lt 60; $w++) {
+                            Start-Sleep -Seconds 2
+                            $b = ("" + (cmd.exe /c "adb shell getprop sys.boot_completed 2>nul")).Trim()
+                            if ($b -eq "1") { break }
+                        }
+                        $readyEmu = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\tdevice' })
+                        if ($readyEmu.Count -gt 0) { $targetDevId = $readyEmu[0].Split("`t")[0] }
+                    } else { Write-Host "[Note] Connect phone via USB or create an AVD with avdmanager." -ForegroundColor Yellow }
+                }
+                break
             }
-            break
+        } finally {
+            $ErrorActionPreference = $prevEAP
         }
-        $ErrorActionPreference = $prevEAP
     }
     if (-not $targetDevId) { throw "No active Android device or emulator available." }
-    $m = ([string](cmd.exe /c "adb -s $targetDevId shell getprop ro.product.model 2>nul")).Trim(); $devName = if ($m) { "$m ($targetDevId)" } else { $targetDevId }
-    $abi = ([string](cmd.exe /c "adb -s $targetDevId shell getprop ro.product.cpu.abi 2>nul")).Trim()
+    $m = ("" + (cmd.exe /c "adb -s $targetDevId shell getprop ro.product.model 2>nul")).Trim()
+    $devName = if ($m) { "$m ($targetDevId)" } else { $targetDevId }
+    $abi = ("" + (cmd.exe /c "adb -s $targetDevId shell getprop ro.product.cpu.abi 2>nul")).Trim()
     $arch = if ($abi -match "x86_64") { "x86_64" } elseif ($abi -match "arm64|aarch64") { "aarch64" } else { "armv7" }
     Write-Host "`n>>> [Headless] Building debug APK for $devName ($arch)..." -ForegroundColor Cyan
     npx tauri android build --debug --apk -t $arch; if ($LASTEXITCODE -ne 0) { throw "Tauri android debug build failed." }
     $apk = (Get-ChildItem -Path (Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk") -Recurse -Filter "*debug*.apk" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
     if (-not $apk) { throw "Generated debug APK not found." }
+    $apkPath = $apk.FullName
     Write-Host "Installing APK to $devName..." -ForegroundColor Cyan
-    cmd.exe /c "adb -s $targetDevId install -r `"$($apk.FullName)`""; if ($LASTEXITCODE -ne 0) { throw "ADB installation failed." }
+    cmd.exe /c "adb -s $targetDevId install -r `"$apkPath`""; if ($LASTEXITCODE -ne 0) { throw "ADB installation failed." }
     Write-Host "Launching Cathet on $devName..." -ForegroundColor Green
     cmd.exe /c "adb -s $targetDevId shell am start -n com.cathet.app/com.cathet.app.MainActivity"
     Write-Host "Cathet is now running! Streaming logcat (Ctrl+C to stop):`n" -ForegroundColor Green
