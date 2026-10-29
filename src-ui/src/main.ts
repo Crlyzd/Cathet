@@ -13,6 +13,7 @@ import { UpdateService } from "./services/updateService";
 import { DragDropService } from "./services/dragDropService";
 import { PreviewService } from "./services/previewService";
 import { DualPaneService } from "./services/dualPaneService";
+import { MobileCoordinator } from "./services/mobileCoordinator";
 import { globalEventBus } from "./utils/eventBus";
 import { registerShortcuts } from "./utils/shortcuts";
 import { buildContextMenuItems } from "./utils/contextMenuItems";
@@ -24,20 +25,17 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import tutorialContent from "./assets/tutorial.md?raw";
 
 class CathetApp {
-  private fileService = new FileService();
-  private windowService = new WindowService();
-  private themeService = new ThemeService();
-  private fontService = new FontService();
-  private updateService = new UpdateService();
-  private dragDropService = new DragDropService();
-  private previewService = new PreviewService();
-  private dualPaneService = new DualPaneService();
+  private fileService = new FileService(); private windowService = new WindowService();
+  private themeService = new ThemeService(); private fontService = new FontService();
+  private updateService = new UpdateService(); private dragDropService = new DragDropService();
+  private previewService = new PreviewService(); private dualPaneService = new DualPaneService();
   private topBar = new TopBarComponent("topbar-container", this.windowService);
   private popupMenu = new PopupMenuComponent("popup-container");
   private contextMenu = new ContextMenuComponent("contextmenu-container");
   private editor = new EditorComponent("editor-container");
   private dropOverlay = new DropOverlayComponent("app");
   private dualPaneView: DualPaneView | null = null;
+  private mobileCoord: MobileCoordinator | null = null;
   private currentFilePath: string | null = null;
   private isAlwaysOnTop = false;
 
@@ -63,6 +61,13 @@ class CathetApp {
       onUpdateAvailable: (a) => { this.topBar.setUpdateAvailable(a); },
       onLoadTutorial: () => this.loadTutorialDocument(),
       onSnapScrollChanged: (s) => { this.dualPaneService.setSnapScroll(s); this.dualPaneView?.setSnapScroll(s); },
+    });
+
+    this.mobileCoord = new MobileCoordinator({
+      onToggleMarkdown: () => this.toggleMarkdown(), onSave: () => this.saveDocument(false),
+      onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
+      onToggleDualPane: () => this.toggleDualPane(), onOpenTutorial: () => this.loadTutorialDocument(),
+      onFontChanged: (f) => { this.editor.setFontFamily(f); this.dualPaneView?.getEditorRight()?.setFontFamily(f); },
     });
 
     this.registerShortcuts();
@@ -121,10 +126,8 @@ class CathetApp {
     this.contextMenu.hide();
     const ed = this.getActiveEditor();
     this.popupMenu.toggle(x, y, buildMainMenuItems({
-      isMarkdownPreview: ed.getIsMarkdownPreview(),
-      isDualPane: this.dualPaneService.isDualPane(),
-      hasUpdate: this.updateService.hasUpdate(),
-      isUpToDate: !ed.isModified(),
+      isMarkdownPreview: ed.getIsMarkdownPreview(), isDualPane: this.dualPaneService.isDualPane(),
+      hasUpdate: this.updateService.hasUpdate(), isUpToDate: !ed.isModified(),
       onNewWindow: () => this.windowService.openNewInstance(), onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
       onSave: () => this.saveDocument(false), onSaveAs: () => this.saveDocument(true),
       onToggleDualPane: () => this.toggleDualPane(), onToggleMarkdown: () => this.toggleMarkdown(),
@@ -142,8 +145,7 @@ class CathetApp {
         onOpenLeft: () => this.fetchAndApply(() => this.fileService.promptOpen(), "left"),
         onOpenRight: () => this.fetchAndApply(() => this.fileService.promptOpen(), "right"),
         onNewRight: () => { this.dualPaneService.setRightPath(null); this.dualPaneView?.mountRightEditor("", null, false, this.fontService.getCurrentFont().family).focus(); this.topBar.setTitle(this.dualPaneService.getFormattedTitle()); },
-        onCloseDualPane: () => this.toggleDualPane(),
-        onActivePaneChange: (p) => this.dualPaneService.setActivePane(p),
+        onCloseDualPane: () => this.toggleDualPane(), onActivePaneChange: (p) => this.dualPaneService.setActivePane(p),
         onTitleChange: () => this.topBar.setTitle(this.dualPaneService.getFormattedTitle()),
       });
       this.dualPaneView.setLeftTitle(this.currentFilePath?.split(/[/\\]/).pop() || "Untitled");
@@ -159,6 +161,7 @@ class CathetApp {
       host.appendChild(this.editor.getWrapperEl());
       this.windowService.setMinSize(200, 300);
     }
+    this.mobileCoord?.setDualPaneState(this.dualPaneService.isDualPane());
     this.topBar.setTitle(this.dualPaneService.getFormattedTitle());
   }
 
@@ -169,17 +172,16 @@ class CathetApp {
     } else {
       this.editor.toggleMarkdownPreview();
     }
+    this.mobileCoord?.setMarkdownState(this.getActiveEditor().getIsMarkdownPreview());
   }
 
   private applyLoadedFile(res: FilePayload, pane: "left" | "right"): void {
     const preview = this.previewService.shouldOpenInPreview(res.path);
     const isWrap = (res.fileSize ?? res.file_size ?? 0) <= 3 * 1024 * 1024;
     const name = res.path.split(/[/\\]/).pop() || "Untitled";
-
     if (pane === "right" && this.dualPaneView) {
       this.dualPaneService.setRightPath(res.path);
-      const ed = this.dualPaneView.mountRightEditor(res.content, res.path, preview, this.fontService.getCurrentFont().family);
-      ed.setWordWrap(isWrap);
+      this.dualPaneView.mountRightEditor(res.content, res.path, preview, this.fontService.getCurrentFont().family).setWordWrap(isWrap);
     } else {
       this.currentFilePath = res.path;
       this.dualPaneService.setLeftPath(res.path);
@@ -188,6 +190,7 @@ class CathetApp {
       this.dualPaneView?.setLeftTitle(name);
       this.dualPaneView?.setLeftPreviewActive(preview);
     }
+    this.mobileCoord?.setMarkdownState(preview);
     this.topBar.setTitle(this.dualPaneService.getFormattedTitle());
   }
 
@@ -238,6 +241,7 @@ class CathetApp {
     this.editor.loadDocument(tutorialContent, null, true);
     this.editor.setWordWrap(true);
     this.dualPaneView?.setLeftPreviewActive(true);
+    this.mobileCoord?.setMarkdownState(true);
     this.topBar.setTitle("Cathet Tutorial.md");
   }
 }
