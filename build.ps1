@@ -201,6 +201,10 @@ function Initialize-AndroidEnvironment {
             cmd.exe /c "`"$keytoolCmd`" -genkeypair -v -keystore `"$keystore`" -alias cathet -keyalg RSA -keysize 2048 -validity 10000 -storepass cathetpass -keypass cathetpass -dname `"CN=Cathet, OU=App, O=Cathet, C=US`"" 2>$null | Out-Null
         }
     }
+    $proguard = Join-Path $androidGen "app\proguard-rules.pro"
+    if ((Test-Path $proguard) -and ((Get-Content $proguard -Raw) -notmatch 'com\.cathet\.app\.MainActivity')) {
+        Add-Content -Path $proguard -Value "`n-keepclassmembers class com.cathet.app.MainActivity {`n    native <methods>;`n}`n`n-keep class com.cathet.app.FileHelper {`n    public static *;`n}"
+    }
 }
 
 function Install-MinimalAndroidSdk {
