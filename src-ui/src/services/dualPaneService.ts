@@ -5,6 +5,8 @@ export class DualPaneService {
   private active: boolean = false;
   private leftPath: string | null = null;
   private rightPath: string | null = null;
+  private leftTitle: string | null = null;
+  private rightTitle: string | null = null;
   private activePane: "left" | "right" = "left";
   private snapScroll: boolean = false;
 
@@ -29,16 +31,26 @@ export class DualPaneService {
     this.active = active;
   }
 
-  setLeftPath(path: string | null): void {
+  setLeftPath(path: string | null, title?: string | null): void {
     this.leftPath = path;
+    if (title !== undefined) this.leftTitle = title;
+  }
+
+  setLeftTitle(title: string | null): void {
+    this.leftTitle = title;
   }
 
   getLeftPath(): string | null {
     return this.leftPath;
   }
 
-  setRightPath(path: string | null): void {
+  setRightPath(path: string | null, title?: string | null): void {
     this.rightPath = path;
+    if (title !== undefined) this.rightTitle = title;
+  }
+
+  setRightTitle(title: string | null): void {
+    this.rightTitle = title;
   }
 
   getRightPath(): string | null {
@@ -66,11 +78,11 @@ export class DualPaneService {
   }
 
   getFormattedTitle(): string {
-    const leftName = this.leftPath ? this.leftPath.split(/[/\\]/).pop() || "Untitled" : "Untitled";
+    const leftName = this.leftTitle || (this.leftPath ? this.leftPath.split(/[/\\]/).pop() || "Untitled" : "Untitled");
     if (!this.active) {
       return leftName;
     }
-    const rightName = this.rightPath ? this.rightPath.split(/[/\\]/).pop() || "Untitled" : "Empty";
+    const rightName = this.rightTitle || (this.rightPath ? this.rightPath.split(/[/\\]/).pop() || "Untitled" : "Empty");
     return `${leftName} ⇄ ${rightName} (Dual Pane)`;
   }
 }

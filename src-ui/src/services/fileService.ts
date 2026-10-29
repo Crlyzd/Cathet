@@ -5,6 +5,8 @@ export interface FilePayload {
   content: string;
   fileSize: number;
   file_size?: number;
+  displayName?: string;
+  display_name?: string;
 }
 
 export class FileService {
@@ -14,6 +16,17 @@ export class FileService {
     return this.lastError;
   }
 
+  private normalizePayload(result: FilePayload | null): FilePayload | null {
+    if (!result) return null;
+    if (result.fileSize === undefined && result.file_size !== undefined) {
+      result.fileSize = result.file_size;
+    }
+    if (!result.displayName && result.display_name) {
+      result.displayName = result.display_name;
+    }
+    return result;
+  }
+
   /**
    * Prompts user with native Open File dialog and loads text content.
    */
@@ -21,10 +34,7 @@ export class FileService {
     this.lastError = null;
     try {
       const result = await invoke<FilePayload | null>("show_open_dialog");
-      if (result && result.fileSize === undefined && result.file_size !== undefined) {
-        result.fileSize = result.file_size;
-      }
-      return result;
+      return this.normalizePayload(result);
     } catch (err: any) {
       this.lastError = typeof err === "string" ? err : err?.message || String(err);
       console.error("Failed to open file dialog:", err);
@@ -39,10 +49,7 @@ export class FileService {
     this.lastError = null;
     try {
       const result = await invoke<FilePayload>("read_text_file", { path });
-      if (result && result.fileSize === undefined && result.file_size !== undefined) {
-        result.fileSize = result.file_size;
-      }
-      return result;
+      return this.normalizePayload(result);
     } catch (err: any) {
       this.lastError = typeof err === "string" ? err : err?.message || String(err);
       console.error("Failed to load file:", err);
@@ -56,10 +63,7 @@ export class FileService {
   async getInitialFile(): Promise<FilePayload | null> {
     try {
       const result = await invoke<FilePayload | null>("get_initial_file");
-      if (result && result.fileSize === undefined && result.file_size !== undefined) {
-        result.fileSize = result.file_size;
-      }
-      return result;
+      return this.normalizePayload(result);
     } catch (err) {
       console.error("Failed to get initial file:", err);
       return null;
