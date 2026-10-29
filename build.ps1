@@ -55,6 +55,12 @@ function Get-FreePort([int]$startPort = 5173) {
 
 function Stop-ActiveProcesses {
     Get-Process | Where-Object { $_.ProcessName -like "cathet*" -or $_.ProcessName -eq "cleanpad" } | Stop-Process -Force -ErrorAction SilentlyContinue
+    $conn = Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue
+    if ($conn) {
+        $conn | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object {
+            Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 function Invoke-CheckMode {
@@ -167,6 +173,10 @@ function Initialize-AndroidEnvironment {
         Write-Host "Initializing Android project wrapper via Tauri..." -ForegroundColor Yellow
         npx tauri android init; if ($LASTEXITCODE -ne 0) { throw "Tauri android init failed." }
     }
+    $lp = Join-Path $androidGen "local.properties"
+    if (-not (Test-Path $lp)) {
+        Set-Content -Path $lp -Value "sdk.dir=$($sdk.Replace('\', '/'))"
+    }
     $gp = Join-Path $androidGen "gradle.properties"
     if ((Test-Path $gp) -and ((Get-Content $gp -Raw) -notmatch 'kotlin\.incremental')) {
         Add-Content -Path $gp -Value "`nkotlin.incremental=false`nandroid.javaCompile.suppressSourceTargetDeprecationWarning=true"
@@ -182,6 +192,14 @@ function Initialize-AndroidEnvironment {
         New-Item -ItemType Directory -Path (Join-Path $androidRes "mipmap-anydpi-v26") -Force | Out-Null
         Set-Content -Path $roundXml -Value "<?xml version=`"1.0`" encoding=`"utf-8`"?>`n<adaptive-icon xmlns:android=`"http://schemas.android.com/apk/res/android`">`n  <foreground android:drawable=`"@mipmap/ic_launcher_foreground`"/>`n  <background android:drawable=`"@color/ic_launcher_background`"/>`n</adaptive-icon>"
         Remove-Item (Join-Path $androidRes "drawable\ic_launcher_background.xml"), (Join-Path $androidRes "drawable-v24\ic_launcher_foreground.xml") -Force -ErrorAction SilentlyContinue
+    }
+    $keystore = Join-Path $androidGen "app\cathet-release.jks"
+    if (-not (Test-Path $keystore)) {
+        Write-Host "Ensuring Android release signing keystore..." -ForegroundColor Yellow
+        $keytoolCmd = if (Get-Command keytool.exe -ErrorAction SilentlyContinue) { "keytool.exe" } elseif ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME "bin\keytool.exe" } else { $null }
+        if ($keytoolCmd) {
+            cmd.exe /c "`"$keytoolCmd`" -genkeypair -v -keystore `"$keystore`" -alias cathet -keyalg RSA -keysize 2048 -validity 10000 -storepass cathetpass -keypass cathetpass -dname `"CN=Cathet, OU=App, O=Cathet, C=US`"" 2>$null | Out-Null
+        }
     }
 }
 
@@ -233,6 +251,8 @@ function Invoke-AndroidDev {
                     $avds = @(cmd.exe /c "emulator -list-avds 2>nul")
                     if ($avds.Count -gt 0) {
                         $avd = $avds[0]; Write-Host "Starting Android emulator '$avd' with host GPU..." -ForegroundColor Yellow
+                        $lockDir = Join-Path $env:USERPROFILE ".android\avd\$avd.avd"
+                        Remove-Item (Join-Path $lockDir "*.lock") -Recurse -Force -ErrorAction SilentlyContinue
                         Start-Process "emulator" -ArgumentList "-avd", "$avd", "-gpu", "host"
                         Write-Host "Waiting for emulator to complete boot..." -ForegroundColor Yellow
                         cmd.exe /c "adb wait-for-device 2>nul" | Out-Null
@@ -256,17 +276,25 @@ function Invoke-AndroidDev {
     $devName = if ($m) { "$m ($targetDevId)" } else { $targetDevId }
     $abi = ("" + (cmd.exe /c "adb -s $targetDevId shell getprop ro.product.cpu.abi 2>nul")).Trim()
     $arch = if ($abi -match "x86_64") { "x86_64" } elseif ($abi -match "arm64|aarch64") { "aarch64" } else { "armv7" }
-    Write-Host "`n>>> [Headless] Building debug APK for $devName ($arch)..." -ForegroundColor Cyan
-    npx tauri android build --debug --apk -t $arch; if ($LASTEXITCODE -ne 0) { throw "Tauri android debug build failed." }
-    $apk = (Get-ChildItem -Path (Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk") -Recurse -Filter "*debug*.apk" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
-    if (-not $apk) { throw "Generated debug APK not found." }
-    $apkPath = $apk.FullName
-    Write-Host "Installing APK to $devName..." -ForegroundColor Cyan
-    cmd.exe /c "adb -s $targetDevId install -r `"$apkPath`""; if ($LASTEXITCODE -ne 0) { throw "ADB installation failed." }
-    Write-Host "Launching Cathet on $devName..." -ForegroundColor Green
-    cmd.exe /c "adb -s $targetDevId shell am start -n com.cathet.app/com.cathet.app.MainActivity"
-    Write-Host "Cathet is now running! Streaming logcat (Ctrl+C to stop):`n" -ForegroundColor Green
-    cmd.exe /c "adb -s $targetDevId logcat -c && adb -s $targetDevId logcat -s RustStdoutStderr:V Cathet:V Chromium:I"
+    $rustTarget = if ($arch -eq "x86_64") { "x86_64-linux-android" } elseif ($arch -eq "aarch64") { "aarch64-linux-android" } else { "armv7-linux-androideabi" }
+    Confirm-Target @($rustTarget)
+
+    cmd.exe /c "adb -s $targetDevId reverse tcp:5173 tcp:5173 2>nul" | Out-Null
+    Write-Host "`n>>> Starting Cathet Android Live Dev (Hot Reload) on $devName..." -ForegroundColor Cyan
+
+    # If multiple devices connected, specify target; otherwise let Tauri CLI auto-detect the single active device
+    $allReady = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\t(device|emulator)' })
+    if ($allReady.Count -gt 1) {
+        $avdName = $null
+        if ($targetDevId -like "emulator-*") {
+            $avdRaw = ("" + (cmd.exe /c "adb -s $targetDevId emu avd name 2>nul")).Trim()
+            if ($avdRaw) { $avdName = ($avdRaw -replace '(?i)\s*OK\s*$', '').Trim() }
+        }
+        $tauriDevTarget = if ($avdName) { $avdName } elseif ($m) { $m } else { $targetDevId }
+        npx tauri android dev $tauriDevTarget
+    } else {
+        npx tauri android dev
+    }
 }
 
 function Invoke-AndroidBuild {
@@ -274,7 +302,11 @@ function Invoke-AndroidBuild {
     Confirm-Target @("aarch64-linux-android", "armv7-linux-androideabi", "i686-linux-android", "x86_64-linux-android")
     Write-Host "`nCompiling Android Universal Release APK..." -ForegroundColor Cyan
     npx tauri android build --apk; if ($LASTEXITCODE -ne 0) { throw "Tauri android build failed with exit code $LASTEXITCODE." }
-    $apkSrc = Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release-unsigned.apk"
+    $apkCandidate = (Get-ChildItem -Path (Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk") -Recurse -Filter "*release*.apk" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike "*unsigned*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
+    $apkSrc = if ($apkCandidate) { $apkCandidate.FullName } else { Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release.apk" }
+    if (-not (Test-Path $apkSrc)) {
+        $apkSrc = Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release-unsigned.apk"
+    }
     if (Test-Path $apkSrc) {
         if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
         $apkDest = Join-Path $ReleaseDir "cathet-v$ver-android.apk"
@@ -286,7 +318,17 @@ function Invoke-AndroidBuild {
             $did = $devs[0].Split("`t")[0]
             $c = (Read-Host "`nInstall release APK to connected USB device ($did)? [Y/n] (Default: n)").Trim()
             if ($c -in "y", "Y") {
-                cmd.exe /c "adb -s $did install -r `"$apkDest`""; cmd.exe /c "adb -s $did shell am start -n com.cathet.app/com.cathet.app.MainActivity"
+                $installRes = cmd.exe /c "adb -s $did install -r `"$apkDest`" 2>&1"
+                Write-Host $installRes
+                if ($installRes -match "INSTALL_FAILED_UPDATE_INCOMPATIBLE") {
+                    Write-Host "`n[ALERT] Signature mismatch with existing debug installation." -ForegroundColor Yellow
+                    $reinstall = (Read-Host "Uninstall old version and install new release APK? [Y/n] (Default: y)").Trim()
+                    if ($reinstall -notin "n", "N") {
+                        cmd.exe /c "adb -s $did uninstall com.cathet.app 2>nul" | Out-Null
+                        cmd.exe /c "adb -s $did install `"$apkDest`""
+                    }
+                }
+                cmd.exe /c "adb -s $did shell am start -n com.cathet.app/com.cathet.app.MainActivity"
             }
         }
     }
@@ -294,7 +336,7 @@ function Invoke-AndroidBuild {
 
 function Show-InteractiveMenu {
     $ver = Get-AppVersion; $arch = Get-NativeArch
-    Write-Host "`nSelect an action:`n  [1] Live Development (Desktop Hot Reload) [Default]`n  [2] Run Verification Checks (Vite + Cargo)`n  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe`n  [4] Build & Launch Native ($arch) Fast Executable Immediately`n  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe`n  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe`n  [7] Build All Windows Targets Release -> x64 and ARM64`n  [8] Android Live Dev (USB Device / Emulator)`n  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk`n  [10] Bump Project Version (Current: v$ver)`n  [Q] Exit" -ForegroundColor Yellow
+    Write-Host "`nSelect an action:`n  [1] Live Development (Desktop Hot Reload) [Default]`n  [2] Run Verification Checks (Vite + Cargo)`n  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe`n  [4] Build & Launch Native ($arch) Fast Executable Immediately`n  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe`n  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe`n  [7] Build All Windows Targets Release -> x64 and ARM64`n  [8] Android Live Dev (Hot Reload - USB Device / Emulator)`n  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk`n  [10] Bump Project Version (Current: v$ver)`n  [Q] Exit" -ForegroundColor Yellow
     $c = (Read-Host "Enter option [1-10, Q] (Default: 1)").Trim(); return $(if ($c) { $c } else { "1" })
 }
 
