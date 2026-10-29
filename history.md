@@ -360,10 +360,9 @@ This document serves as the living project documentation and institutional memor
   - `build.ps1`: Added multi-device selector, emulator boot fallback, and unified headless APK deployment.
   - `src-tauri/src/commands/updater.rs`: Platform-gated update network checks for Android.
 
-
-
-
-
-
-
-
+### 2026-10-29: Fix Rust Target Array Coercion & Null-Safe Trim in `build.ps1`
+- **Summary**:
+  1. **Rustup Target Array Parameter Fix**: Fixed `Confirm-Target` signature which previously declared `[string]$target`. When passed an array like `@("x86_64-linux-android", "aarch64-linux-android")`, PowerShell coerced it into a single space-separated string `"x86_64-linux-android aarch64-linux-android"`, triggering `error: toolchain does not support target`. Updated parameter to `[string[]]$targets` and iterated through each target individually.
+  2. **Null-Safe String Trim in Device & Boot Detection**: Fixed terminating exception `You cannot call a method on a null-valued expression` caused by calling `.Trim()` directly on `$null` when native `cmd.exe` commands returned empty stdout during emulator boot polling. Wrapped outputs in `[string](cmd.exe ...)` ensuring safe string handling across boot status, device model, and CPU architecture detection.
+- **Files Modified**:
+  - `build.ps1`: Changed `Confirm-Target` to `[string[]]$targets` with loop, and cast `cmd.exe` results to `[string]` before trimming.

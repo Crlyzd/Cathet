@@ -32,12 +32,14 @@ function Initialize-Environment {
     }
 }
 
-function Confirm-Target([string]$target) {
-    if (-not $target) { return }
+function Confirm-Target([string[]]$targets) {
+    if (-not $targets) { return }
     $installed = @(rustup target list --installed)
-    if ($installed -notcontains $target) {
-        Write-Host "Adding missing Rust target: $target..." -ForegroundColor Yellow
-        rustup target add $target
+    foreach ($t in $targets) {
+        if ($t -and ($installed -notcontains $t)) {
+            Write-Host "Adding missing Rust target: $t..." -ForegroundColor Yellow
+            rustup target add $t
+        }
     }
 }
 
@@ -213,11 +215,13 @@ function Invoke-AndroidDev {
             } elseif (Get-Command emulator -ErrorAction SilentlyContinue) {
                 $avds = @(cmd.exe /c "emulator -list-avds 2>nul")
                 if ($avds.Count -gt 0) {
-                    $avd = $avds[0]; Write-Host "Starting headless emulator '$avd' with host GPU..." -ForegroundColor Yellow
+                    $avd = $avds[0]; Write-Host "Starting Android emulator '$avd' with host GPU..." -ForegroundColor Yellow
                     Start-Process "emulator" -ArgumentList "-avd", "$avd", "-gpu", "host"
                     Write-Host "Waiting for emulator to complete boot..." -ForegroundColor Yellow
                     for ($w = 0; $w -lt 60; $w++) {
-                        Start-Sleep -Seconds 2; if ((cmd.exe /c "adb shell getprop sys.boot_completed 2>nul").Trim() -eq "1") { break }
+                        Start-Sleep -Seconds 2
+                        $b = [string](cmd.exe /c "adb shell getprop sys.boot_completed 2>nul")
+                        if ($b.Trim() -eq "1") { break }
                     }
                     $readyEmu = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\tdevice' })
                     if ($readyEmu.Count -gt 0) { $targetDevId = $readyEmu[0].Split("`t")[0] }
@@ -228,8 +232,8 @@ function Invoke-AndroidDev {
         $ErrorActionPreference = $prevEAP
     }
     if (-not $targetDevId) { throw "No active Android device or emulator available." }
-    $m = (cmd.exe /c "adb -s $targetDevId shell getprop ro.product.model 2>nul").Trim(); $devName = if ($m) { "$m ($targetDevId)" } else { $targetDevId }
-    $abi = (cmd.exe /c "adb -s $targetDevId shell getprop ro.product.cpu.abi 2>nul").Trim()
+    $m = ([string](cmd.exe /c "adb -s $targetDevId shell getprop ro.product.model 2>nul")).Trim(); $devName = if ($m) { "$m ($targetDevId)" } else { $targetDevId }
+    $abi = ([string](cmd.exe /c "adb -s $targetDevId shell getprop ro.product.cpu.abi 2>nul")).Trim()
     $arch = if ($abi -match "x86_64") { "x86_64" } elseif ($abi -match "arm64|aarch64") { "aarch64" } else { "armv7" }
     Write-Host "`n>>> [Headless] Building debug APK for $devName ($arch)..." -ForegroundColor Cyan
     npx tauri android build --debug --apk -t $arch; if ($LASTEXITCODE -ne 0) { throw "Tauri android debug build failed." }
