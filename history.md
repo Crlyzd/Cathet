@@ -63,6 +63,18 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-10-29: Android Launcher & Desktop App Icon Synchronization
+- **Summary**: Synchronized the official Cathet notepad icon (`public/app-icon.png`) across all Android density mipmaps (`mipmap-mdpi`, `mipmap-hdpi`, `mipmap-xhdpi`, `mipmap-xxhdpi`, `mipmap-xxxhdpi`), replacing default Tauri placeholder logos. Configured Android 8.0+ adaptive icon definitions (`ic_launcher.xml` and `ic_launcher_round.xml` in `mipmap-anydpi-v26`) with clean white backdrop (`@color/ic_launcher_background`), added `android:roundIcon="@mipmap/ic_launcher_round"` to `AndroidManifest.xml`, eliminated obsolete Android Studio bot template vectors, regenerated crisp multi-resolution desktop icons in `src-tauri/icons`, and integrated an automated icon sync and adaptive round icon verification guardrail in `build.ps1` (`Initialize-AndroidEnvironment`).
+- **Files Modified / Added**:
+  - `src-tauri/gen/android/app/src/main/res/mipmap-*/`: Replaced default Tauri logo with official Cathet notepad icon in all densities (`ic_launcher.png`, `ic_launcher_round.png`, `ic_launcher_foreground.png`).
+  - `src-tauri/gen/android/app/src/main/res/values/ic_launcher_background.xml`: Generated adaptive background color definition (`#fff`).
+  - `src-tauri/gen/android/app/src/main/res/mipmap-anydpi-v26/`: Configured `ic_launcher.xml` and added `ic_launcher_round.xml` for native API 26+ adaptive icon scaling and shape masking.
+  - `src-tauri/gen/android/app/src/main/res/drawable/`: Removed stale `ic_launcher_background.xml` and `ic_launcher_foreground.xml` bot templates.
+  - `src-tauri/gen/android/app/src/main/AndroidManifest.xml`: Declared `android:roundIcon="@mipmap/ic_launcher_round"`.
+  - `src-tauri/icons/`: Regenerated crisp desktop multi-platform icons (`icon.ico`, `icon.icns`, `128x128.png`, `32x32.png`, etc.).
+  - `build.ps1`: Added automatic icon synchronization and round adaptive icon self-healing guardrail to `Initialize-AndroidEnvironment`.
+  - `history.md`: Recorded change log entry.
+
 ### 2026-10-29: Headless Android SDK Installation, USB Direct Deploy & Run Pipeline
 - **Summary**: Implemented 1-click headless Android SDK installer, cross-drive Gradle optimization, and headless USB direct build-deploy-run pipeline in `build.ps1` to completely bypass heavy Android Studio installation (~5–8 GB). Enabled Option `[8]` to detect physical USB devices, automatically resolve target ABI (`aarch64`), cross-compile Vite and Rust headlessly via `tauri android build --debug --apk -t aarch64`, stream-install the APK to the device via ADB, launch MainActivity on the phone screen, and stream live logcat. Added instant ADB installation prompt to Option `[9]` (Release APK build). Added `kotlin.incremental=false` to eliminate cross-drive Kotlin daemon compilation errors between `C:` and `D:`.
 - **Files Modified / Added**:

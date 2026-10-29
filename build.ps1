@@ -170,6 +170,18 @@ function Initialize-AndroidEnvironment {
     if ((Test-Path $gp) -and ((Get-Content $gp -Raw) -notmatch 'kotlin\.incremental')) {
         Add-Content -Path $gp -Value "`nkotlin.incremental=false`nandroid.javaCompile.suppressSourceTargetDeprecationWarning=true"
     }
+    $manifest = Join-Path $androidGen "app\src\main\AndroidManifest.xml"
+    if ((Test-Path $manifest) -and ((Get-Content $manifest -Raw) -notmatch 'roundIcon')) {
+        (Get-Content $manifest -Raw) -replace 'android:icon="@mipmap/ic_launcher"', "android:icon=`"@mipmap/ic_launcher`"`n        android:roundIcon=`"@mipmap/ic_launcher_round`"" | Set-Content $manifest -NoNewline
+    }
+    $androidRes = Join-Path $androidGen "app\src\main\res"
+    $roundXml = Join-Path $androidRes "mipmap-anydpi-v26\ic_launcher_round.xml"
+    if (-not (Test-Path $roundXml)) {
+        npx tauri icon (Join-Path $ProjectRoot "public\app-icon.png")
+        New-Item -ItemType Directory -Path (Join-Path $androidRes "mipmap-anydpi-v26") -Force | Out-Null
+        Set-Content -Path $roundXml -Value "<?xml version=`"1.0`" encoding=`"utf-8`"?>`n<adaptive-icon xmlns:android=`"http://schemas.android.com/apk/res/android`">`n  <foreground android:drawable=`"@mipmap/ic_launcher_foreground`"/>`n  <background android:drawable=`"@color/ic_launcher_background`"/>`n</adaptive-icon>"
+        Remove-Item (Join-Path $androidRes "drawable\ic_launcher_background.xml"), (Join-Path $androidRes "drawable-v24\ic_launcher_foreground.xml") -Force -ErrorAction SilentlyContinue
+    }
 }
 
 function Install-MinimalAndroidSdk {
