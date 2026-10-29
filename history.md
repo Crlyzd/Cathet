@@ -63,6 +63,13 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-10-29: Headless Android SDK Installation, USB Direct Deploy & Run Pipeline
+- **Summary**: Implemented 1-click headless Android SDK installer, cross-drive Gradle optimization, and headless USB direct build-deploy-run pipeline in `build.ps1` to completely bypass heavy Android Studio installation (~5–8 GB). Enabled Option `[8]` to detect physical USB devices, automatically resolve target ABI (`aarch64`), cross-compile Vite and Rust headlessly via `tauri android build --debug --apk -t aarch64`, stream-install the APK to the device via ADB, launch MainActivity on the phone screen, and stream live logcat. Added instant ADB installation prompt to Option `[9]` (Release APK build). Added `kotlin.incremental=false` to eliminate cross-drive Kotlin daemon compilation errors between `C:` and `D:`.
+- **Files Modified / Added**:
+  - `build.ps1`: Added `Install-MinimalAndroidSdk`, interactive USB device authorization detection, headless direct USB deploy/run in `Invoke-AndroidDev`, and post-build USB installation prompt in `Invoke-AndroidBuild`.
+  - `src-tauri/gen/android/gradle.properties`: Added `kotlin.incremental=false` and `android.javaCompile.suppressSourceTargetDeprecationWarning=true`.
+  - `history.md`: Recorded change log entry.
+
 ### 2026-10-17: Agent Rules, `history.md`, and Workflow Governance
 - **Summary**: Established `history.md` as the authoritative project history and mistake prevention log. Updated `AGENTS.md` and workflow files (`architect.md`, `coding-specialist.md`, `orchestrator.md`) with the 4 core governance directives.
 - **Files Modified / Added**:
@@ -308,3 +315,55 @@ This document serves as the living project documentation and institutional memor
 - **Summary**: Resolved fatal Gradle build failure (`Unsupported class file major version 69`) occurring on Options 8 and 9 in `build.ps1`. Root-caused Gradle 8.14.3 incompatibility with Java 25 (class major version 69) bundled by Android Studio's JBR (`25.0.4`). Installed portable OpenJDK 21 LTS (`Eclipse Temurin 21`) to user profile `.jdks/` and updated `build.ps1` with `Resolve-CompatibleJavaHome` to automatically detect, validate, and bind `JAVA_HOME` to JDK 17/21 before executing Android operations. Streamlined `build.ps1` to 272 lines strictly adhering to anti-monolith standards.
 - **Files Modified / Added**:
   - `build.ps1`: Added `Resolve-CompatibleJavaHome` pre-flight validation and compact pipeline execution (272 lines).
+
+### 2026-10-29: Enhanced Android SDK, NDK, Rust Targets & Emulator Automation in `build.ps1`
+- **Summary**: Upgraded `build.ps1` to provide robust pre-flight toolchain management for Android development:
+  1. **SDK Auto-Resolution & PATH Configuration**: `Ensure-AndroidEnvironment` checks `$env:ANDROID_HOME`, `$env:ANDROID_SDK_ROOT`, and the default `%LOCALAPPDATA%\Android\Sdk` directory, automatically registering `platform-tools`, `emulator`, and `cmdline-tools` into the current session `$env:PATH`.
+  2. **NDK Auto-Detection**: Scans `$env:ANDROID_HOME\ndk` and binds `$env:NDK_HOME` to the latest installed NDK version if not already configured.
+  3. **Rust Targets Auto-Confirmation**: Extended `Confirm-Target` to take array arguments; `Invoke-AndroidDev` automatically checks and installs `x86_64-linux-android` and `aarch64-linux-android` via `rustup`, while `Invoke-AndroidBuild` automatically checks and installs all 4 universal APK targets.
+  4. **USB Device & AVD Emulator Detection**: Automatically detects physical USB-connected phones (`adb devices`), retrieves and logs the device model (e.g. `Pixel 7`), issues an immediate visual warning if the phone is unauthorized (`[WARNING] Unlock your phone and tap 'Allow USB Debugging'`), or falls back to launching an AVD emulator if no physical device is connected.
+  5. **Actionable Remediation Messages**: Clear diagnostic guidance directing developers to install OpenJDK 21 (`winget install Microsoft.OpenJDK.21`) or Android Studio (`winget install Google.AndroidStudio`) upon missing prerequisites.
+- **Files Modified**:
+  - `build.ps1`: Upgraded `Confirm-Target`, `Initialize-AndroidEnvironment`, `Invoke-AndroidDev`, and `Invoke-AndroidBuild`; resolved PSScriptAnalyzer warnings (unapproved verb and unused `$pkgPath`).
+
+### 2026-10-29: Fix PowerShell Syntax Errors in `build.ps1`
+- **Summary**: Resolved unexpected token errors at lines 210, 304, and 308 in `build.ps1`. Restored accidentally truncated compilation and packaging commands in `Invoke-AndroidBuild` (`Confirm-Target`, `npx tauri android build --apk`, `$apkSrc`), eliminated an extra closing brace at line 210, and removed duplicate trailing `else` and `catch` blocks at the end of the script. Verified clean AST parsing with PowerShell language parser.
+- **Files Modified**:
+  - `build.ps1`: Restored `Invoke-AndroidBuild` logic and removed duplicated closing blocks (311 lines).
+
+### 2026-10-29: Accelerate Android SDK Download via Native `curl.exe` in `build.ps1`
+- **Summary**: Resolved slow download speed caused by Windows PowerShell 5.1's default `Invoke-WebRequest` console progress bar bottleneck (repainting the blue progress box on every chunk, throttling network throughput by 10x-50x). Replaced with native Windows `curl.exe -L --progress-bar` (with silent progress fallback), enabling full line-speed downloads in seconds without console stutter.
+- **Files Modified**:
+  - `build.ps1`: Swapped `Invoke-WebRequest` for `curl.exe` in `Install-MinimalAndroidSdk`.
+
+### 2026-10-29: Auto-Accept All Android SDK Licenses via Piped Stream in `build.ps1`
+- **Summary**: Fixed `sdkmanager` hanging on stdin at step 3/3 (`Installing platform-tools, platforms, build-tools, and NDK...`). Root-caused unbuffered interactive license prompts (`Accept? (y/N):`) that halted execution waiting for user keystrokes. Piped continuous multi-line `y` confirmations (`cmd.exe /c "(for /l %i in (1,1,25) do @echo y) | sdkmanager ..."`) to automatically accept all licenses across all packages.
+- **Files Modified**:
+  - `build.ps1`: Piped continuous `y` stream to `--licenses` and package installation in `Install-MinimalAndroidSdk` (317 lines).
+
+### 2026-10-29: Fix ADB Daemon Stderr Causing False Terminating Error in `build.ps1`
+- **Summary**: Resolved false `[BUILD ERROR] * daemon not running; starting now at tcp:5037` in `Invoke-AndroidDev`. When ADB starts its background server for the first time, it writes normal status diagnostics to stderr. In PowerShell with `$ErrorActionPreference = "Stop"`, native stderr in pipelines triggers a terminating error. Updated device detection in `Invoke-AndroidDev` to isolate stderr via `2>nul` and temporarily use `SilentlyContinue` during device inspection.
+- **Files Modified**:
+  - `build.ps1`: Wrapped ADB device inspection in `SilentlyContinue` and redirected stderr with `2>nul` (322 lines).
+
+### 2026-10-29: Pre-Flight USB Authorization Gate & Explicit Device Target in `build.ps1`
+- **Summary**: Upgraded `Invoke-AndroidDev` with an interactive pre-flight gate detecting unauthorized USB devices. Prompts developers to unlock and tap 'Allow USB debugging', rechecking until authorized. Explicitly passes `$targetDevId` to `npx tauri android dev <devId>`, preventing Tauri CLI from falling back to attempting to open Android Studio (`studio.exe`) on missing IDE environments.
+- **Files Modified**:
+  - `build.ps1`: Added interactive authorization loop and explicit target device passing (329 lines).
+
+### 2026-10-29: Headless Android Emulator Support & TLS Verifier Fix on Android
+- **Summary**:
+  1. **Headless Android Emulator (`cathet_emu`)**: Configured official Google CLI emulator (`emulator.exe` v37.2.12 with system-image `android-34;google_apis;x86_64`) running under Windows Hypervisor Platform (WHPX) on AMD Ryzen 5 with host GPU acceleration (`hw.gpu.mode=host`, 60fps).
+  2. **Unified Headless Pipeline in `build.ps1`**: Updated `Invoke-AndroidDev` in `build.ps1` to detect both physical USB devices and running emulators; if multiple targets exist, prompts the developer to select target; automatically resolves target architecture (`aarch64` for ARM phones, `x86_64` for x86_64 emulators) and runs the headless build, APK install, and activity launch pipeline without requiring Android Studio.
+  3. **Resolved `rustls-platform-verifier` Panic on Android**: Gated updater HTTP networking in `src-tauri/src/commands/updater.rs` with `#[cfg(not(target_os = "android"))]`, returning `update_available: false` immediately on Android. Prevents uninitialized JNI context panics in `rustls-platform-verifier` on tokio runtime threads.
+- **Files Modified**:
+  - `build.ps1`: Added multi-device selector, emulator boot fallback, and unified headless APK deployment.
+  - `src-tauri/src/commands/updater.rs`: Platform-gated update network checks for Android.
+
+
+
+
+
+
+
+
