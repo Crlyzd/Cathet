@@ -1,38 +1,25 @@
 <#
 .SYNOPSIS
-    build.ps1 - Cathet Unified Automation Pipeline (Interactive CLI, Dev, Build, Check, Bump, Android)
+    build.ps1 - Cathet Unified Automation Pipeline (CLI, Dev, Build, Check, Bump, Android)
 #>
-
 param(
-    [switch]$Dev, [switch]$Live, [switch]$Check, [switch]$Build,
-    [switch]$BuildX64, [switch]$BuildArm64, [switch]$All, [switch]$Run,
-    [switch]$AndroidDev, [switch]$AndroidBuild,
-    [switch]$Patch, [switch]$Minor, [switch]$Major,
-    [string]$TargetVersion, [string]$OutputDir = "release",
-    [int]$Port = 0, [switch]$NoPause, [switch]$Help
+    [switch]$Dev, [switch]$Live, [switch]$Check, [switch]$Build, [switch]$BuildX64, [switch]$BuildArm64,
+    [switch]$All, [switch]$Run, [switch]$AndroidDev, [switch]$AndroidBuild, [switch]$Patch, [switch]$Minor,
+    [switch]$Major, [string]$TargetVersion, [string]$OutputDir = "release", [int]$Port = 0, [switch]$NoPause, [switch]$Help
 )
 
-$ErrorActionPreference = "Stop"
-$ProjectRoot = $PSScriptRoot
-Set-Location $ProjectRoot
+$ErrorActionPreference = "Stop"; $ProjectRoot = $PSScriptRoot; Set-Location $ProjectRoot
 $ReleaseDir = Join-Path $ProjectRoot $OutputDir
 
 function Invoke-Exit([int]$code = 0) {
     if (-not $NoPause) { Write-Host ""; [void](Read-Host "Press Enter to exit...") }
     exit $code
 }
-
-function Get-AppVersion {
-    return (Get-Content -Raw (Join-Path $ProjectRoot "package.json") | ConvertFrom-Json).version
-}
-
-function Get-NativeArch {
-    if ($env:PROCESSOR_ARCHITECTURE -match "ARM64" -or $env:PROCESSOR_ARCHITEW6432 -match "ARM64") { return "arm64" }
-    return "x64"
-}
+function Get-AppVersion { (Get-Content -Raw (Join-Path $ProjectRoot "package.json") | ConvertFrom-Json).version }
+function Get-NativeArch { if ($env:PROCESSOR_ARCHITECTURE -match "ARM64" -or $env:PROCESSOR_ARCHITEW6432 -match "ARM64") { "arm64" } else { "x64" } }
 
 function Show-HelpGuide {
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch desktop live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build native fast executable`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific distribution release binary`n  .\build.ps1 -All                   -> Build both x64 and ARM64 release binaries`n  .\build.ps1 -AndroidDev            -> Launch Android live dev on USB device / emulator`n  .\build.ps1 -AndroidBuild          -> Build release Android APK package`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Menu | -Dev / -Live -> Hot reload | -Check -> Tests | -Build [-Run] -> Fast EXE`n  -BuildX64 / -BuildArm64 -> Release EXE | -All -> Both | -AndroidDev / -AndroidBuild -> Android`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -58,8 +45,7 @@ function Get-FreePort([int]$startPort = 5173) {
     for ($p = $startPort; $p -lt ($startPort + 100); $p++) {
         try {
             $l = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $p)
-            $l.Start(); $l.Stop()
-            return $p
+            $l.Start(); $l.Stop(); return $p
         } catch { continue }
     }
     return $startPort
@@ -80,29 +66,21 @@ function Invoke-CheckMode {
 }
 
 function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$isMinor = $false, [bool]$isMajor = $false) {
-    $pkgPath = Join-Path $ProjectRoot "package.json"
-    $tauriPath = Join-Path $ProjectRoot "src-tauri\tauri.conf.json"
-    $cargoPath = Join-Path $ProjectRoot "src-tauri\Cargo.toml"
-
-    $currentVer = (Get-Content -Raw $pkgPath | ConvertFrom-Json).version
+    $pkgPath = Join-Path $ProjectRoot "package.json"; $tauriPath = Join-Path $ProjectRoot "src-tauri\tauri.conf.json"
+    $cargoPath = Join-Path $ProjectRoot "src-tauri\Cargo.toml"; $currentVer = Get-AppVersion
     Write-Host "Current Cathet version: $currentVer" -ForegroundColor Cyan
 
     $newVer = $targetVer
     if (-not $newVer) {
-        $p = $currentVer.Split('.')
-        $maj = [int]$p[0]; $min = [int]$p[1]; $pat = [int]$p[2]
-        if ($isMajor) { $maj++; $min = 0; $pat = 0 }
-        elseif ($isMinor) { $min++; $pat = 0 }
-        elseif ($isPatch) { $pat++ }
+        $p = $currentVer.Split('.'); $maj = [int]$p[0]; $min = [int]$p[1]; $pat = [int]$p[2]
+        if ($isMajor) { $maj++; $min = 0; $pat = 0 } elseif ($isMinor) { $min++; $pat = 0 } elseif ($isPatch) { $pat++ }
         $newVer = "$maj.$min.$pat"
     }
-
     if ($newVer -notmatch '^\d+\.\d+\.\d+') { throw "Invalid SemVer format: '$newVer'. Expected X.Y.Z" }
     Write-Host "Bumping version to: $newVer" -ForegroundColor Green
 
     npm version $newVer --no-git-tag-version --allow-same-version | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "npm version bump failed." }
-
     (Get-Content -Raw $tauriPath) -replace '"version":\s*"[^"]+"', """version"": ""$newVer""" | Set-Content $tauriPath -NoNewline
     (Get-Content -Raw $cargoPath) -replace '(?m)^version\s*=\s*"[^"]+"', "version = ""$newVer""" | Set-Content $cargoPath -NoNewline
 
@@ -113,39 +91,54 @@ function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$
 }
 
 function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$versionedFileName, [string]$cargoProfile = "release") {
-    Stop-ActiveProcesses
-    if ($targetTriple) { Confirm-Target $targetTriple }
+    Stop-ActiveProcesses; if ($targetTriple) { Confirm-Target $targetTriple }
     Write-Host "`n>>> Compiling ($cargoProfile) for $label ($targetTriple)..." -ForegroundColor Yellow
     npm run build | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "Frontend build failed with exit code $LASTEXITCODE." }
 
     $manifest = Join-Path $ProjectRoot "src-tauri\Cargo.toml"
-    $sourceBin = if ($targetTriple) {
-        Join-Path $ProjectRoot "src-tauri\target\$targetTriple\$cargoProfile\cathet.exe"
-    } else {
-        Join-Path $ProjectRoot "src-tauri\target\$cargoProfile\cathet.exe"
-    }
-
+    $sourceBin = if ($targetTriple) { Join-Path $ProjectRoot "src-tauri\target\$targetTriple\$cargoProfile\cathet.exe" }
+                 else { Join-Path $ProjectRoot "src-tauri\target\$cargoProfile\cathet.exe" }
     Remove-Item -Path $sourceBin -Force -ErrorAction SilentlyContinue
 
-    if ($targetTriple) {
-        cargo build --profile $cargoProfile --target $targetTriple --manifest-path $manifest
-    } else {
-        cargo build --profile $cargoProfile --manifest-path $manifest
-    }
+    if ($targetTriple) { cargo build --profile $cargoProfile --target $targetTriple --manifest-path $manifest }
+    else { cargo build --profile $cargoProfile --manifest-path $manifest }
     if ($LASTEXITCODE -ne 0) { throw "Cargo $cargoProfile build failed with exit code $LASTEXITCODE." }
-
     if (-not (Test-Path $sourceBin)) { throw "Binary not found at: $sourceBin" }
     if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
 
     $destPath = Join-Path $ReleaseDir $versionedFileName
     Copy-Item -Path $sourceBin -Destination $destPath -Force
     $sizeMb = [math]::Round((Get-Item $destPath).Length / 1MB, 2)
-    Write-Host "Output saved: $destPath ($sizeMb MB)" -ForegroundColor Green
-    return $destPath
+    Write-Host "Output saved: $destPath ($sizeMb MB)" -ForegroundColor Green; return $destPath
+}
+
+function Resolve-CompatibleJavaHome {
+    $candidates = @()
+    if ($env:JAVA_HOME -and (Test-Path $env:JAVA_HOME)) { $candidates += $env:JAVA_HOME }
+    $roots = @((Join-Path $env:USERPROFILE ".jdks"), "C:\Program Files\Eclipse Adoptium", "C:\Program Files\Microsoft", "C:\Program Files\Java")
+    foreach ($r in $roots) {
+        if (Test-Path $r) {
+            Get-ChildItem -Path $r -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -match "jdk[-_]?(17|21)" } |
+                ForEach-Object { $candidates += $_.FullName }
+        }
+    }
+    foreach ($c in $candidates) {
+        $jExe = Join-Path $c "bin\java.exe"
+        if (Test-Path $jExe) {
+            $v = (cmd.exe /c "`"$jExe`" -version 2>&1") -join "`n"
+            if ($v -match '"(17|21)\.') {
+                $env:JAVA_HOME = $c; $env:PATH = "$c\bin;$env:PATH"
+                Write-Host "Using Java runtime ($($Matches[1])): $c" -ForegroundColor Green; return
+            }
+        }
+    }
+    throw "Compatible JDK (17 or 21 LTS) required. Java 25 triggers error 69. Run: winget install Microsoft.OpenJDK.21"
 }
 
 function Ensure-AndroidInit {
+    Resolve-CompatibleJavaHome
     $androidGen = Join-Path $ProjectRoot "src-tauri\gen\android"
     if (-not (Test-Path $androidGen)) {
         Write-Host "First-time Android setup: Initializing native project wrapper..." -ForegroundColor Yellow
@@ -202,10 +195,8 @@ function Invoke-Pipeline([hashtable]$opts) {
     if ($opts.AndroidDev) { Invoke-AndroidDev; return }
     if ($opts.AndroidBuild) { Invoke-AndroidBuild; return }
     if ($opts.TargetVersion -or $opts.Patch -or $opts.Minor -or $opts.Major) {
-        Invoke-VersionBump $opts.TargetVersion ([bool]$opts.Patch) ([bool]$opts.Minor) ([bool]$opts.Major)
-        return
+        Invoke-VersionBump $opts.TargetVersion ([bool]$opts.Patch) ([bool]$opts.Minor) ([bool]$opts.Major); return
     }
-
     $ver = Get-AppVersion; $nativeArch = Get-NativeArch; $compiledBin = $null
     if ($opts.All) {
         Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
@@ -220,12 +211,9 @@ function Invoke-Pipeline([hashtable]$opts) {
         $nativeTriple = if ($nativeArch -eq "arm64") { "aarch64-pc-windows-msvc" } else { "x86_64-pc-windows-msvc" }
         $compiledBin = Invoke-CompileTarget $nativeTriple "Windows $nativeArch" "cathet-v$ver-$nativeArch-fast.exe" "fast-release"
     }
-
     if ($compiledBin -and $opts.Run) {
-        Write-Host "Launching: $compiledBin" -ForegroundColor Cyan
-        Start-Process -FilePath $compiledBin
+        Write-Host "Launching: $compiledBin" -ForegroundColor Cyan; Start-Process -FilePath $compiledBin
     }
-
     if ($opts.Dev -or $opts.Live) {
         $p = if ($opts.Port -gt 0) { $opts.Port } else { Get-FreePort 5173 }
         $env:PORT = "$p"; $env:VITE_PORT = "$p"
@@ -234,9 +222,7 @@ function Invoke-Pipeline([hashtable]$opts) {
         try {
             @{ build = @{ devUrl = "http://127.0.0.1:$p" } } | ConvertTo-Json | Set-Content $cfg
             npx tauri dev -c $cfg
-        } finally {
-            Remove-Item $cfg -Force -ErrorAction SilentlyContinue
-        }
+        } finally { Remove-Item $cfg -Force -ErrorAction SilentlyContinue }
     }
 }
 
@@ -244,15 +230,12 @@ function Invoke-Pipeline([hashtable]$opts) {
 try {
     if ($Help) { Show-HelpGuide; Invoke-Exit 0 }
     Write-Host "=== Cathet - Unified Build Pipeline ===" -ForegroundColor Cyan
-    Stop-ActiveProcesses
-    Initialize-Environment
-
+    Stop-ActiveProcesses; Initialize-Environment
     $isInteractive = ($PSBoundParameters.Count -eq 0) -or ($PSBoundParameters.Count -eq 1 -and $PSBoundParameters.ContainsKey("NoPause"))
 
     if ($isInteractive) {
         while ($true) {
-            $sel = Show-InteractiveMenu
-            $runOpts = @{ Port = $Port }
+            $sel = Show-InteractiveMenu; $runOpts = @{ Port = $Port }
             switch ($sel) {
                 "1" { $runOpts.Dev = $true }
                 "2" { $runOpts.Check = $true }

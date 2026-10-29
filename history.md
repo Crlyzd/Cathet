@@ -1,4 +1,4 @@
-﻿# Cathet â€” Project History & Institutional Memory
+# Cathet â€” Project History & Institutional Memory
 
 This document serves as the living project documentation and institutional memory for **Cathet**.
 
@@ -303,3 +303,8 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/src/main.ts`: Integrated mobile coordinator and streamlined lines (248 lines).
   - `index.html`: Added mobile viewport-fit, interactive-widget, and stylesheet links (34 lines).
   - `build.ps1`: Added `-AndroidDev` and `-AndroidBuild` switches (274 lines).
+
+### 2026-10-29: Fix Android Build Gradle Java 25 Class Version 69 Incompatibility
+- **Summary**: Resolved fatal Gradle build failure (`Unsupported class file major version 69`) occurring on Options 8 and 9 in `build.ps1`. Root-caused Gradle 8.14.3 incompatibility with Java 25 (class major version 69) bundled by Android Studio's JBR (`25.0.4`). Installed portable OpenJDK 21 LTS (`Eclipse Temurin 21`) to user profile `.jdks/` and updated `build.ps1` with `Resolve-CompatibleJavaHome` to automatically detect, validate, and bind `JAVA_HOME` to JDK 17/21 before executing Android operations. Streamlined `build.ps1` to 272 lines strictly adhering to anti-monolith standards.
+- **Files Modified / Added**:
+  - `build.ps1`: Added `Resolve-CompatibleJavaHome` pre-flight validation and compact pipeline execution (272 lines).
