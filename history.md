@@ -1,4 +1,4 @@
-# Cathet — Project History & Institutional Memory
+﻿# Cathet â€” Project History & Institutional Memory
 
 This document serves as the living project documentation and institutional memory for **Cathet**.
 
@@ -48,6 +48,17 @@ This document serves as the living project documentation and institutional memor
   1. When making flex containers or their children scrollable in CSS, ALWAYS explicitly set `min-height: 0` and `overflow: hidden` on intermediate flex ancestors.
   2. Put `overflow-y: auto` directly on the tab pane container (`#pane-settings`), allowing the card inside to have natural height (`height: auto; min-height: min-content;`). This guarantees `scrollHeight > clientHeight` and triggers native mouse wheel and touchpad scrolling instantly.
 
+
+### [Mistake] 2026-10-29: Recommending Monolithic Commit Instead of Grouping and Directly Executing Commits per AGENTS.md Rule 14
+- **Context**: When user asked to make a branch and write a commit message, the agent provided a single monolithic commit message and asked the user to run it manually, violating AGENTS.md Rule 14 and past mistake records.
+- **User Correction**: "have you read the @AGENTS.md how to wrote a commit msg?"
+- **Corrective Guardrail**:
+  1. ALWAYS inspect AGENTS.md Rule 14 when asked for commit messages or to commit changes.
+  2. Categorize and group waiting files by logical subsystem (e.g., Build/Config, Rust Backend, Frontend UI).
+  3. Stage each group independently using git add <files>.
+  4. Write granular bullet points for each file in the group followed by a broader summary line.
+  5. Execute git commit directly via tool calls so the user does not have to run them manually.
+
 ---
 
 ## Project Changes Log
@@ -89,13 +100,13 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/styles/settings.css`: Upgraded update button to continuous `infinite` pulse animation in dark and light modes, added `.about-hero-header:hover` icon and text glow, added heart sprout keyframes, and styled the links capsule.
 
 ### 2026-10-17: About Pane Symmetrical Row Alignment & Multi-Color Sprouting Hearts
-- **Summary**: Resolved visual capsule misalignment by restructuring the links and coffee rows with left-aligned labels (`Project Links` and `Buy me a coffee:`) and flush right-aligned frosted glass capsules (`justify-content: space-between`). Differentiated project links with clean neutral text and coffee links with warm amber tones. Upgraded the heart sprout particle system with a vibrant 11-color palette and a wide ±85px (170px total) horizontal spread with matching colored glow auras.
+- **Summary**: Resolved visual capsule misalignment by restructuring the links and coffee rows with left-aligned labels (`Project Links` and `Buy me a coffee:`) and flush right-aligned frosted glass capsules (`justify-content: space-between`). Differentiated project links with clean neutral text and coffee links with warm amber tones. Upgraded the heart sprout particle system with a vibrant 11-color palette and a wide Â±85px (170px total) horizontal spread with matching colored glow auras.
 - **Files Modified**:
-  - `src-ui/src/utils/heartSprout.ts`: Added `HEART_PALETTE`, expanded spread radius to ±85px, randomized upward velocity, and wired dynamic particle glow colors.
+  - `src-ui/src/utils/heartSprout.ts`: Added `HEART_PALETTE`, expanded spread radius to Â±85px, randomized upward velocity, and wired dynamic particle glow colors.
   - `src-ui/src/components/settings/AboutPane.ts`: Refactored to `.about-row-aligned` containing left-aligned labels and flush right-aligned capsules (kept at 139 lines, < 250 limit).
   - `src-ui/styles/settings.css`: Added `.about-row-aligned`, `.about-row-label`, `.project-icon-wrap`, `.link-project`, and updated `@keyframes sproutFloat`.
 
-### 2026-10-17: Sprouting Heart Cluster Burst (Random 1–3 Particles)
+### 2026-10-17: Sprouting Heart Cluster Burst (Random 1â€“3 Particles)
 - **Summary**: Upgraded heart sprout controller to dynamically spawn a randomized burst of 1, 2, or 3 hearts per click. Implemented arc-based trajectory dispersion (left bias, center fountain, and right bias) and 40ms organic micro-staggering so multi-particle clusters blossom outward like a bouquet without clumping.
 - **Files Modified**:
   - `src-ui/src/utils/heartSprout.ts`: Refactored to `spawnSingleHeart` with arc-based trajectory dispersion and micro-staggered loop over 1 to 3 random particles (kept at 117 lines, < 250 limit).
@@ -114,7 +125,7 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/src/components/Editor.ts`: Integrated scroll capture/restoration and non-scrolling focus in `toggleMarkdownPreview()` (preserved at 248 lines, strictly adhering to < 250 limit).
 
 ### 2026-10-18: Dual Pane Mode with Proportional Bidirectional Scroll Synchronization
-- **Summary**: Implemented Dual Pane side-by-side mode allowing users to open, edit, and navigate two documents simultaneously with proportional bidirectional scroll synchronization. Decoupled `EditorComponent` for container-scoped instantiation, implemented `SyncScrollController` with normalized ratio tracking ($0.0 \to 1.0$) and recursion guard, built draggable frosted glass `DualPaneSplitter` with `🔗` lock toggle, created per-pane headers and placeholder dropzone, and integrated `DualPaneService` with spatial drag & drop and `Ctrl+D` shortcut support. Strictly maintained anti-monolith line limit standards across all files (< 250 lines).
+- **Summary**: Implemented Dual Pane side-by-side mode allowing users to open, edit, and navigate two documents simultaneously with proportional bidirectional scroll synchronization. Decoupled `EditorComponent` for container-scoped instantiation, implemented `SyncScrollController` with normalized ratio tracking ($0.0 \to 1.0$) and recursion guard, built draggable frosted glass `DualPaneSplitter` with `ðŸ”—` lock toggle, created per-pane headers and placeholder dropzone, and integrated `DualPaneService` with spatial drag & drop and `Ctrl+D` shortcut support. Strictly maintained anti-monolith line limit standards across all files (< 250 lines).
 - **Files Modified / Added**:
   - `src-ui/src/components/dualpane/DualPaneView.ts`: Created dual-pane layout and lifecycle manager (195 lines).
   - `src-ui/src/components/dualpane/DualPaneSplitter.ts`: Created draggable divider and sync lock toggle component (108 lines).
@@ -134,7 +145,7 @@ This document serves as the living project documentation and institutional memor
 ### 2026-10-18: Dual Pane UI Refinements, Monochrome Icons & Offset Scroll Sync
 - **Summary**: Refined Dual Pane mode based on user testing and UI feedback:
   1. Replaced OS folder emoji with theme-adaptive monochrome SVG folder icon (`currentColor`).
-  2. Removed appended checkmark (`✓`) on the Markdown Preview toggle button while retaining active state styling.
+  2. Removed appended checkmark (`âœ“`) on the Markdown Preview toggle button while retaining active state styling.
   3. Redesigned scroll sync lock toggle with frosted glass pill badge and monochrome SVG `link`/`unlink` icons instead of emojis.
   4. Implemented offset-based scroll sync with a user-configurable "Dual Pane Snap Scroll" toggle in Settings:
      - When OFF (default): re-locking preserves current scroll positions and synchronizes proportionally with relative ratio offset ($\Delta \text{ratio}$).
@@ -143,7 +154,7 @@ This document serves as the living project documentation and institutional memor
   6. Resolved squished-window layout wrapping in TopBar drag area and added container queries to hide header pills on narrow widths.
 - **Files Modified**:
   - `src-ui/src/utils/monochromeIcons.ts`: Added SVG `folder`, `link`, and `unlink` icons (149 lines).
-  - `src-ui/src/components/dualpane/DualPaneHeader.ts`: Replaced folder emoji with monochrome SVG, removed `✓` from preview button (81 lines).
+  - `src-ui/src/components/dualpane/DualPaneHeader.ts`: Replaced folder emoji with monochrome SVG, removed `âœ“` from preview button (81 lines).
   - `src-ui/src/components/dualpane/DualPaneSplitter.ts`: Integrated SVG link/unlink icons with active state classes (109 lines).
   - `src-ui/src/components/dualpane/DualPaneView.ts`: Synchronized initial Left Pane preview active state, exposed `setLeftPreviewActive` and `setSnapScroll` (219 lines).
   - `src-ui/src/utils/syncScrollController.ts`: Added ratio offset calculation, `snapScroll` mode, and continuous offset-preserved scroll synchronization (140 lines).
@@ -171,7 +182,7 @@ This document serves as the living project documentation and institutional memor
 - **Summary**: Redesigned the sync scroll lock toggle button: anchored it to the bottom of the window divider (`.dualpane-splitter-line:first-child { flex: 1 }` and `:last-child { flex: 0 0 8px }`) to completely eliminate any collisions with document headers or the secondary placeholder island. Reshaped the button into a modern squircle (`border-radius: 4px`), and applied a cosmic galaxy nebula gradient (`linear-gradient(135deg, #4f46e5 0%, #7c3aed 45%, #c026d3 75%, #ec4899 100%)`) with white starlight icon and radiant violet/magenta glow when selected/active.
 
 ### 2026-10-18: Dual Mode Spatial Drop UI & Extreme Squish Resolution
-- **Summary**: Implemented spatially aware drag & drop overlay targeting in Dual Pane mode: tracked live cursor coordinates across DOM dragover and native OLE events, dynamically bound the frosted drop overlay to the hovered pane (`Drop in Left Pane` vs `Drop in Right Pane`), and added smooth 0.12s slide transitions between panes while leaving the non-hovered document visible. Resolved extreme window squishing (220px × 200px) by changing compact button copy from `Open...` to `Open` (eliminating `O...` ellipsis truncation), reserving a 34px protected bottom zone for the sync button, and introducing `@container (max-width: 140px)` ultra-compact sizing to keep the island card completely unclipped with full corner and dashed border integrity.
+- **Summary**: Implemented spatially aware drag & drop overlay targeting in Dual Pane mode: tracked live cursor coordinates across DOM dragover and native OLE events, dynamically bound the frosted drop overlay to the hovered pane (`Drop in Left Pane` vs `Drop in Right Pane`), and added smooth 0.12s slide transitions between panes while leaving the non-hovered document visible. Resolved extreme window squishing (220px Ã— 200px) by changing compact button copy from `Open...` to `Open` (eliminating `O...` ellipsis truncation), reserving a 34px protected bottom zone for the sync button, and introducing `@container (max-width: 140px)` ultra-compact sizing to keep the island card completely unclipped with full corner and dashed border integrity.
 - **Files Modified**:
   - `src-ui/src/components/DropOverlay.ts`: Added `updateSpatialTarget()` and contextual pane titles (57 lines).
   - `src-ui/src/services/dragDropService.ts`: Added `onDragOver` cursor position tracking across DOM and Tauri events (67 lines).
@@ -182,15 +193,15 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/styles/dualpane.css`: Added bottom sync reservation (34px) and `@container (max-width: 140px)` ultra-compact sizing (520 lines).
 
 ### 2026-10-18: Dual Pane Secondary Island Center Alignment & Button Slicing Prevention
-- **Summary**: Corrected vertical and horizontal centering of the secondary document placeholder island (`.dualpane-empty-card`) when squished in Dual Pane mode. Restored symmetric vertical padding (`10px` top/bottom for <=175px, `8px` top/bottom for <=140px and <=280px height) and unconstrained `max-height: 100%` on the card without `overflow: hidden`, completely eliminating upward vertical displacement and horizontal slicing of the "Open" button. Removed WebView2 scrollbar gutter via `.dualpane-empty::-webkit-scrollbar { display: none }`, and maintained symmetric `12px–14px` horizontal padding for equal breathing room and clearance on both sides.
+- **Summary**: Corrected vertical and horizontal centering of the secondary document placeholder island (`.dualpane-empty-card`) when squished in Dual Pane mode. Restored symmetric vertical padding (`10px` top/bottom for <=175px, `8px` top/bottom for <=140px and <=280px height) and unconstrained `max-height: 100%` on the card without `overflow: hidden`, completely eliminating upward vertical displacement and horizontal slicing of the "Open" button. Removed WebView2 scrollbar gutter via `.dualpane-empty::-webkit-scrollbar { display: none }`, and maintained symmetric `12pxâ€“14px` horizontal padding for equal breathing room and clearance on both sides.
 - **Files Modified**:
   - `src-ui/styles/dualpane.css`: Replaced asymmetric bottom padding with symmetric insets, removed scrollbar gutter, set `max-height: 100%`, and adjusted compact container queries (526 lines).
 
 ### 2026-10-18: Dual Drop Zones, Window Constraints (200x300), Secondary Island New Document, and Font Dropdown Scrolling
 - **Summary**: Delivered a major usability and ergonomics update across Dual Pane mode, window resizing, and the Settings window:
   1. **Simultaneous Dual Drop Targets**: Replaced the one-sided single drop overlay with simultaneous dual-zone drop targets in Dual Pane mode (`.drop-zone-left` and `.drop-zone-right`). Both panes are clearly presented to the user during file dragging, with live cursor tracking dynamically lighting up the hovered pane with radiant accent glow (`.active-target`) while keeping the non-hovered pane visible as an idle drop target (`.idle-target`). Replaced the solid white curtain with a translucent frosted glass backdrop (`rgba(..., 0.45-0.55)` with `backdrop-filter: blur(16px)`).
-  2. **Window Minimum Drag/Resize Constraints (200 × 300)**: Configured `"minWidth": 200, "minHeight": 300` in `tauri.conf.json`, guaranteeing at least 240px of vertical editor height below the topbar and headers to permanently eliminate vertical squishing or button slicing.
-  3. **Secondary Island "New Document" & Card Close**: Added a primary `[ + New Document ]` (compact `[ + New ]`) action alongside `[ 📂 Open Document... ]` (compact `[ Open ]`) to allow instant side-by-side note-taking and scratchpad editing without an existing file on disk. Added a card-level frosted circular close button (`✕`) to easily dismiss Dual Mode directly from the island.
+  2. **Window Minimum Drag/Resize Constraints (200 Ã— 300)**: Configured `"minWidth": 200, "minHeight": 300` in `tauri.conf.json`, guaranteeing at least 240px of vertical editor height below the topbar and headers to permanently eliminate vertical squishing or button slicing.
+  3. **Secondary Island "New Document" & Card Close**: Added a primary `[ + New Document ]` (compact `[ + New ]`) action alongside `[ ðŸ“‚ Open Document... ]` (compact `[ Open ]`) to allow instant side-by-side note-taking and scratchpad editing without an existing file on disk. Added a card-level frosted circular close button (`âœ•`) to easily dismiss Dual Mode directly from the island.
   4. **Settings Typography Font Dropdown Scrolling**: Fixed `scrollCloseHandler` in `FontSelect.ts` to inspect `e.target` and ignore scroll events within `#font-select-menu`, preventing the menu from collapsing when scrolled. Added `overscroll-behavior: contain`, increased `max-height` to 152px, enabled a sleek 3px micro-scrollbar thumb, and auto-scrolled the active font into view upon opening.
 - **Files Modified**:
   - `src-tauri/tauri.conf.json`: Set `"minWidth": 200` and `"minHeight": 300` (49 lines).
@@ -206,8 +217,8 @@ This document serves as the living project documentation and institutional memor
 
 ### 2026-10-18: Secondary Island Close Removal, Dual Mode 350x350 Window Floor, and File Drop Island Transparency
 - **Summary**: Implemented user refinements for Dual Pane mode and file drag-and-drop:
-  1. **Removed Island ✕ Close Button**: Eliminated the circular close button from `.dualpane-empty-card` in `DualPaneEmptyDropzone.ts` and `dualpane.css`, keeping the card focused purely on document creation and file opening while relying on the secondary pane header's `✕` button for Dual Mode exit.
-  2. **Enforced 350 × 350 Minimum Window Size in Dual Mode**: Implemented `set_window_min_size` in `src-tauri/src/commands/window.rs` and `src-ui/src/services/windowService.ts`. When activating Dual Mode, Cathet locks the OS-level DWM minimum window size to `350 × 350` and automatically expands the window if width or height is below 350px. When exiting Dual Mode, the window floor is cleanly restored to the single-pane minimum (`200 × 300`).
+  1. **Removed Island âœ• Close Button**: Eliminated the circular close button from `.dualpane-empty-card` in `DualPaneEmptyDropzone.ts` and `dualpane.css`, keeping the card focused purely on document creation and file opening while relying on the secondary pane header's `âœ•` button for Dual Mode exit.
+  2. **Enforced 350 Ã— 350 Minimum Window Size in Dual Mode**: Implemented `set_window_min_size` in `src-tauri/src/commands/window.rs` and `src-ui/src/services/windowService.ts`. When activating Dual Mode, Cathet locks the OS-level DWM minimum window size to `350 Ã— 350` and automatically expands the window if width or height is below 350px. When exiting Dual Mode, the window floor is cleanly restored to the single-pane minimum (`200 Ã— 300`).
   3. **File Drop Island Transparency**: In `DropOverlay.ts`, toggled `document.body.classList.add("is-dragging")` on drag entrance and removed it on completion/cancellation. Styled `body.is-dragging .dualpane-empty` with `opacity: 0; visibility: hidden; pointer-events: none;`, completely hiding the underlying placeholder island during file dragging and eliminating ghost text collisions with the frosted drop target card.
 - **Files Modified**:
   - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`: Removed close button and click listener (61 lines).
@@ -266,3 +277,29 @@ This document serves as the living project documentation and institutional memor
 
 
 
+
+
+### 2026-10-29: Cross-Platform Android Support Architecture & UI Adaptations
+- **Summary**: Implemented full cross-platform decoupling and frontend mobile adaptations to enable Cathet on Android while preserving 100% of Windows features:
+  1. **Rust Cross-Platform Decoupling**: Moved `windows-sys` and `window-vibrancy` under `[target.'cfg(windows)'.dependencies]` in `Cargo.toml`. Isolated Windows-specific Win32 Registry associations, DWM Acrylic backdrops, process working set memory trimming, and `.exe` auto-replacement behind `#[cfg(target_os = "windows")]` with safe no-op/fallback stubs on mobile.
+  2. **In-App Mobile Settings Modal**: Replaced multi-window requirement on mobile by creating `SettingsModal.ts` and `mobileCoordinator.ts` to host `SettingsTabs` inside an in-app frosted glass sheet mounted in `index.html`.
+  3. **Mobile Action Toolbar**: Built `MobileActionBar.ts` and `mobile.css` providing touch-friendly controls (Markdown preview toggle, quick save, open, dual pane, and settings) with safe area insets and soft keyboard `interactive-widget=resizes-content` handling.
+  4. **Responsive Dual Pane Portrait**: Pivoted narrow screen Dual Pane (< 600px) to top/bottom vertical split layout while keeping bidirectional synced scrolling active.
+  5. **Unified Build Pipeline**: Extended `build.ps1` with `-AndroidDev` and `-AndroidBuild` options for running live development on USB devices and building universal `.apk` packages.
+  6. **Anti-Monolith Modularity**: Verified all 12 modified/created files strictly respect the < 250 lines/file ceiling.
+- **Files Modified / Added**:
+  - `src-tauri/Cargo.toml`: Gated platform dependencies (57 lines).
+  - `src-tauri/src/commands/vibrancy.rs`: Added non-Windows stubs (163 lines).
+  - `src-tauri/src/commands/association.rs`: Added non-Windows stubs (224 lines).
+  - `src-tauri/src/commands/window.rs`: Added mobile modal event emission and sizing guards (143 lines).
+  - `src-tauri/src/commands/updater.rs`: Added mobile APK asset match & desktop guards (234 lines).
+  - `src-tauri/src/commands/file.rs`: Guarded desktop multi-file spawn (175 lines).
+  - `src-tauri/src/lib.rs`: Platform-gated desktop window event listeners (104 lines).
+  - `src-ui/src/services/platformService.ts`: Created device/OS detection service (42 lines).
+  - `src-ui/src/services/mobileCoordinator.ts`: Created mobile lifecycle and event coordinator (64 lines).
+  - `src-ui/src/components/SettingsModal.ts`: Created in-app frosted glass settings sheet (152 lines).
+  - `src-ui/src/components/MobileActionBar.ts`: Created touch quick action bar (110 lines).
+  - `src-ui/styles/mobile.css`: Created mobile touch, safe-area, and portrait split styles (156 lines).
+  - `src-ui/src/main.ts`: Integrated mobile coordinator and streamlined lines (248 lines).
+  - `index.html`: Added mobile viewport-fit, interactive-widget, and stylesheet links (34 lines).
+  - `build.ps1`: Added `-AndroidDev` and `-AndroidBuild` switches (274 lines).

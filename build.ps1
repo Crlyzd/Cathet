@@ -1,11 +1,12 @@
 <#
 .SYNOPSIS
-    build.ps1 - Cathet Unified Automation Pipeline (Interactive CLI, Dev, Build, Check, Bump)
+    build.ps1 - Cathet Unified Automation Pipeline (Interactive CLI, Dev, Build, Check, Bump, Android)
 #>
 
 param(
     [switch]$Dev, [switch]$Live, [switch]$Check, [switch]$Build,
     [switch]$BuildX64, [switch]$BuildArm64, [switch]$All, [switch]$Run,
+    [switch]$AndroidDev, [switch]$AndroidBuild,
     [switch]$Patch, [switch]$Minor, [switch]$Major,
     [string]$TargetVersion, [string]$OutputDir = "release",
     [int]$Port = 0, [switch]$NoPause, [switch]$Help
@@ -31,9 +32,7 @@ function Get-NativeArch {
 }
 
 function Show-HelpGuide {
-    $ver = Get-AppVersion
-    $arch = Get-NativeArch
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build native fast executable (cathet-v$ver-$arch-fast.exe)`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific distribution release binary (smallest size)`n  .\build.ps1 -All                   -> Build both x64 and ARM64 distribution binaries (2 versioned files)`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -TargetVersion 1.2.3   -> Explicit version bump`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1                        -> Interactive CLI menu`n  .\build.ps1 -Dev / -Live           -> Launch desktop live dev mode (hot reload)`n  .\build.ps1 -Check                 -> Run TypeScript build & Cargo check`n  .\build.ps1 -Build [-Run]          -> Build native fast executable`n  .\build.ps1 -BuildX64 / -BuildArm64-> Build target-specific distribution release binary`n  .\build.ps1 -All                   -> Build both x64 and ARM64 release binaries`n  .\build.ps1 -AndroidDev            -> Launch Android live dev on USB device / emulator`n  .\build.ps1 -AndroidBuild          -> Build release Android APK package`n  .\build.ps1 -Patch|-Minor|-Major   -> Bump version across all manifests`n  .\build.ps1 -NoPause               -> Non-interactive exit (for CI/CD)" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -101,7 +100,6 @@ function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$
     if ($newVer -notmatch '^\d+\.\d+\.\d+') { throw "Invalid SemVer format: '$newVer'. Expected X.Y.Z" }
     Write-Host "Bumping version to: $newVer" -ForegroundColor Green
 
-    # Safely bump package.json and package-lock.json via npm to prevent lockfile corruption
     npm version $newVer --no-git-tag-version --allow-same-version | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "npm version bump failed." }
 
@@ -114,29 +112,28 @@ function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$
     Write-Host "Version bumped successfully: $currentVer -> $newVer" -ForegroundColor Green
 }
 
-function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$versionedFileName, [string]$profile = "release") {
+function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$versionedFileName, [string]$cargoProfile = "release") {
     Stop-ActiveProcesses
     if ($targetTriple) { Confirm-Target $targetTriple }
-    Write-Host "`n>>> Compiling ($profile) for $label ($targetTriple)..." -ForegroundColor Yellow
+    Write-Host "`n>>> Compiling ($cargoProfile) for $label ($targetTriple)..." -ForegroundColor Yellow
     npm run build | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "Frontend build failed with exit code $LASTEXITCODE." }
 
     $manifest = Join-Path $ProjectRoot "src-tauri\Cargo.toml"
     $sourceBin = if ($targetTriple) {
-        Join-Path $ProjectRoot "src-tauri\target\$targetTriple\$profile\cathet.exe"
+        Join-Path $ProjectRoot "src-tauri\target\$targetTriple\$cargoProfile\cathet.exe"
     } else {
-        Join-Path $ProjectRoot "src-tauri\target\$profile\cathet.exe"
+        Join-Path $ProjectRoot "src-tauri\target\$cargoProfile\cathet.exe"
     }
 
-    # Remove stale binary if present so a compilation failure never reuses an old artifact
     Remove-Item -Path $sourceBin -Force -ErrorAction SilentlyContinue
 
     if ($targetTriple) {
-        cargo build --profile $profile --target $targetTriple --manifest-path $manifest
+        cargo build --profile $cargoProfile --target $targetTriple --manifest-path $manifest
     } else {
-        cargo build --profile $profile --manifest-path $manifest
+        cargo build --profile $cargoProfile --manifest-path $manifest
     }
-    if ($LASTEXITCODE -ne 0) { throw "Cargo $profile build failed with exit code $LASTEXITCODE." }
+    if ($LASTEXITCODE -ne 0) { throw "Cargo $cargoProfile build failed with exit code $LASTEXITCODE." }
 
     if (-not (Test-Path $sourceBin)) { throw "Binary not found at: $sourceBin" }
     if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
@@ -148,35 +145,68 @@ function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$ve
     return $destPath
 }
 
-function Show-InteractiveMenu {
+function Ensure-AndroidInit {
+    $androidGen = Join-Path $ProjectRoot "src-tauri\gen\android"
+    if (-not (Test-Path $androidGen)) {
+        Write-Host "First-time Android setup: Initializing native project wrapper..." -ForegroundColor Yellow
+        npx tauri android init
+        if ($LASTEXITCODE -ne 0) { throw "Tauri android init failed." }
+    }
+}
+
+function Invoke-AndroidDev {
+    Ensure-AndroidInit
+    Write-Host "`nLaunching Android Live Dev (Connecting to USB device / emulator)..." -ForegroundColor Cyan
+    npx tauri android dev
+}
+
+function Invoke-AndroidBuild {
+    Ensure-AndroidInit
     $ver = Get-AppVersion
-    $arch = Get-NativeArch
+    Write-Host "`nCompiling Android Universal Release APK..." -ForegroundColor Cyan
+    npx tauri android build --apk
+    if ($LASTEXITCODE -ne 0) { throw "Tauri android build failed with exit code $LASTEXITCODE." }
+    
+    $apkSrc = Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release-unsigned.apk"
+    if (Test-Path $apkSrc) {
+        if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
+        $apkDest = Join-Path $ReleaseDir "cathet-v$ver-android.apk"
+        Copy-Item -Path $apkSrc -Destination $apkDest -Force
+        $sizeMb = [math]::Round((Get-Item $apkDest).Length / 1MB, 2)
+        Write-Host "Android APK created: $apkDest ($sizeMb MB)" -ForegroundColor Green
+    }
+}
+
+function Show-InteractiveMenu {
+    $ver = Get-AppVersion; $arch = Get-NativeArch
     Write-Host @"
 Select an action:
-  [1] Live Development (Hot Reload) [Default]
+  [1] Live Development (Desktop Hot Reload) [Default]
   [2] Run Verification Checks (Vite + Cargo)
   [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe
   [4] Build & Launch Native ($arch) Fast Executable Immediately
   [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe
   [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe
-  [7] Build All Targets Release (Smallest) -> x64 and ARM64 (2 versioned binaries)
-  [8] Bump Project Version (Current: v$ver)
+  [7] Build All Windows Targets Release -> x64 and ARM64
+  [8] Android Live Dev (USB Device / Emulator)
+  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk
+  [10] Bump Project Version (Current: v$ver)
   [Q] Exit
 "@ -ForegroundColor Yellow
-    $c = (Read-Host "Enter option [1-8, Q] (Default: 1)").Trim()
+    $c = (Read-Host "Enter option [1-10, Q] (Default: 1)").Trim()
     return $(if ($c) { $c } else { "1" })
 }
 
 function Invoke-Pipeline([hashtable]$opts) {
     if ($opts.Check) { Invoke-CheckMode; return }
+    if ($opts.AndroidDev) { Invoke-AndroidDev; return }
+    if ($opts.AndroidBuild) { Invoke-AndroidBuild; return }
     if ($opts.TargetVersion -or $opts.Patch -or $opts.Minor -or $opts.Major) {
         Invoke-VersionBump $opts.TargetVersion ([bool]$opts.Patch) ([bool]$opts.Minor) ([bool]$opts.Major)
         return
     }
 
-    $ver = Get-AppVersion
-    $nativeArch = Get-NativeArch
-    $compiledBin = $null
+    $ver = Get-AppVersion; $nativeArch = Get-NativeArch; $compiledBin = $null
     if ($opts.All) {
         Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
         Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
@@ -192,12 +222,8 @@ function Invoke-Pipeline([hashtable]$opts) {
     }
 
     if ($compiledBin -and $opts.Run) {
-        if ($compiledBin -match "arm64" -and $nativeArch -ne "arm64") {
-            Write-Host "Notice: Cannot launch ARM64 executable on an $nativeArch host." -ForegroundColor Yellow
-        } else {
-            Write-Host "Launching: $compiledBin" -ForegroundColor Cyan
-            Start-Process -FilePath $compiledBin
-        }
+        Write-Host "Launching: $compiledBin" -ForegroundColor Cyan
+        Start-Process -FilePath $compiledBin
     }
 
     if ($opts.Dev -or $opts.Live) {
@@ -235,7 +261,9 @@ try {
                 "5" { $runOpts.BuildX64 = $true }
                 "6" { $runOpts.BuildArm64 = $true }
                 "7" { $runOpts.All = $true }
-                "8" {
+                "8" { $runOpts.AndroidDev = $true }
+                "9" { $runOpts.AndroidBuild = $true }
+                "10" {
                     $bChoice = (Read-Host "`nBump type: [1] Patch [2] Minor [3] Major [4] Custom (Default: 1)").Trim()
                     if ($bChoice -eq "2") { $runOpts.Minor = $true }
                     elseif ($bChoice -eq "3") { $runOpts.Major = $true }
@@ -245,14 +273,14 @@ try {
                     } else { $runOpts.Patch = $true }
                 }
                 { $_ -in "q","Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
-                default { Write-Host "Invalid option '$_'. Choose 1-8 or Q." -ForegroundColor Red; continue }
+                default { Write-Host "Invalid option '$_'. Choose 1-10 or Q." -ForegroundColor Red; continue }
             }
             Invoke-Pipeline $runOpts
             $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim()
             if ($ans -eq "q" -or $ans -eq "Q") { Invoke-Exit 0 }
         }
     } else {
-        Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; All = $All; Run = $Run; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port }
+        Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port }
         Invoke-Exit 0
     }
 } catch {
