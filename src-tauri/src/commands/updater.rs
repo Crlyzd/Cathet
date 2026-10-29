@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports)]
+
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs::File;

@@ -39,6 +39,10 @@ windows-sys = { version = "0.59", features = [
 [target.'cfg(not(windows))'.dependencies]
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+ndk-context = "0.1"
+
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]

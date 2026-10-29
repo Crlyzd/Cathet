@@ -12,6 +12,8 @@ pub struct FilePayload {
     pub path: String,
     pub content: String,
     pub file_size: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
 }
 
 const FILTER_ALL_SUPPORTED: &[&str] = &[
@@ -29,6 +31,18 @@ use crate::encoding::decode_text_bytes;
 
 #[tauri::command]
 pub async fn read_text_file(path: String) -> Result<FilePayload, String> {
+    if path.starts_with("content://") {
+        let (display_name, raw_bytes) = crate::commands::android_fs::read_content_uri(&path)?;
+        let content = decode_text_bytes(&raw_bytes)?;
+        let file_size = raw_bytes.len() as u64;
+        return Ok(FilePayload {
+            path,
+            content,
+            file_size,
+            display_name: Some(display_name),
+        });
+    }
+
     let path_buf = PathBuf::from(&path);
     let metadata = fs::metadata(&path_buf).map_err(|e| e.to_string())?;
     let raw_bytes = fs::read(&path_buf).map_err(|e| e.to_string())?;
@@ -38,16 +52,23 @@ pub async fn read_text_file(path: String) -> Result<FilePayload, String> {
         path,
         content,
         file_size: metadata.len(),
+        display_name: None,
     })
 }
 
 #[tauri::command]
 pub async fn write_text_file(path: String, content: String) -> Result<(), String> {
+    if path.starts_with("content://") {
+        return crate::commands::android_fs::write_content_uri(&path, content.as_bytes());
+    }
     fs::write(path, content).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn is_file_readonly(path: String) -> Result<bool, String> {
+    if path.starts_with("content://") {
+        return Ok(false);
+    }
     let metadata = fs::metadata(&path).map_err(|e| e.to_string())?;
     Ok(metadata.permissions().readonly())
 }
@@ -120,6 +141,8 @@ pub async fn get_initial_file(state: State<'_, AppState>) -> Result<Option<FileP
     if let Some(path_buf) = path_opt {
         let path_str = path_buf.to_string_lossy().to_string();
         read_text_file(path_str).await.map(Some)
+    } else if let Some(android_uri) = crate::commands::android_fs::get_android_initial_uri() {
+        read_text_file(android_uri).await.map(Some)
     } else {
         Ok(None)
     }

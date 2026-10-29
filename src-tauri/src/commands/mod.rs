@@ -1,3 +1,4 @@
+pub mod android_fs;
 pub mod association;
 pub mod file;
 pub mod memory;
