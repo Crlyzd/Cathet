@@ -39,19 +39,8 @@ pub struct DownloadProgress {
 
 #[tauri::command]
 pub async fn check_for_updates() -> Result<UpdateInfo, String> {
-    let url = format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO);
-    let client = reqwest::Client::builder()
-        .user_agent("Cathet-Updater")
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let response = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| format!("Failed to fetch release: {}", e))?;
-
-    if !response.status().is_success() {
+    #[cfg(target_os = "android")]
+    {
         return Ok(UpdateInfo {
             update_available: false,
             current_version: CURRENT_VERSION.into(),
@@ -61,25 +50,50 @@ pub async fn check_for_updates() -> Result<UpdateInfo, String> {
         });
     }
 
-    let release: GithubRelease = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse release: {}", e))?;
+    #[cfg(not(target_os = "android"))]
+    {
+        let url = format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO);
+        let client = reqwest::Client::builder()
+            .user_agent("Cathet-Updater")
+            .build()
+            .map_err(|e| e.to_string())?;
 
-    let latest_tag = release.tag_name.trim_start_matches('v');
-    let has_update = is_newer_version(latest_tag, CURRENT_VERSION);
-    let matching_asset = find_matching_asset(&release.assets);
-    let download_url = matching_asset
-        .map(|a| a.browser_download_url.clone())
-        .unwrap_or_default();
+        let response = client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| format!("Failed to fetch release: {}", e))?;
 
-    Ok(UpdateInfo {
-        update_available: has_update && !download_url.is_empty(),
-        current_version: CURRENT_VERSION.into(),
-        latest_version: latest_tag.into(),
-        download_url,
-        release_notes: release.body.unwrap_or_default(),
-    })
+        if !response.status().is_success() {
+            return Ok(UpdateInfo {
+                update_available: false,
+                current_version: CURRENT_VERSION.into(),
+                latest_version: CURRENT_VERSION.into(),
+                download_url: String::new(),
+                release_notes: String::new(),
+            });
+        }
+
+        let release: GithubRelease = response
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse release: {}", e))?;
+
+        let latest_tag = release.tag_name.trim_start_matches('v');
+        let has_update = is_newer_version(latest_tag, CURRENT_VERSION);
+        let matching_asset = find_matching_asset(&release.assets);
+        let download_url = matching_asset
+            .map(|a| a.browser_download_url.clone())
+            .unwrap_or_default();
+
+        Ok(UpdateInfo {
+            update_available: has_update && !download_url.is_empty(),
+            current_version: CURRENT_VERSION.into(),
+            latest_version: latest_tag.into(),
+            download_url,
+            release_notes: release.body.unwrap_or_default(),
+        })
+    }
 }
 
 #[tauri::command]
@@ -87,14 +101,22 @@ pub async fn download_update_payload(
     app_handle: AppHandle,
     download_url: String,
 ) -> Result<String, String> {
-    if download_url.is_empty() {
-        return Err("Download URL is empty".into());
+    #[cfg(target_os = "android")]
+    {
+        let _ = (app_handle, download_url);
+        return Err("Self-updating executable is only supported on Windows desktop.".into());
     }
 
-    let client = reqwest::Client::builder()
-        .user_agent("Cathet-Updater")
-        .build()
-        .map_err(|e| e.to_string())?;
+    #[cfg(not(target_os = "android"))]
+    {
+        if download_url.is_empty() {
+            return Err("Download URL is empty".into());
+        }
+
+        let client = reqwest::Client::builder()
+            .user_agent("Cathet-Updater")
+            .build()
+            .map_err(|e| e.to_string())?;
 
     let mut response = client
         .get(&download_url)
@@ -128,6 +150,7 @@ pub async fn download_update_payload(
     );
 
     Ok(staging_path.to_string_lossy().to_string())
+    }
 }
 
 #[tauri::command]
