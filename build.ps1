@@ -137,29 +137,117 @@ function Resolve-CompatibleJavaHome {
     throw "Compatible JDK (17 or 21 LTS) required. Java 25 triggers error 69. Run: winget install Microsoft.OpenJDK.21"
 }
 
-function Ensure-AndroidInit {
+function Initialize-AndroidEnvironment {
     Resolve-CompatibleJavaHome
+    $sdk = if ($env:ANDROID_HOME -and (Test-Path $env:ANDROID_HOME)) { $env:ANDROID_HOME }
+    elseif ($env:ANDROID_SDK_ROOT -and (Test-Path $env:ANDROID_SDK_ROOT)) { $env:ANDROID_SDK_ROOT }
+    elseif (Test-Path "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe") { "$env:LOCALAPPDATA\Android\Sdk" } else { $null }
+    if (-not $sdk) {
+        Write-Host "`n[Android SDK] Headless Android SDK is not yet installed." -ForegroundColor Yellow
+        $c = (Read-Host "Install minimal headless Android SDK (~1.2 GB)? [Y/n] (Default: Y)").Trim()
+        if ($c -eq "n" -or $c -eq "N") { throw "Android SDK required. Run again and accept [Y] or install manually." }
+        Install-MinimalAndroidSdk | Out-Null; $sdk = Join-Path $env:LOCALAPPDATA "Android\Sdk"
+    }
+    $sdk = [string]$sdk; $env:ANDROID_HOME = $sdk; $env:ANDROID_SDK_ROOT = $sdk
+    foreach ($sub in "platform-tools", "emulator", "cmdline-tools\latest\bin") {
+        $p = Join-Path $sdk $sub; if ((Test-Path $p) -and ($env:PATH -notmatch [regex]::Escape($p))) { $env:PATH = "$p;$env:PATH" }
+    }
+    if (-not $env:NDK_HOME) {
+        $ndkRoot = Join-Path $sdk "ndk"
+        if (Test-Path $ndkRoot) {
+            $latest = Get-ChildItem -Path $ndkRoot -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+            if ($latest) { $env:NDK_HOME = $latest.FullName }
+        }
+    }
     $androidGen = Join-Path $ProjectRoot "src-tauri\gen\android"
     if (-not (Test-Path $androidGen)) {
-        Write-Host "First-time Android setup: Initializing native project wrapper..." -ForegroundColor Yellow
-        npx tauri android init
-        if ($LASTEXITCODE -ne 0) { throw "Tauri android init failed." }
+        Write-Host "Initializing Android project wrapper via Tauri..." -ForegroundColor Yellow
+        npx tauri android init; if ($LASTEXITCODE -ne 0) { throw "Tauri android init failed." }
+    }
+    $gp = Join-Path $androidGen "gradle.properties"
+    if ((Test-Path $gp) -and ((Get-Content $gp -Raw) -notmatch 'kotlin\.incremental')) {
+        Add-Content -Path $gp -Value "`nkotlin.incremental=false`nandroid.javaCompile.suppressSourceTargetDeprecationWarning=true"
     }
 }
 
+function Install-MinimalAndroidSdk {
+    $sdk = Join-Path $env:LOCALAPPDATA "Android\Sdk"; $latestDir = Join-Path $sdk "cmdline-tools\latest"
+    Write-Host "`n>>> Setting up Minimal Headless Android SDK (~1.2 GB) in: $sdk" -ForegroundColor Cyan
+    $tZip = Join-Path $env:TEMP "cathet-cmdline-tools.zip"; $tExt = Join-Path $env:TEMP "cathet-cmdline-tools-ext"
+    Remove-Item $tZip, $tExt -Recurse -Force -ErrorAction SilentlyContinue
+    $cliUrl = "https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip"
+    if (Get-Command curl.exe -ErrorAction SilentlyContinue) { curl.exe -L --progress-bar $cliUrl -o $tZip }
+    else { $prev = $ProgressPreference; $ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri $cliUrl -OutFile $tZip; $ProgressPreference = $prev }
+    Expand-Archive -Path $tZip -DestinationPath $tExt -Force
+    if (Test-Path $latestDir) { Remove-Item $latestDir -Recurse -Force }
+    New-Item -ItemType Directory -Path (Join-Path $sdk "cmdline-tools") -Force | Out-Null
+    Move-Item -Path (Join-Path $tExt "cmdline-tools") -Destination $latestDir -Force; Remove-Item $tZip, $tExt -Recurse -Force -ErrorAction SilentlyContinue
+    $sdkMgr = Join-Path $latestDir "bin\sdkmanager.bat"
+    cmd.exe /c "(for /l %i in (1,1,25) do @echo y) | `"$sdkMgr`" --sdk_root=`"$sdk`" --licenses" 2>$null | Out-Null
+    cmd.exe /c "(for /l %i in (1,1,25) do @echo y) | `"$sdkMgr`" --sdk_root=`"$sdk`" `"platform-tools`" `"platforms;android-34`" `"build-tools;34.0.0`" `"ndk;26.3.11579264`"" | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "Android SDK package installation failed with exit code $LASTEXITCODE." }
+    Write-Host "Minimal Android SDK setup completed successfully!" -ForegroundColor Green; return $sdk
+}
+
 function Invoke-AndroidDev {
-    Ensure-AndroidInit
-    Write-Host "`nLaunching Android Live Dev (Connecting to USB device / emulator)..." -ForegroundColor Cyan
-    npx tauri android dev
+    Initialize-AndroidEnvironment; Confirm-Target @("x86_64-linux-android", "aarch64-linux-android")
+    $targetDevId = $null
+    if (Get-Command adb -ErrorAction SilentlyContinue) {
+        $prevEAP = $ErrorActionPreference; $ErrorActionPreference = 'SilentlyContinue'
+        while ($true) {
+            $raw = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\t(device|emulator|unauthorized)' })
+            if (@($raw | Where-Object { $_ -match '\tunauthorized' }).Count -gt 0) {
+                Write-Host "`n[ALERT] Device connected but UNAUTHORIZED! Unlock phone and tap Allow." -ForegroundColor Yellow
+                $ans = (Read-Host "Press Enter once allowed (or 'q' to skip)").Trim(); if ($ans -in "q", "Q") { break } else { continue }
+            }
+            $ready = @($raw | Where-Object { $_ -match '\t(device|emulator)' })
+            if ($ready.Count -gt 1) {
+                Write-Host "`nMultiple active Android targets found:" -ForegroundColor Cyan
+                for ($i = 0; $i -lt $ready.Count; $i++) {
+                    $did = $ready[$i].Split("`t")[0]; $m = (cmd.exe /c "adb -s $did shell getprop ro.product.model 2>nul").Trim(); Write-Host "  [$($i+1)] $did ($m)"
+                }
+                $sel = (Read-Host "Select target [1-$($ready.Count)] (Default: 1)").Trim()
+                $idx = if ($sel -match '^\d+$' -and [int]$sel -ge 1 -and [int]$sel -le $ready.Count) { [int]$sel - 1 } else { 0 }
+                $targetDevId = $ready[$idx].Split("`t")[0]
+            } elseif ($ready.Count -eq 1) { $targetDevId = $ready[0].Split("`t")[0]
+            } elseif (Get-Command emulator -ErrorAction SilentlyContinue) {
+                $avds = @(cmd.exe /c "emulator -list-avds 2>nul")
+                if ($avds.Count -gt 0) {
+                    $avd = $avds[0]; Write-Host "Starting headless emulator '$avd' with host GPU..." -ForegroundColor Yellow
+                    Start-Process "emulator" -ArgumentList "-avd", "$avd", "-gpu", "host"
+                    Write-Host "Waiting for emulator to complete boot..." -ForegroundColor Yellow
+                    for ($w = 0; $w -lt 60; $w++) {
+                        Start-Sleep -Seconds 2; if ((cmd.exe /c "adb shell getprop sys.boot_completed 2>nul").Trim() -eq "1") { break }
+                    }
+                    $readyEmu = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\tdevice' })
+                    if ($readyEmu.Count -gt 0) { $targetDevId = $readyEmu[0].Split("`t")[0] }
+                } else { Write-Host "[Note] Connect phone via USB or create an AVD with avdmanager." -ForegroundColor Yellow }
+            }
+            break
+        }
+        $ErrorActionPreference = $prevEAP
+    }
+    if (-not $targetDevId) { throw "No active Android device or emulator available." }
+    $m = (cmd.exe /c "adb -s $targetDevId shell getprop ro.product.model 2>nul").Trim(); $devName = if ($m) { "$m ($targetDevId)" } else { $targetDevId }
+    $abi = (cmd.exe /c "adb -s $targetDevId shell getprop ro.product.cpu.abi 2>nul").Trim()
+    $arch = if ($abi -match "x86_64") { "x86_64" } elseif ($abi -match "arm64|aarch64") { "aarch64" } else { "armv7" }
+    Write-Host "`n>>> [Headless] Building debug APK for $devName ($arch)..." -ForegroundColor Cyan
+    npx tauri android build --debug --apk -t $arch; if ($LASTEXITCODE -ne 0) { throw "Tauri android debug build failed." }
+    $apk = (Get-ChildItem -Path (Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk") -Recurse -Filter "*debug*.apk" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
+    if (-not $apk) { throw "Generated debug APK not found." }
+    Write-Host "Installing APK to $devName..." -ForegroundColor Cyan
+    cmd.exe /c "adb -s $targetDevId install -r `"$($apk.FullName)`""; if ($LASTEXITCODE -ne 0) { throw "ADB installation failed." }
+    Write-Host "Launching Cathet on $devName..." -ForegroundColor Green
+    cmd.exe /c "adb -s $targetDevId shell am start -n com.cathet.app/com.cathet.app.MainActivity"
+    Write-Host "Cathet is now running! Streaming logcat (Ctrl+C to stop):`n" -ForegroundColor Green
+    cmd.exe /c "adb -s $targetDevId logcat -c && adb -s $targetDevId logcat -s RustStdoutStderr:V Cathet:V Chromium:I"
 }
 
 function Invoke-AndroidBuild {
-    Ensure-AndroidInit
-    $ver = Get-AppVersion
+    Initialize-AndroidEnvironment; $ver = Get-AppVersion
+    Confirm-Target @("aarch64-linux-android", "armv7-linux-androideabi", "i686-linux-android", "x86_64-linux-android")
     Write-Host "`nCompiling Android Universal Release APK..." -ForegroundColor Cyan
-    npx tauri android build --apk
-    if ($LASTEXITCODE -ne 0) { throw "Tauri android build failed with exit code $LASTEXITCODE." }
-    
+    npx tauri android build --apk; if ($LASTEXITCODE -ne 0) { throw "Tauri android build failed with exit code $LASTEXITCODE." }
     $apkSrc = Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release-unsigned.apk"
     if (Test-Path $apkSrc) {
         if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
@@ -167,27 +255,21 @@ function Invoke-AndroidBuild {
         Copy-Item -Path $apkSrc -Destination $apkDest -Force
         $sizeMb = [math]::Round((Get-Item $apkDest).Length / 1MB, 2)
         Write-Host "Android APK created: $apkDest ($sizeMb MB)" -ForegroundColor Green
+        $devs = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\tdevice' })
+        if ($devs.Count -gt 0) {
+            $did = $devs[0].Split("`t")[0]
+            $c = (Read-Host "`nInstall release APK to connected USB device ($did)? [Y/n] (Default: n)").Trim()
+            if ($c -in "y", "Y") {
+                cmd.exe /c "adb -s $did install -r `"$apkDest`""; cmd.exe /c "adb -s $did shell am start -n com.cathet.app/com.cathet.app.MainActivity"
+            }
+        }
     }
 }
 
 function Show-InteractiveMenu {
     $ver = Get-AppVersion; $arch = Get-NativeArch
-    Write-Host @"
-Select an action:
-  [1] Live Development (Desktop Hot Reload) [Default]
-  [2] Run Verification Checks (Vite + Cargo)
-  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe
-  [4] Build & Launch Native ($arch) Fast Executable Immediately
-  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe
-  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe
-  [7] Build All Windows Targets Release -> x64 and ARM64
-  [8] Android Live Dev (USB Device / Emulator)
-  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk
-  [10] Bump Project Version (Current: v$ver)
-  [Q] Exit
-"@ -ForegroundColor Yellow
-    $c = (Read-Host "Enter option [1-10, Q] (Default: 1)").Trim()
-    return $(if ($c) { $c } else { "1" })
+    Write-Host "`nSelect an action:`n  [1] Live Development (Desktop Hot Reload) [Default]`n  [2] Run Verification Checks (Vite + Cargo)`n  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe`n  [4] Build & Launch Native ($arch) Fast Executable Immediately`n  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe`n  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe`n  [7] Build All Windows Targets Release -> x64 and ARM64`n  [8] Android Live Dev (USB Device / Emulator)`n  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk`n  [10] Bump Project Version (Current: v$ver)`n  [Q] Exit" -ForegroundColor Yellow
+    $c = (Read-Host "Enter option [1-10, Q] (Default: 1)").Trim(); return $(if ($c) { $c } else { "1" })
 }
 
 function Invoke-Pipeline([hashtable]$opts) {
@@ -203,17 +285,13 @@ function Invoke-Pipeline([hashtable]$opts) {
         Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
         $compiledBin = Join-Path $ReleaseDir "cathet-v$ver-$nativeArch.exe"
         Write-Host "`nAll release targets compiled successfully into '$OutputDir/'!" -ForegroundColor Green
-    } elseif ($opts.BuildArm64) {
-        $compiledBin = Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
-    } elseif ($opts.BuildX64) {
-        $compiledBin = Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
+    } elseif ($opts.BuildArm64) { $compiledBin = Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
+    } elseif ($opts.BuildX64) { $compiledBin = Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
     } elseif ($opts.Build) {
         $nativeTriple = if ($nativeArch -eq "arm64") { "aarch64-pc-windows-msvc" } else { "x86_64-pc-windows-msvc" }
         $compiledBin = Invoke-CompileTarget $nativeTriple "Windows $nativeArch" "cathet-v$ver-$nativeArch-fast.exe" "fast-release"
     }
-    if ($compiledBin -and $opts.Run) {
-        Write-Host "Launching: $compiledBin" -ForegroundColor Cyan; Start-Process -FilePath $compiledBin
-    }
+    if ($compiledBin -and $opts.Run) { Write-Host "Launching: $compiledBin" -ForegroundColor Cyan; Start-Process -FilePath $compiledBin }
     if ($opts.Dev -or $opts.Live) {
         $p = if ($opts.Port -gt 0) { $opts.Port } else { Get-FreePort 5173 }
         $env:PORT = "$p"; $env:VITE_PORT = "$p"
@@ -237,19 +315,13 @@ try {
         while ($true) {
             $sel = Show-InteractiveMenu; $runOpts = @{ Port = $Port }
             switch ($sel) {
-                "1" { $runOpts.Dev = $true }
-                "2" { $runOpts.Check = $true }
-                "3" { $runOpts.Build = $true }
-                "4" { $runOpts.Build = $true; $runOpts.Run = $true }
-                "5" { $runOpts.BuildX64 = $true }
-                "6" { $runOpts.BuildArm64 = $true }
-                "7" { $runOpts.All = $true }
-                "8" { $runOpts.AndroidDev = $true }
+                "1" { $runOpts.Dev = $true }; "2" { $runOpts.Check = $true }; "3" { $runOpts.Build = $true }
+                "4" { $runOpts.Build = $true; $runOpts.Run = $true }; "5" { $runOpts.BuildX64 = $true }
+                "6" { $runOpts.BuildArm64 = $true }; "7" { $runOpts.All = $true }; "8" { $runOpts.AndroidDev = $true }
                 "9" { $runOpts.AndroidBuild = $true }
                 "10" {
                     $bChoice = (Read-Host "`nBump type: [1] Patch [2] Minor [3] Major [4] Custom (Default: 1)").Trim()
-                    if ($bChoice -eq "2") { $runOpts.Minor = $true }
-                    elseif ($bChoice -eq "3") { $runOpts.Major = $true }
+                    if ($bChoice -eq "2") { $runOpts.Minor = $true } elseif ($bChoice -eq "3") { $runOpts.Major = $true }
                     elseif ($bChoice -eq "4") {
                         $v = (Read-Host "Enter target SemVer (e.g. 3.1.0)").Trim()
                         if ($v) { $runOpts.TargetVersion = $v } else { $runOpts.Patch = $true }
@@ -259,14 +331,12 @@ try {
                 default { Write-Host "Invalid option '$_'. Choose 1-10 or Q." -ForegroundColor Red; continue }
             }
             Invoke-Pipeline $runOpts
-            $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim()
-            if ($ans -eq "q" -or $ans -eq "Q") { Invoke-Exit 0 }
+            $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim(); if ($ans -in "q", "Q") { Invoke-Exit 0 }
         }
     } else {
         Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port }
         Invoke-Exit 0
     }
 } catch {
-    Write-Host "`n[BUILD ERROR] $_" -ForegroundColor Red
-    Invoke-Exit 1
+    Write-Host "`n[BUILD ERROR] $_" -ForegroundColor Red; Invoke-Exit 1
 }
