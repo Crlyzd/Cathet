@@ -63,6 +63,31 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-10-30: Android ContentResolver & SAF File Access Integration (`content://` URI Support)
+- **Summary**: Resolved Android file opening failure (`No such file or directory (os error 2)`) caused by passing Android Storage Access Framework (SAF) `content://` URIs directly to Rust's POSIX `std::fs` syscalls. Created `FileHelper.kt` utilizing Android's `ContentResolver` to provide stream-based file reading, writeback, and `OpenableColumns.DISPLAY_NAME` resolution. Bridged native Android storage to Rust in `commands/android_fs.rs` via JNI (`jni` and `ndk-context` under `cfg(target_os = "android")`), with clean compile-time elimination and zero overhead on Windows desktop targets. Updated `commands/file.rs` (`read_text_file`, `write_text_file`, `is_file_readonly`, `get_initial_file`) to transparently route `content://` URIs. Configured `ACTION_VIEW` intent-filters in `AndroidManifest.xml` and wired intent data capture in `MainActivity.kt` to support Android system-wide "Open With" for Markdown and text documents. Updated frontend `fileService.ts`, `dualPaneService.ts`, and `main.ts` to display human-readable file names in the title bar.
+- **Files Modified / Added**:
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/FileHelper.kt`: Created Kotlin ContentResolver input/output stream and display name helper.
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/MainActivity.kt`: Added `ACTION_VIEW` launch and new intent handling.
+  - `src-tauri/gen/android/app/src/main/AndroidManifest.xml`: Declared `android.intent.action.VIEW` intent filters for `.md`, `.markdown`, and `.txt` files.
+  - `src-tauri/Cargo.toml`: Added Android target dependencies (`jni`, `ndk-context`).
+  - `src-tauri/src/commands/android_fs.rs`: Created modular Rust JNI bridge for ContentResolver stream operations.
+  - `src-tauri/src/commands/mod.rs`: Registered `android_fs` submodule.
+  - `src-tauri/src/commands/file.rs`: Added `content://` URI routing, `displayName` field in `FilePayload`, and Android initial URI retrieval.
+  - `src-ui/src/services/fileService.ts`: Added `displayName` normalization.
+  - `src-ui/src/services/dualPaneService.ts`: Added support for custom display titles in formatted window title.
+  - `src-ui/src/main.ts`: Integrated display name resolution into `applyLoadedFile`.
+  - `history.md`: Recorded change log entry.
+
+### 2026-10-30: Android Release APK Signing Scheme & Automated Keystore Provisioning
+- **Summary**: Resolved the Android Package Installer rejection error (`App not installed as package appears to be invalid`) caused by distributing unsigned release APKs. Configured release `signingConfigs` in `src-tauri/gen/android/app/build.gradle.kts` targeting `cathet-release.jks` with fallback to the SDK debug keystore. Integrated automated release keystore generation (`keytool`) and persistent `local.properties` (`sdk.dir`) self-healing into `Initialize-AndroidEnvironment` in `build.ps1`. Updated `Invoke-AndroidBuild` (Option `[9]`) to locate and verify signed release outputs (`app-universal-release.apk`) using APK Signature Scheme v2, and implemented an interactive signature collision recovery guardrail for devices with pre-existing debug builds (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`).
+- **Files Modified / Added**:
+  - `src-tauri/gen/android/app/build.gradle.kts`: Declared release `signingConfigs` block and bound to `buildTypes.release`.
+  - `build.ps1`: Added automatic `cathet-release.jks` provisioning, `local.properties` creation, signed release APK target resolution, and smart update-incompatible recovery.
+  - `src-tauri/gen/android/app/cathet-release.jks`: Generated 2048-bit RSA release signing keystore with 10,000 days validity.
+  - `src-tauri/gen/android/local.properties`: Configured persistent `sdk.dir` mapping.
+  - `release/cathet-v5.0.0-android.apk`: Rebuilt and verified signed universal APK via `apksigner`.
+  - `history.md`: Recorded change log entry.
+
 ### 2026-10-29: Android Launcher & Desktop App Icon Synchronization
 - **Summary**: Synchronized the official Cathet notepad icon (`public/app-icon.png`) across all Android density mipmaps (`mipmap-mdpi`, `mipmap-hdpi`, `mipmap-xhdpi`, `mipmap-xxhdpi`, `mipmap-xxxhdpi`), replacing default Tauri placeholder logos. Configured Android 8.0+ adaptive icon definitions (`ic_launcher.xml` and `ic_launcher_round.xml` in `mipmap-anydpi-v26`) with clean white backdrop (`@color/ic_launcher_background`), added `android:roundIcon="@mipmap/ic_launcher_round"` to `AndroidManifest.xml`, eliminated obsolete Android Studio bot template vectors, regenerated crisp multi-resolution desktop icons in `src-tauri/icons`, and integrated an automated icon sync and adaptive round icon verification guardrail in `build.ps1` (`Initialize-AndroidEnvironment`).
 - **Files Modified / Added**:
@@ -378,3 +403,109 @@ This document serves as the living project documentation and institutional memor
   2. **Null-Safe String Trim in Device & Boot Detection**: Fixed terminating exception `You cannot call a method on a null-valued expression` caused by calling `.Trim()` directly on `$null` when native `cmd.exe` commands returned empty stdout during emulator boot polling. Wrapped outputs in `[string](cmd.exe ...)` ensuring safe string handling across boot status, device model, and CPU architecture detection.
 - **Files Modified**:
   - `build.ps1`: Changed `Confirm-Target` to `[string[]]$targets` with loop, and cast `cmd.exe` results to `[string]` before trimming.
+
+### 2026-10-29: Mobile UI Redesign, Shadow Artifact Elimination & Dynamic Dock Sync
+- **Summary**:
+  1. **Solid Mobile Themes & Text Contrast**: Added solid background surfaces (`#0f1117` in Dark Mode, `#f8fafc` in Light Mode) and high-contrast text tokens for `body.is-mobile`, resolving the invisible dark-text-on-black-surface bug in Light Mode while keeping Windows desktop transparent DWM Acrylic 100% unaffected.
+  2. **Eliminated Android WebView Black Shadow Halos**: Replaced multi-stop spread `box-shadow` on mobile overlay elements with clean 1px hairline borders and subtle low-blur single-layer alpha shadows, eliminating Skia composition clipping glitches.
+  3. **Touch-First Top Bar & Dual Pane Headers**: Scaled mobile top bar to 48px with a 40px touch menu button and 15px bold centered document title. Scaled dual-pane pane headers to 40px with touch-friendly action pills.
+  4. **Dock-Integrated Sync Scroll Button**: Relocated the sync scroll button from the awkward divider line corner into the bottom mobile action dock between `Dual Pane` and `Settings`. Retained full signature gradients (purple/magenta `.active` and cyan `.blue-galaxy` snap scroll) and clean uncluttered 12px divider line on mobile.
+  5. **Mobile Action Drawer (`MobileMenuDrawer.ts`)**: Built touch-first bottom sheet drawer with 50px touch rows, clean monochrome icons, and zero desktop keyboard shortcut hints, replacing the desktop contextual menu on mobile.
+  6. **Mobile Settings Sheet Optimization**: Platform-filtered desktop-only rows (*Stay on Top*, *Default Application Windows Registry*, *EXE GitHub Updater*), dynamically labeled version as `v5.0.0 (Android)` instead of `(x64)`, and updated engine attribution to `Android WebView`.
+- **Files Modified / Added**:
+  - `src-ui/styles/mobile.css`: Defined mobile theme surfaces, hairline borders, elevated dock clearance, 48px top bar, 40px headers, and dock sync button styling.
+  - `src-ui/src/components/MobileActionBar.ts`: Added dynamic dock sync scroll button with signature gradient glow states.
+  - `src-ui/src/components/MobileMenuDrawer.ts`: Created touch-first mobile document actions bottom sheet drawer.
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Added sync change callbacks, `toggleLock`, and `isSyncLocked` methods.
+  - `src-ui/src/components/SettingsTabs.ts`: Dynamic architecture label (`Android` vs `x64`).
+  - `src-ui/src/components/settings/SettingsPane.ts`: Platform-filtered desktop-only settings rows.
+  - `src-ui/src/components/settings/AboutPane.ts`: Dynamic description and `Android WebView` engine attribution.
+  - `src-ui/src/services/mobileCoordinator.ts`: Integrated `MobileMenuDrawerComponent` and dock sync coordination.
+  - `src-ui/src/utils/monochromeIcons.ts`: Added centralized `file`, `save`, `eye`, and `dualpane` SVG icons.
+  - `src-ui/src/main.ts`: Wired mobile menu drawer, new document creation, and dual pane sync updates.
+  - `history.md`: Recorded change log entry.
+
+### 2026-10-29: Native Mobile Settings Bottom Sheet Overhaul (`MobileSettingsView.ts`)
+- **Summary**:
+  1. **Eliminated Desktop Window Relic in Mobile Sheet**: Decoupled `SettingsModal.ts` from desktop `SettingsTabsComponent` (which was designed for 350x318px fixed Windows acrylic windows). Built dedicated `MobileSettingsView.ts` using touch-native grouped inset cards.
+  2. **Eliminated 70% White Screen Void**: Converted the mobile settings sheet to a content-hugged, naturally scrolling card layout (`max-height: 88vh`) with safe-area bottom padding.
+  3. **Visual Theme Selector Tiles**: Replaced tiny desktop switch pill with large side-by-side Dark Mode and Light Mode selectable visual tiles.
+  4. **Touch-First Grouped Layout**: Organized mobile settings into clear uppercase sections (`APPEARANCE`, `EDITOR PREFERENCES`, `ABOUT & SUPPORT`) with 52px touch rows, clear primary/secondary labels, native typography selector, and mobile action buttons for donation and project links.
+  5. **Windows Desktop Invariance**: Windows desktop `settings.html` window continues to use `SettingsTabsComponent`, `SettingsPaneComponent`, and `AboutPaneComponent` completely unchanged.
+- **Files Modified / Added**:
+  - `src-ui/src/components/MobileSettingsView.ts`: Created dedicated mobile-native preferences view with visual theme tiles and grouped cards (203 lines).
+  - `src-ui/src/components/SettingsModal.ts`: Mounted `MobileSettingsView` instead of desktop `SettingsTabsComponent` (144 lines).
+  - `src-ui/styles/mobile.css`: Added mobile settings navigation, visual theme tiles, grouped cards, and responsive button grid styling.
+  - `history.md`: Recorded change log entry.
+
+### 2026-10-29: Android Live Dev & Instant Hot Reload in `build.ps1`
+- **Summary**:
+  1. **Enabled Instant Hot Reloading for Android**: Replaced the static debug APK compilation (`npx tauri android build --debug --apk`) in `Invoke-AndroidDev` with native `npx tauri android dev $targetDevId`.
+  2. **Automated ADB Reverse Port Forwarding**: Added `adb -s $targetDevId reverse tcp:5173 tcp:5173` prior to launch, establishing a bidirectional bridge between the emulator/device Android WebView and host machine's Vite dev server.
+  3. **Real-Time UI Updates**: Code changes in `src-ui/` (`.ts`, `.css`) now trigger instant Vite HMR updates inside the running emulator in real time without recompiling or reinstalling the APK.
+- **Files Modified**:
+  - `build.ps1`: Configured ADB reverse port forwarding and switched to `npx tauri android dev $targetDevId` in `Invoke-AndroidDev`.
+  - `history.md`: Recorded change log entry.
+
+### 2026-10-29: Mobile Polish: Top Bar Anchoring, 3-State Sync Dock Button, App Icon Normalization, Settings Scrollbar Removal & Vertical Separator Dragging
+- **Summary**:
+  1. **Top Bar Anchoring**: Resolved layout push-up bug where large text overflowing dual pane pushed the top bar off-screen into the status bar and camera punch-hole cutout. Added `flex-shrink: 0 !important;` to `#topbar-container` and `flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important;` to `#editor-container`, `.dualpane-container`, and `.editor-wrapper` under `body.is-mobile`.
+  2. **3-State Sync Scroll Dock Button**: Upgraded the mobile action dock sync button to cycle smoothly through 3 operational states without requiring the user to open Settings:
+     - `Locked Standard`: Radiant purple/magenta gradient (`#4f46e5` ➔ `#7c3aed` ➔ `#c026d3` ➔ `#ec4899`), `icons.link`.
+     - `Snap Scroll Locked`: Blue Galaxy cyan gradient (`#1e3a8a` ➔ `#0284c7` ➔ `#06b6d4` ➔ `#38bdf8`), `icons.link` with cyan aura.
+     - `Paused`: Neutral translucent background, `icons.unlink`.
+  3. **App Icon Discrepancy Elimination**: Diagnosed the root cause of the Cathet logo looking different in Light Mode vs Dark Mode (white horizontal ruled lines in Light Mode vs dark navy lines in Dark Mode). Filled internal transparent cutout pixels inside the notebook ruled lines and binder ring tabs in `public/app-icon.png` with solid white (`#ffffff`). The icon now renders 100% identically with crisp, uniform white paper lines across both light and dark themes.
+  4. **Settings Scrollbar Removal**: Added `-ms-overflow-style: none`, `scrollbar-width: none`, and `::-webkit-scrollbar { display: none !important; }` across `.settings-modal-content`, `.mobile-settings-scroll`, and modal sheet containers.
+  5. **Vertical Dual Pane Separator Dragging**: Removed overriding `flex: 1 1 50% !important;` from `.dualpane-pane` in `mobile.css`, configured `.dualpane-pane-left` to respect dynamic inline flex basis sizing, updated `DualPaneSplitter.ts` to detect vertical split orientation and compute resizing percentages from `clientY` and `rect.height`, and expanded the touch target hit-slop to 32px with `touch-action: none !important;`.
+- **Files Modified**:
+  - `src-ui/styles/mobile.css`: Anchored topbar, enabled dynamic column pane sizing, expanded splitter touch hit area, and hid scrollbars.
+  - `src-ui/src/components/MobileActionBar.ts`: Implemented `MobileSyncMode` 3-state cycling with visual gradient updates.
+  - `src-ui/src/components/dualpane/DualPaneSplitter.ts`: Added vertical orientation detection and Y-axis touch dragging calculations.
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Added `setSyncLocked` method.
+  - `src-ui/src/services/mobileCoordinator.ts`: Propagated `MobileSyncMode` between dock and main coordinator.
+  - `src-ui/src/main.ts`: Wired 3-state sync cycling into `DualPaneView` and `DualPaneService`.
+  - `public/app-icon.png`: Filled transparent interior notebook lines with solid white.
+### 2026-10-30: Mobile Light/Dark Theme Synchronization & Editor Touch Scrolling Restoration
+- **Summary**:
+  1. **Restored Editor & Preview Swiping / Momentum Scrolling**: Fixed layout regression where `.editor-wrapper` was inadvertently set to `overflow: hidden !important;` in `mobile.css`, which caused the WebView to reject all vertical touch drag/scroll gestures. Separated layout ancestors (`#editor-container`, `.dualpane-container`, `.dualpane-editor-host`) from `.editor-wrapper`, configuring `.editor-wrapper` with `overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-y !important; overscroll-behavior-y: contain;` and `.editor-content` with `touch-action: pan-y !important;`. Smooth touch scrolling and swiping now works across single pane and dual pane in both edit and preview modes.
+  2. **System Theme Auto-Detection**: Updated `ThemeService` to auto-detect `(prefers-color-scheme: light)` when the user has no stored theme preference in `localStorage`, and added an active media query listener to automatically track OS-level theme toggles.
+  3. **Symmetric Multi-Root `data-theme` Application**: Updated `ThemeService.applyTheme` to symmetrically apply `data-theme` to `document.documentElement`, `document.body`, and `#app`, eliminating the mismatch where `<body>` remained on Dark Mode variables while `<html>` evaluated Light Mode variables.
+  4. **Robust Theme Selector Cascade**: Broadened dark and light theme token selectors in `mobile.css` to match against `[data-theme]` on `html`, `body`, or `#app` interchangeably. Added light-mode soft modal backdrop scrim `rgba(15, 23, 42, 0.4)`.
+  5. **Direct Settings Modal Theme Dispatch**: Updated `SettingsModal.ts` to call `this.themeService.setTheme(theme)` directly instead of `toggleTheme()`, ensuring state, `localStorage`, DOM attributes, and Tauri events update atomically.
+- **Files Modified**:
+  - `src-ui/styles/mobile.css`: Restored `.editor-wrapper` scrolling, expanded light/dark token selectors, and added light-mode modal backdrop scrim.
+  - `src-ui/src/services/themeService.ts`: Added singleton pattern, system `prefers-color-scheme` auto-detection, and symmetric `body`/`app` theme attribute application.
+  - `src-ui/src/components/SettingsModal.ts`: Updated `onThemeChange` to invoke `setTheme` directly.
+### 2026-10-30: App Icon Spiral Binder Ring Unification & Inversion Elimination
+- **Summary**:
+  1. **Root Cause Analysis**: Identified why the Cathet notebook icon appeared to visually invert from Dark Mode to Light Mode. In `public/app-icon.png`, the binder rings had dark teal outer arcs (`#037ea7`) with transparent punch holes, but the inner arms entering the notebook were solid white (`#ffffff`). On Light Mode (white background), the white arms blended into the white card while the dark arcs popped, looking like dark blue rings; on Dark Mode (dark navy background), the dark arcs blended into the dark card while the white arms popped out intensely, creating the striking illusion that the rings changed from dark teal to white.
+  2. **Unified Ring Color & Alpha Reconstruction**: Replaced the white horizontal binder tabs with matching dark teal (`#037ea7`), unified the ring geometry across all three binder loops, and cleaned the inner punch holes with true alpha transparency (eliminating white anti-aliased fringe artifacts).
+  3. **Multi-Platform Icon Synchronization**: Synchronized the unified icon to `src-ui/src/assets/app-icon.png`, regenerated all multi-resolution desktop assets in `src-tauri/icons/` (`icon.ico`, `icon.icns`, `icon.png`, square appx tiles), and updated all Android density mipmaps (`mipmap-mdpi`, `mipmap-hdpi`, `mipmap-xhdpi`, `mipmap-xxhdpi`, `mipmap-xxxhdpi`) via `npx tauri icon`. The icon now renders 100% identically with crisp, uniform dark teal rings across both dark and light modes.
+- **Files Modified**:
+  - `public/app-icon.png`: Unified binder ring colors to dark teal and ensured punch holes are truly transparent.
+  - `src-ui/src/assets/app-icon.png`: Synchronized unified app icon.
+  - `src-tauri/icons/*`: Regenerated desktop and Android multi-platform icons.
+  - `history.md`: Recorded change log entry.
+
+### 2026-10-30: Mobile Landscape Status Bar Inset, Auto-Small Dock & Sync 3-State Cycle Fix
+- **Summary**:
+  1. **Landscape Status Bar & Punch-Hole Camera Clearance**: Fixed top bar overlap with Android status bar clock and notifications in landscape mode. Applied `padding-top: max(24px, env(safe-area-inset-top, 0px)) !important;` to `#topbar-container` with seamless background color bleeding, and added `max(14px, env(safe-area-inset-right, 0px))` / `max(10px, env(safe-area-inset-left, 0px))` lateral padding to `.topbar` to protect the menu dot `●` from side-facing camera punch-holes.
+  2. **Global Mobile Splitter Sync Badge Removal**: Moved `body.is-mobile .dualpane-sync-badge { display: none !important; }` out of `@media (max-width: 600px)` into the global mobile scope in `mobile.css`, ensuring the desktop splitter button never appears in landscape or wide mobile orientations while Windows desktop remains unaffected.
+  3. **Auto-Small Collapsing Dock**: Upgraded `MobileActionBarComponent` to automatically shrink into a compact 44px × 44px circular trigger pill (`.is-small`) after 3.5 seconds of inactivity or when the user scrolls the editor canvas. Tapping the trigger smoothly expands the full 6-button dock (`cubic-bezier(0.16, 1, 0.3, 1)`) and restarts the auto-collapse timer. Added `icons.ellipsis` to `monochromeIcons.ts`.
+  4. **Sync Button 3-State Cycle & Re-Entrancy Fix**: Solved the multi-click cycle bug where clicking the dock sync button re-entrantly reset to `locked` due to out-of-order `snapScroll` updates. Enforced the strict state progression: `inactive (paused)` ➔ `synced (locked)` ➔ `synced snap (snap)` ➔ `inactive (paused)`. Re-ordered `dualPaneService.setSnapScroll` before `setSyncLocked` in `main.ts` and added an active `isTogglingSync` re-entrancy lock in `MobileActionBar.ts`.
+- **Files Modified**:
+  - `src-ui/styles/mobile.css`: Applied status bar and lateral insets, elevated splitter badge suppression, and added `.is-small` dock animation styling.
+  - `src-ui/src/components/MobileActionBar.ts`: Added auto-small collapse timer, tap-to-expand handler, strict `SYNC_CYCLE` progression, and re-entrancy lock (207 lines).
+  - `src-ui/src/services/mobileCoordinator.ts`: Added editor scroll listener to auto-collapse dock (103 lines).
+  - `src-ui/src/main.ts`: Re-ordered `setSnapScroll` before `setSyncLocked` in `onToggleSync` (291 lines).
+  - `src-ui/src/utils/monochromeIcons.ts`: Added `icons.ellipsis` (187 lines).
+  - `history.md`: Recorded change log entry.
+
+### 2026-10-30: Dark Mode Elevation Overhaul & Hairline Specular Highlight
+- **Summary**:
+  1. **Eliminated Dark Mode "Muddy" Shadow Halos**: Diagnosed why shadows in dark mode looked ugly and bruised. Replaced the tight `0 2px 6px rgba(0, 0, 0, 0.15)` black occlusion shadow on `.dualpane-empty-card` with a modern dark mode elevation architecture: a 1px specular hairline rim (`0 0 0 1px rgba(255, 255, 255, 0.05)`) paired with wide, soft ambient dispersion (`0 8px 30px rgba(0, 0, 0, 0.45)`).
+  2. **Refined Floating Dock Elevation**: Replaced the harsh `0 4px 16px rgba(0, 0, 0, 0.22)` shadow on `.mobile-action-pill` and `.mobile-action-bar.is-small` with a 1px specular highlight (`0 0 0 1px rgba(255, 255, 255, 0.06)`) and deep ambient shadow (`0 8px 24px rgba(0, 0, 0, 0.45)`). Added refined, soft shadows for light mode. Floating elements now render with razor-sharp edge contrast and premium depth across both Dark and Light themes.
+- **Files Modified**:
+  - `src-ui/styles/dualpane.css`: Replaced tight dark shadows with hairline specular rim and ambient dispersion on `.dualpane-empty-card` (602 lines).
+  - `src-ui/styles/mobile.css`: Applied hairline highlights and ambient shadows to `.mobile-action-pill` across dark and light themes (665 lines).
+  - `history.md`: Recorded change log entry.
