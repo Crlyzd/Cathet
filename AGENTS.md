@@ -95,9 +95,9 @@ The assistant operates as a collaborative pair programmer capable of switching b
 
 ---
 
-## 3. Workflow References
-Detailed persona definitions are preserved in `.agents/workflows/`:
-- [orchestrator.md](file:///.agents/workflows/orchestrator.md)
-- [architect.md](file:///.agents/workflows/architect.md)
-- [coding-specialist.md](file:///.agents/workflows/coding-specialist.md)
-- [code-reviewer.md](file:///.agents/workflows/code-reviewer.md)
+## 3. Skill & Persona References
+Detailed persona definitions are preserved in `.agents/skills/`:
+- [orchestrator](file:///d:/Cathet/.agents/skills/orchestrator/SKILL.md)
+- [architect](file:///d:/Cathet/.agents/skills/architect/SKILL.md)
+- [coding-specialist](file:///d:/Cathet/.agents/skills/coding-specialist/SKILL.md)
+- [code-reviewer](file:///d:/Cathet/.agents/skills/code-reviewer/SKILL.md)

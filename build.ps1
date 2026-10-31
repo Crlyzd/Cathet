@@ -283,7 +283,23 @@ function Invoke-AndroidDev {
     $rustTarget = if ($arch -eq "x86_64") { "x86_64-linux-android" } elseif ($arch -eq "aarch64") { "aarch64-linux-android" } else { "armv7-linux-androideabi" }
     Confirm-Target @($rustTarget)
 
+    cmd.exe /c "adb -s $targetDevId wait-for-device 2>nul" | Out-Null
     cmd.exe /c "adb -s $targetDevId reverse tcp:5173 tcp:5173 2>nul" | Out-Null
+
+    # Pre-flight signature collision check: detect release installation on target device
+    $isInstalled = ("" + (cmd.exe /c "adb -s $targetDevId shell pm list packages com.cathet.app 2>nul")).Trim()
+    if ($isInstalled -match "com\.cathet\.app") {
+        $pkgDump = ("" + (cmd.exe /c "adb -s $targetDevId shell dumpsys package com.cathet.app 2>nul"))
+        if ($pkgDump -and ($pkgDump -notmatch "DEBUGGABLE")) {
+            Write-Host "`n[ALERT] Device has release-signed Cathet installed (incompatible with Debug Live Dev)." -ForegroundColor Yellow
+            $clean = (Read-Host "Uninstall old release APK to allow Live Dev? [Y/n] (Default: y)").Trim()
+            if ($clean -notin "n", "N") {
+                cmd.exe /c "adb -s $targetDevId uninstall com.cathet.app 2>nul" | Out-Null
+                Write-Host "Uninstalled old conflicting release package." -ForegroundColor Green
+            }
+        }
+    }
+
     Write-Host "`n>>> Starting Cathet Android Live Dev (Hot Reload) on $devName..." -ForegroundColor Cyan
 
     # If multiple devices connected, specify target; otherwise let Tauri CLI auto-detect the single active device

@@ -63,6 +63,73 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-10-31: Light Mode Text Contrast Normalization & Circular Ripple Theme Transition
+- **Summary**: Resolved light mode text invisibility where card titles, body snippets, and search input were unreadable against white cards and dark background discrepancies. Normalized container background to crisp `#f4f5f8` in light mode, with deep charcoal titles (`#111827`), slate body snippets (`#4b5563`), and muted timestamps (`#6b7280`). Implemented modern 60fps circular ripple theme transitions originating from the Sun/Moon toggle button coordinates using the CSS View Transitions API (`clip-path: circle()`) in `themeTransition.ts`, paired with a graceful expanding ripple overlay fallback. Verified with `npx tsc --noEmit` and `cargo check`.
+- **Files Modified / Added**:
+  - `src-ui/src/utils/themeTransition.ts`: Created circular clip-path reveal and overlay ripple transition utility (58 lines).
+  - `src-ui/src/components/home/HomeHeader.ts`: Passed button click coordinates `(x, y)` to theme toggle callback (122 lines).
+  - `src-ui/src/components/home/HomeView.ts`: Integrated circular theme transition with `ThemeService` and window theme sync (199 lines).
+  - `src-ui/styles/home.css`: Overhauled Light mode contrast tokens (typography, search bar, chips, cards) and added View Transition styles (240 lines).
+  - `history.md`: Recorded change log entry.
+
+### 2026-10-31: Android Homepage UI Refinements: Dock Hiding, Notch Clearance, Adaptive FAB, Sun/Moon Toggle, Fixed Tile Geometry
+- **Summary**: Refined the Android Notes Homepage based on physical device testing. Added safe-area notch and status bar clearance (`env(safe-area-inset-top)`) to prevent camera cutout and notification icons overlapping the header. Hid the `MobileActionBar` dock button (`...`) while on Homepage to eliminate FAB collisions, restoring it seamlessly in the Editor. Replaced hardcoded orange FAB with high-contrast theme-adaptive styling (white circle in dark mode, dark circle in light mode). Added an animated Sun/Moon toggle button at the top-right header for instant theme switching with smooth 0.3s color crossfade. Rebranded header to "Cathet" and search placeholder to "Search Cathet". Replaced colored emojis with minimalist monochrome SVGs across empty state and card pin indicators. Enlarged mobile touch targets (48px search bar, 40px category pills) and locked note cards to an identical uniform height (`165px`) with bottom-anchored timestamps for clean grid symmetry. Verified with `npx tsc --noEmit` and `cargo check`.
+- **Files Modified**:
+  - `src-ui/src/components/home/HomeHeader.ts`: Added "Cathet" title, search placeholder, and Sun/Moon toggle button.
+  - `src-ui/src/components/home/HomeNoteGrid.ts`: Replaced emoji with monochrome SVG and updated pin badge.
+  - `src-ui/src/components/home/HomeView.ts`: Connected `ThemeService` toggle and window theme sync.
+  - `src-ui/src/components/MobileActionBar.ts`: Added `setVisible` method.
+  - `src-ui/src/services/mobileCoordinator.ts`: Added `setActionBarVisible` method.
+  - `src-ui/src/services/homeCoordinator.ts`: Controlled dock visibility across Homepage and Editor transitions.
+  - `src-ui/styles/home.css`: Added status safe-area padding, theme FAB styling, enlarged touch targets, uniform card heights, and smooth transition animations.
+  - `history.md`: Recorded change log entry.
+
+### 2026-10-31: Android Notes Homepage Dashboard, Multi-Select Mode, Dual Mode Grid Integration & Auto-Save
+- **Summary**: Implemented the Android exclusive Notes Homepage Dashboard modeled after the reference 2-column card grid design. Built backend storage in `commands/notes.rs` managing internal notes under `<app_data_dir>/notes/` with physical folder subdirectories and instant metadata registry caching (`metadata.json`). Created modular frontend components strictly adhering to the Anti-Monolith standard (< 250 lines): `HomeHeader` (Notes title, live title+content search, selection counter), `HomeCategoryTabs` (horizontal folder scroll with `+` new folder chip), `HomeNoteGrid` (2-column cards, snippets, timestamps, pin badges, selection indicators), `HomeSelectionBar` (frosted glass action bar for Hide, Pin, Move to, Delete), `HomeFab` (speed-dial floating action button with 45° rotation and animated "New note" / "Open file" pills), and `FolderModal` (frosted folder picker and creator). Implemented touch hold long-press detection (500ms) in `touchGesture.ts`. Integrated `HomeCoordinator` wiring auto-save on back navigation (`<`) and app blur, with automatic title derivation from the first line. In Dual Mode, replaced the folder icon with the 2x2 Grid icon (`[ ⊞ ]`) and mounted the embedded Homepage in split panes for inline document selection with cancel `<` back navigation. Added `show_save_dialog` guardrail auto-defaulting to `.txt` when no extension or filename is provided. Verified 100% clean compilation across `cargo check` and `npx tsc --noEmit`.
+- **Files Modified / Added**:
+  - `src-tauri/src/commands/notes.rs`: Created Rust commands for note CRUD, folders, metadata, and external import (243 lines).
+  - `src-tauri/src/commands/file.rs`: Added automatic `.txt` default extension fallback in `show_save_dialog`.
+  - `src-tauri/src/commands/mod.rs` & `src-tauri/src/lib.rs`: Registered notes commands.
+  - `src-ui/src/services/notesService.ts`: Created TypeScript service for note CRUD and search filtering (151 lines).
+  - `src-ui/src/services/homeCoordinator.ts`: Created coordinator for Android Homepage navigation and auto-save (148 lines).
+  - `src-ui/src/utils/touchGesture.ts`: Created modular long-press gesture detector (77 lines).
+  - `src-ui/src/utils/monochromeIcons.ts`: Added 2x2 Grid icon (`grid`), pin, trash, move, and lock icons.
+  - `src-ui/src/components/home/HomeHeader.ts`: Created header with search and selection mode counter (104 lines).
+  - `src-ui/src/components/home/HomeCategoryTabs.ts`: Created horizontal category chips with add folder pill (79 lines).
+  - `src-ui/src/components/home/HomeNoteGrid.ts`: Created 2-column note card grid with long-press selection (116 lines).
+  - `src-ui/src/components/home/HomeSelectionBar.ts`: Created bottom multi-select action bar (62 lines).
+  - `src-ui/src/components/home/HomeFab.ts`: Created speed-dial FAB with animated options (109 lines).
+  - `src-ui/src/components/home/FolderModal.ts`: Created frosted modal for folder creation and move-to selection (103 lines).
+  - `src-ui/src/components/home/HomeView.ts`: Created main container orchestrator (183 lines).
+  - `src-ui/src/components/TopBar.ts`: Added `<` back button with auto-save navigation for Android.
+  - `src-ui/src/components/dualpane/DualPaneHeader.ts`: Replaced folder icon with 2x2 Grid icon (`[ ⊞ ]`) and added cancel back button.
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Added embedded host accessors and callbacks for Dual Mode note selection.
+  - `src-ui/src/main.ts`: Connected `HomeCoordinator`, Dual Mode embedded notes picker, and external import.
+  - `src-ui/styles/home.css`: Created frosted glassmorphism styling for cards, tabs, FAB, and selection bar (246 lines).
+  - `src-ui/styles/topbar.css`: Added `.back-btn` styling.
+  - `index.html`: Linked `home.css`.
+  - `history.md`: Appended change log entry.
+
+### 2026-10-31: Android Live Dev (`[8]`) Signature Collision Pre-Flight Guardrail & Self-Healing
+- **Summary**: Resolved the Android Live Dev installation failure (`INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package com.cathet.app signatures do not match newer version`) in `build.ps1` (`Invoke-AndroidDev`). When switching between production release testing (signed with `cathet-release.jks`) and live development (signed with the Android SDK debug key), Android rejects debug APK updates. Added automated pre-flight package inspection in `Invoke-AndroidDev` using `adb shell dumpsys package com.cathet.app` to detect non-debuggable release installations prior to launching `npx tauri android dev`. If an incompatible release APK is detected, `build.ps1` alerts the user and cleanly offers to uninstall the conflicting release package before hot reload compilation. Additionally added explicit `adb wait-for-device` synchronization before reverse socket configuration to eliminate device-not-ready race conditions during emulator boot.
+- **Files Modified / Added**:
+  - `build.ps1`: Added explicit device wait and signature collision pre-flight recovery in `Invoke-AndroidDev`.
+  - `history.md`: Appended change log entry.
+
+### 2026-10-30: Android Pinch-to-Zoom Font Resizing, Dual-Pane Scroll Snap Sync, and Context Menu Platform Scoping
+- **Summary**: Implemented multi-touch pinch-to-zoom font scaling exclusively on Android devices (`isAndroid()`). Created modular `touchZoomHandler.ts` providing 2-finger Euclidean distance tracking, transient frosted glass zoom percentage badges (`120%`) with smooth 1.2s fade-out, and pane isolation. Synchronized pinch zooming across both primary and secondary panes when Dual-Pane sync lock is active (`locked` or `snap`) using relative delta scaling ($\Delta z = z_A - z_{A,0}$; $z_B = z_{B,0} + \Delta z$), while keeping scaling independent per pane when `paused`. Resolved the Android scroll snap synchronization bug by establishing bidirectional state synchronization between `MobileActionBarComponent`'s sync button cycle and `SettingsModalComponent`'s "Dual Pane Scroll Snap" toggle, and updated `SyncScrollController.setSnapScroll(true)` to execute instant 1:1 proportional scroll alignment. Restricted context menu keyboard shortcut labels (`Ctrl+X`, `Ctrl+C`, etc.) strictly to PC Windows desktop, suppressing shortcut annotations on mobile and reducing context menu width for touch devices. Verified zero regressions and passed `npx tsc --noEmit`.
+- **Files Modified / Added**:
+  - `src-ui/src/utils/touchZoomHandler.ts`: Created touch pinch gesture handler with relative delta scaling, transient frosted badge, and clean lifecycle management.
+  - `src-ui/src/components/Editor.ts`: Added `getZoomLevel`, `setZoomLevel`, `setTouchZoomOptions`, and wired Android touch zoom handler.
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Connected touch zoom synchronization options between primary and secondary editor panes.
+  - `src-ui/src/utils/syncScrollController.ts`: Updated `setSnapScroll` for instant zero-offset resync upon activation.
+  - `src-ui/src/components/SettingsModal.ts`: Added `onSnapScrollChange` callback and `updateSnapScroll` method for real-time synchronization.
+  - `src-ui/src/services/mobileCoordinator.ts`: Bridged settings snap scroll changes and action bar sync state.
+  - `src-ui/src/main.ts`: Wired bidirectional synchronization between action bar mode cycle, settings modal, and dual pane view.
+  - `src-ui/src/components/ContextMenu.ts`: Added platform-aware shortcut rendering and dynamic mobile width clamping.
+  - `src-ui/styles/mobile.css`: Added frosted glass `.touch-zoom-pill` styling and suppressed `.context-menu-shortcut` under `body.is-mobile`.
+  - `history.md`: Appended change log entry.
+
 ### 2026-10-30: Android Startup Crash (`SIGABRT` & `ClassNotFoundException`) Resolution
 - **Summary**: Resolved the immediate crash upon launching Cathet on Android devices. Diagnosed the primary abort (`Abort message: 'android context was not initialized'`) caused by calling `ndk_context::android_context()` before `ndk_context::initialize_android_context` had been invoked, which escalated to an immediate process abort (`SIGABRT`) under `panic = "abort"`. Eliminated uninitialized panics by establishing an early JNI bridge in `commands/android_fs.rs` (`initNativeBridge`), invoked from `MainActivity.onCreate` before `super.onCreate(savedInstanceState)` with `System.loadLibrary("cathet")` in companion object. Additionally resolved the secondary `ClassNotFoundException: com.cathet.app.FileHelper` caused by attached Tokio worker threads falling back to the Android system `BootClassLoader` rather than the app's `PathClassLoader`. Cached the `FileHelper` `jclass` globally via `GlobalRef` on the main UI thread during `initNativeBridge`, routed all static method invocations directly to the cached `JClass`, added defensive JNI exception clearing, and added Proguard `-keep` rules to `proguard-rules.pro` for `MainActivity` native methods and `FileHelper` static members. Tested and verified on physical/emulator target with 521ms startup time, stable UI render, and zero crashes.
 - **Files Modified / Added**:
@@ -517,4 +584,27 @@ This document serves as the living project documentation and institutional memor
 - **Files Modified**:
   - `src-ui/styles/dualpane.css`: Replaced tight dark shadows with hairline specular rim and ambient dispersion on `.dualpane-empty-card` (602 lines).
   - `src-ui/styles/mobile.css`: Applied hairline highlights and ambient shadows to `.mobile-action-pill` across dark and light themes (665 lines).
+  - `history.md`: Recorded change log entry.
+
+### 2026-10-31: Android Notes Homepage Architecture, Dual Pane Embedded View & Top Bar Ergonomics
+- **Summary**:
+  1. **Android Notes Homepage Architecture**: Designed and built a dedicated mobile notes dashboard for Android (`commands/notes.rs`, `notesService.ts`, `homeCoordinator.ts`, and `HomeView.ts` subcomponents: `HomeHeader`, `HomeCategoryTabs`, `HomeNoteGrid`, `HomeSelectionBar`, `HomeFab`, `FolderModal`). Features instant CRUD, folder categorization, multi-select operations (pin, hide, move, delete), search filtering, and circular ripple view transitions between light and dark modes.
+  2. **Top Bar Layout & Text Overflow Fix**: Moved the `<` back button to the far right of the top bar and clamped the document title with `max-width: 65%`, ellipsis, and `white-space: nowrap`, eliminating collision with camera punch-holes and status bar notifications.
+  3. **Platform-Aware Right Pane & Desktop Preservation**: Made `DualPaneView.showEmptyRightPane()` platform-aware: on Android, bypasses `DualPaneEmptyDropzone` completely, leaving the pane clear for the embedded notes dashboard, while preserving the legacy drag-and-drop card for Windows desktop.
+  4. **Streamlined Embedded Homepage**: Under `.home-view-embedded`, suppressed the large "Cathet" title row and category tabs, shrinking header padding to 8px and presenting a compact search bar directly above 2-column note tiles for split-pane ergonomics.
+  5. **Instance Tracking & Multi-Click Stacking Elimination**: Added `embeddedHomeLeft`/`embeddedHomeRight` lifecycle tracking and `clearEmbeddedHome()` in `DualPaneView.ts` to cleanly destroy existing instances and wipe host containers before mounting, resolving triple-stacked header duplication on repeated clicks.
+  6. **Consistent & Borderless SVG Back Chevron**: Replaced the desktop-inherited `.dualpane-btn.btn-back` with a dedicated, borderless `.dualpane-back-btn` (24×24px, 16×16px SVG chevron with `stroke-width: 2.5`). Eliminated the rectangular grey border box and squished clipping, making the split-pane back button 100% visually consistent with the top bar back button.
+  7. **Dock Auto-Hide & Native Android Back Cancellation**: Automatically hide the floating `...` dock button when note picking in split panes, and wired `popstate` to cancel the embedded picker and restore the open document without quitting.
+  8. **Clean Human-Readable Title Formatting**: Added `formatDisplayTitle()` in `pathUtils.ts` to strip `file:///` schemes, `notes/` prefixes, and escaped paths, propagating clean document titles across top bar, dual pane headers, and note cards.
+  9. **Non-Destructive Instance Storage & Resilient Home Navigation**: Refactored `DualPaneView.setEmbeddedHome()` so storing an instance never clears mounted DOM. Added `try/catch` error guards to `HomeCoordinator.navigateBackToHome()` and automatic dual pane teardown upon returning to the full-screen Notes dashboard.
+- **Files Modified**:
+  - `src-tauri/src/commands/notes.rs`: Added notes backend CRUD, folder management, and path-sanitizing title extraction (248 lines).
+  - `src-ui/src/utils/pathUtils.ts`: Added `formatDisplayTitle` helper (58 lines).
+  - `src-ui/src/services/dualPaneService.ts`: Integrated clean title formatting (88 lines).
+  - `src-ui/src/components/dualpane/DualPaneHeader.ts`: Replaced plain text with SVG chevron (98 lines).
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Added embedded home tracking, non-destructive instance storage, and platform-aware dropzone suppression (244 lines).
+  - `src-ui/src/services/homeCoordinator.ts`: Added resilient auto-save error guards and `onNavigateHome` hook (158 lines).
+  - `src-ui/styles/dualpane.css`: Added styles for `.dualpane-btn.btn-back`.
+  - `src-ui/styles/home.css`: Added compact embedded layout styles and flex container expansion for split pane note grid.
+  - `src-ui/src/main.ts`: Wired dual picker lifecycle, dock auto-hide, popstate back listener, dual pane teardown on home navigation, and clean title formatting.
   - `history.md`: Recorded change log entry.
