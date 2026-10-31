@@ -1,18 +1,19 @@
 /**
- * themeTransition.ts — Expanding circular ripple theme transition
+ * themeTransition.ts — Expanding circular reveal theme transition
+ * High-performance 120fps circular clip-path mask transition powered by View Transitions API.
  */
 
 export async function executeCircularThemeTransition(
   origin: { x: number; y: number },
   toggleFn: () => void
 ): Promise<void> {
-  const doc = document as any;
   const { x, y } = origin;
   const endRadius = Math.hypot(
     Math.max(x, window.innerWidth - x),
     Math.max(y, window.innerHeight - y)
   );
 
+  const doc = document as any;
   if (typeof doc.startViewTransition === "function") {
     const transition = doc.startViewTransition(() => {
       toggleFn();
@@ -29,7 +30,7 @@ export async function executeCircularThemeTransition(
         },
         {
           duration: 420,
-          easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+          easing: "cubic-bezier(0.2, 0, 0, 1)",
           pseudoElement: "::view-transition-new(root)",
         }
       );
@@ -39,20 +40,6 @@ export async function executeCircularThemeTransition(
     return;
   }
 
-  // Fallback: Expanding circular ripple overlay
-  const ripple = document.createElement("div");
-  ripple.className = "theme-ripple-overlay";
-  ripple.style.left = `${x}px`;
-  ripple.style.top = `${y}px`;
-  document.body.appendChild(ripple);
-
+  // Direct toggle fallback if View Transitions API is not supported
   toggleFn();
-
-  requestAnimationFrame(() => {
-    ripple.style.transform = `scale(${(endRadius * 2) / 10})`;
-    ripple.style.opacity = "0";
-  });
-
-  setTimeout(() => ripple.remove(), 450);
 }
-

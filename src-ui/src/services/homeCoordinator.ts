@@ -5,8 +5,9 @@ import { EditorComponent } from "../components/Editor";
 import { PreviewService } from "./previewService";
 import { FontService } from "./fontService";
 import { PlatformService } from "./platformService";
+import { ThemeService } from "./themeService";
+import { ContainerTransform } from "../utils/containerTransform";
 import { globalEventBus } from "../utils/eventBus";
-import { invoke } from "@tauri-apps/api/core";
 
 export interface HomeCoordinatorOptions {
   notesService: NotesService;
@@ -32,6 +33,7 @@ export class HomeCoordinator {
   private currentFolder = "";
   private isHomeVisible = false;
   private isOpeningNote = false;
+  private lastOriginRect: DOMRect | null = null;
 
   constructor(options: HomeCoordinatorOptions) {
     this.options = options;
@@ -39,10 +41,7 @@ export class HomeCoordinator {
     this.topBar = options.topBar;
     this.editor = options.editor;
     this.previewService = options.previewService;
-
-    if (PlatformService.getInstance().isAndroid()) {
-      this.initAndroidHome();
-    }
+    if (PlatformService.getInstance().isAndroid()) this.initAndroidHome();
   }
 
   private initAndroidHome(): void {
@@ -50,18 +49,18 @@ export class HomeCoordinator {
     this.homeView = new HomeViewComponent({
       containerElement: appEl,
       notesService: this.notesService,
-      onOpenNote: (note) => this.openNote(note),
-      onNewNote: (folder) => this.openNewNote(folder),
-      onOpenFile: (folder) => this.options.onOpenExternalPicker(),
+      onOpenNote: (note, rect) => this.openNote(note, rect),
+      onNewNote: (folder, rect) => this.openNewNote(folder, rect),
+      onOpenFile: () => this.options.onOpenExternalPicker(),
     });
 
     globalEventBus.on("topbar:navigateHome", () => this.navigateBackToHome());
     this.showHome();
   }
 
-  isHomeActive(): boolean {
-    return this.isHomeVisible;
-  }
+  isHomeActive(): boolean { return this.isHomeVisible; }
+  isSelectionModeActive(): boolean { return this.homeView?.isSelectionActive() ?? false; }
+  exitSelectionMode(): void { this.homeView?.exitSelectionMode(false); }
 
   showHome(animate = false): void {
     if (!this.homeView) return;
@@ -73,40 +72,52 @@ export class HomeCoordinator {
     if (animate) this.homeView.animateEnter?.();
   }
 
-  async navigateBackToHome(): Promise<void> {
-    try {
-      await this.autoSaveCurrentNote();
-    } catch (err) {
-      console.warn("Auto-save skipped during navigation:", err);
+  async navigateBackToHome(syncHistory = true): Promise<void> {
+    if (syncHistory && window.history.state?.screen === "editor") {
+      window.history.back();
+      return;
     }
 
+    try { await this.autoSaveCurrentNote(); } catch (err) { console.warn("Auto-save skipped:", err); }
+
     const ed = document.getElementById("editor-container");
-    const top = document.getElementById("topbar-container");
     const onExit = () => {
-      ed?.classList.remove("anim-editor-exit");
-      top?.classList.remove("anim-editor-exit");
       this.editor.loadDocument("", null, false);
       this.currentNoteId = null;
+      this.lastOriginRect = null;
       this.options.onNavigateHome?.();
-      this.showHome(true);
+      this.showHome(false);
     };
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !ed) { onExit(); return; }
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !ed) {
-      onExit();
+    this.setEditorContainerVisible(false);
+    this.homeView?.setVisible(true);
+
+    const targetCard = this.currentNoteId
+      ? document.querySelector<HTMLElement>(`.home-note-card[data-id="${this.currentNoteId}"]`)
+      : null;
+    const fabEl = document.querySelector<HTMLElement>("#home-fab-main") || document.querySelector<HTMLElement>(".home-fab-btn");
+    const theme = ThemeService.getInstance().getTheme();
+
+    if (targetCard) {
+      let rect = targetCard.getBoundingClientRect();
+      if ((rect.width === 0 || rect.height === 0) && this.lastOriginRect) rect = this.lastOriginRect;
+      ContainerTransform.collapse({ targetRect: rect, theme, targetBorderRadius: 16, cardEl: targetCard, onComplete: onExit });
+    } else if (fabEl || this.lastOriginRect) {
+      let rect = fabEl ? fabEl.getBoundingClientRect() : null;
+      if (!rect || rect.width === 0 || rect.height === 0) {
+        rect = this.lastOriginRect || new DOMRect(window.innerWidth - 76, window.innerHeight - 90, 56, 56);
+      }
+      ContainerTransform.collapse({ targetRect: rect, theme, targetBorderRadius: 28, onComplete: onExit });
     } else {
-      ed.classList.add("anim-editor-exit");
-      top?.classList.add("anim-editor-exit");
-      let called = false;
-      const finish = () => { if (!called) { called = true; onExit(); } };
-      ed.addEventListener("animationend", finish, { once: true });
-      setTimeout(finish, 160);
+      onExit();
     }
   }
 
   async autoSaveCurrentNote(): Promise<void> {
     if (this.isHomeVisible) return;
     const text = this.editor.getText().trim();
-    if (!text) return; // Don't save empty notes
+    if (!text) return;
 
     const saved = await this.notesService.saveNote(this.currentNoteId, text, this.currentFolder);
     if (saved) {
@@ -115,9 +126,10 @@ export class HomeCoordinator {
     }
   }
 
-  async openNote(note: NoteItem): Promise<void> {
+  async openNote(note: NoteItem, originRect?: DOMRect): Promise<void> {
     if (this.isOpeningNote) return;
     this.isOpeningNote = true;
+    this.lastOriginRect = originRect || null;
     try {
       (document.activeElement as HTMLElement)?.blur();
       window.getSelection()?.removeAllRanges();
@@ -133,70 +145,88 @@ export class HomeCoordinator {
       this.currentNoteId = note.id;
       this.currentFolder = note.folder;
       this.options.onNoteSelectedForEditor(content, note.id, note.title);
-
       this.topBar.setTitle(note.title);
       this.topBar.setBackVisible(true);
+      window.history.pushState({ screen: "editor" }, "");
 
-      this.isHomeVisible = false;
-      if (this.homeView) this.homeView.setVisible(false);
-
-      this.setEditorContainerVisible(true);
-      this.options.getMobileCoordinator?.()?.setActionBarVisible(true);
-
-      this.triggerEditorEnterAnimation();
+      if (originRect && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const theme = ThemeService.getInstance().getTheme();
+        ContainerTransform.expand({
+          originRect, theme, borderRadius: 16, title: note.title, content,
+          onComplete: () => { this.showEditorView(); this.editor.focus(); },
+        });
+      } else {
+        this.showEditorView();
+        this.triggerEditorEnterAnimation();
+      }
     } finally {
       this.isOpeningNote = false;
     }
   }
 
-  openNewNote(folder = ""): void {
-    this.isHomeVisible = false;
+  openNewNote(folder = "", originRect?: DOMRect): void {
     this.currentNoteId = null;
     this.currentFolder = folder === "All" ? "" : folder;
-    if (this.homeView) this.homeView.setVisible(false);
+    const fabEl = document.querySelector<HTMLElement>("#home-fab-main") || document.querySelector<HTMLElement>(".home-fab-btn");
+    this.lastOriginRect = originRect || fabEl?.getBoundingClientRect() || null;
+    this.topBar.setTitle("Untitled Note");
+    this.topBar.setBackVisible(true);
+    this.editor.loadDocument("", null, false);
+    window.history.pushState({ screen: "editor" }, "");
 
+    if (this.lastOriginRect && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const theme = ThemeService.getInstance().getTheme();
+      ContainerTransform.expand({
+        originRect: this.lastOriginRect, theme, borderRadius: 28, isNewNote: true, title: "Untitled Note",
+        onComplete: () => { this.showEditorView(); this.editor.focus(); },
+      });
+    } else {
+      this.showEditorView();
+      this.triggerEditorEnterAnimation();
+      this.editor.focus();
+    }
+  }
+
+  openExternalFile(title: string): void {
+    this.currentNoteId = null;
+    this.currentFolder = "";
+    const fabEl = document.querySelector<HTMLElement>("#home-fab-main") || document.querySelector<HTMLElement>(".home-fab-btn");
+    this.lastOriginRect = fabEl?.getBoundingClientRect() || null;
+    this.topBar.setTitle(title);
+    this.topBar.setBackVisible(true);
+    this.showEditorView();
+    window.history.pushState({ screen: "editor" }, "");
+  }
+
+  private showEditorView(): void {
+    this.isHomeVisible = false;
+    if (this.homeView) this.homeView.setVisible(false);
     this.setEditorContainerVisible(true);
     this.options.getMobileCoordinator?.()?.setActionBarVisible(true);
-    this.topBar.setBackVisible(true);
-    this.topBar.setTitle("Untitled Note");
-
-    this.editor.loadDocument("", null, false);
-    this.triggerEditorEnterAnimation();
-    this.editor.focus();
   }
 
   private triggerEditorEnterAnimation(): void {
     const ed = document.getElementById("editor-container");
     const top = document.getElementById("topbar-container");
     if (!ed || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
     ed.classList.remove("anim-editor-enter", "anim-editor-exit");
     top?.classList.remove("anim-editor-enter", "anim-editor-exit");
     void ed.offsetWidth;
     ed.classList.add("anim-editor-enter");
     top?.classList.add("anim-editor-enter");
-
-    const clearAnim = () => {
-      ed.classList.remove("anim-editor-enter");
-      top?.classList.remove("anim-editor-enter");
-    };
-    ed.addEventListener("animationend", clearAnim, { once: true });
-    setTimeout(clearAnim, 250);
+    const clear = () => { ed.classList.remove("anim-editor-enter"); top?.classList.remove("anim-editor-enter"); };
+    ed.addEventListener("animationend", clear, { once: true });
+    setTimeout(clear, 250);
   }
 
-  getCurrentNoteId(): string | null {
-    return this.currentNoteId;
-  }
-
-  setCurrentNoteId(id: string | null): void {
-    this.currentNoteId = id;
-  }
+  getCurrentNoteId(): string | null { return this.currentNoteId; }
+  setCurrentNoteId(id: string | null): void { this.currentNoteId = id; }
 
   private setEditorContainerVisible(visible: boolean): void {
-    const edContainer = document.getElementById("editor-container");
-    const topContainer = document.getElementById("topbar-container");
-    if (edContainer) edContainer.style.display = visible ? "block" : "none";
-    if (topContainer) topContainer.style.display = visible ? "block" : "none";
+    const ed = document.getElementById("editor-container");
+    const top = document.getElementById("topbar-container");
+    if (ed) ed.style.display = visible ? "block" : "none";
+    if (top) { top.style.display = visible ? "block" : "none"; if (!visible) top.style.zIndex = ""; }
   }
 
   createEmbeddedHome(container: HTMLElement, onSelect: (note: NoteItem) => void): HomeViewComponent {

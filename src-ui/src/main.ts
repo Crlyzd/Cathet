@@ -122,7 +122,14 @@ class CathetApp {
       previewService: this.previewService,
       fontService: this.fontService,
       getMobileCoordinator: () => this.mobileCoord,
-      onOpenExternalPicker: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
+      onOpenExternalPicker: async () => {
+        const res = await this.fileService.promptOpen();
+        if (res) {
+          const name = res.displayName || (res.path.startsWith("content://") ? (decodeURIComponent(res.path.split("/").pop() || "Untitled")) : (res.path.split(/[/\\]/).pop() || "Untitled"));
+          this.applyLoadedFile(res, "left");
+          this.homeCoord?.openExternalFile(name);
+        }
+      },
       onNavigateHome: () => {
         if (this.dualPaneService.isDualPane()) this.toggleDualPane();
       },
@@ -142,6 +149,14 @@ class CathetApp {
     });
 
     window.addEventListener("popstate", () => {
+      if (this.homeCoord?.isSelectionModeActive()) {
+        this.homeCoord.exitSelectionMode();
+        return;
+      }
+      if (this.homeCoord && !this.homeCoord.isHomeActive()) {
+        this.homeCoord.navigateBackToHome(false);
+        return;
+      }
       if (this.dualPaneView?.hasEmbeddedHome()) {
         this.dualPaneView.clearEmbeddedHome("left");
         this.dualPaneView.clearEmbeddedHome("right");
@@ -183,6 +198,10 @@ class CathetApp {
     });
 
     window.addEventListener("contextmenu", (e) => {
+      if (this.homeCoord?.isHomeActive() || (e.target as HTMLElement)?.closest(".home-view-container")) {
+        e.preventDefault();
+        return;
+      }
       if (!import.meta.env.DEV || e.altKey) {
         e.preventDefault();
         const ed = this.getActiveEditor();
@@ -352,11 +371,17 @@ class CathetApp {
           host.appendChild(this.editor.getWrapperEl());
           this.windowService.setMinSize(200, 300);
           this.isClosingDualPane = false;
+          if (!this.homeCoord?.isHomeActive()) {
+            this.mobileCoord?.setActionBarVisible(true);
+          }
         });
       } else {
         host.innerHTML = "";
         host.appendChild(this.editor.getWrapperEl());
         this.windowService.setMinSize(200, 300);
+        if (!this.homeCoord?.isHomeActive()) {
+          this.mobileCoord?.setActionBarVisible(true);
+        }
       }
     }
     this.mobileCoord?.setDualPaneState(this.dualPaneService.isDualPane());
