@@ -43,13 +43,25 @@ export class NotesService {
     }
   }
 
-  async saveNote(id: string | null, content: string, folder?: string): Promise<NoteItem | null> {
+  async saveNote(id: string | null, content: string, folder?: string, title?: string): Promise<NoteItem | null> {
     try {
-      const rec = await invoke<NoteItem>("save_note", { id, content, folder });
+      const rec = await invoke<NoteItem>("save_note", { id, content, folder, title });
       this.registry.notes[rec.id] = rec;
       return rec;
     } catch (err) {
       console.error("Failed to save note:", err);
+      return null;
+    }
+  }
+
+  async renameNote(id: string, newTitle: string): Promise<NoteItem | null> {
+    try {
+      const rec = await invoke<NoteItem>("rename_note", { id, newTitle });
+      if (id !== rec.id) delete this.registry.notes[id];
+      this.registry.notes[rec.id] = rec;
+      return rec;
+    } catch (err) {
+      console.error("Failed to rename note:", err);
       return null;
     }
   }
