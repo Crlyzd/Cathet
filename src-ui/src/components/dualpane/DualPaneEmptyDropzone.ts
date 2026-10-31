@@ -2,6 +2,7 @@ import { PlatformService } from "../../services/platformService";
 
 export interface DualPaneEmptyCallbacks {
   onOpen: () => void;
+  onOpenFile?: () => void;
   onNew: () => void;
 }
 
@@ -26,14 +27,22 @@ export class DualPaneEmptyDropzone {
         <span class="dualpane-empty-title">Secondary Document</span>
         <span class="dualpane-empty-desc">${
           isMobile
-            ? "Choose an existing note from Home or start a new document."
+            ? "Choose a note from Home, open a file, or start a new document."
             : "Drop a text or markdown file here, or choose an existing document."
         }</span>
-        <div class="dualpane-empty-actions">
+        <div class="dualpane-empty-actions${isMobile ? " is-mobile-actions" : ""}">
           <button class="dualpane-empty-btn dualpane-empty-btn-primary" id="dualpane-empty-browse-btn" title="${isMobile ? "Browse Notes (Home)" : "Open Document..."}">
             <span class="dualpane-empty-btn-full">${isMobile ? "Home" : "Open Document..."}</span>
             <span class="dualpane-empty-btn-compact">${isMobile ? "Home" : "Open"}</span>
           </button>
+          ${
+            isMobile
+              ? `<button class="dualpane-empty-btn dualpane-empty-btn-secondary" id="dualpane-empty-openfile-btn" title="Open File...">
+                  <span class="dualpane-empty-btn-full">Open File</span>
+                  <span class="dualpane-empty-btn-compact">Open File</span>
+                </button>`
+              : ""
+          }
           <button class="dualpane-empty-btn dualpane-empty-btn-secondary" id="dualpane-empty-new-btn" title="New Document">
             <span class="dualpane-empty-btn-full">New Document</span>
             <span class="dualpane-empty-btn-compact">New</span>
@@ -52,10 +61,17 @@ export class DualPaneEmptyDropzone {
       callbacks.onOpen();
     });
 
-    this.element.addEventListener("click", (e) => {
-      if ((e.target as HTMLElement).closest(".dualpane-empty-btn")) return;
-      callbacks.onNew();
+    this.element.querySelector("#dualpane-empty-openfile-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      callbacks.onOpenFile?.();
     });
+
+    if (!isMobile) {
+      this.element.addEventListener("click", (e) => {
+        if ((e.target as HTMLElement).closest(".dualpane-empty-btn")) return;
+        callbacks.onNew();
+      });
+    }
   }
 
   getElement(): HTMLElement {

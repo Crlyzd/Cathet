@@ -8,6 +8,7 @@ import { HomeNoteGridComponent } from "./HomeNoteGrid";
 import { HomeSelectionBarComponent } from "./HomeSelectionBar";
 import { HomeFabComponent } from "./HomeFab";
 import { FolderModalComponent } from "./FolderModal";
+import { RenameModalComponent } from "./RenameModal";
 
 export interface HomeViewOptions {
   containerId?: string;
@@ -87,6 +88,7 @@ export class HomeViewComponent {
 
     if (!this.isEmbedded) {
       this.selectionBar = new HomeSelectionBarComponent(this.element, {
+        onRename: () => this.handleRenameSelected(),
         onHide: () => this.handleHideSelected(),
         onPin: () => this.handlePinSelected(),
         onMove: () => this.handleMoveSelected(),
@@ -109,21 +111,30 @@ export class HomeViewComponent {
   private renderGrid(): void {
     const filtered = this.notesService.filterNotes(this.searchQuery, this.activeFolder);
     this.noteGrid.setNotes(filtered, this.isSelectionMode, this.selectedNoteIds);
-    this.header.setSelectionMode(this.isSelectionMode, this.selectedNoteIds.size, filtered.length);
-    this.selectionBar?.setVisible(this.isSelectionMode);
-    this.selectionBar?.setEnabled(this.selectedNoteIds.size > 0);
+    this.syncSelectionBars(filtered.length);
   }
 
-  isSelectionActive(): boolean {
-    return this.isSelectionMode;
+  private syncSelectionUI(): void {
+    const filtered = this.notesService.filterNotes(this.searchQuery, this.activeFolder);
+    this.noteGrid.updateSelectionState(this.isSelectionMode, this.selectedNoteIds);
+    this.syncSelectionBars(filtered.length);
   }
+
+  private syncSelectionBars(totalCount: number): void {
+    this.header.setSelectionMode(this.isSelectionMode, this.selectedNoteIds.size, totalCount);
+    this.selectionBar?.setVisible(this.isSelectionMode);
+    this.selectionBar?.setEnabled(this.selectedNoteIds.size > 0);
+    this.selectionBar?.setSingleSelected(this.selectedNoteIds.size === 1);
+  }
+
+  isSelectionActive(): boolean { return this.isSelectionMode; }
 
   private enterSelectionMode(initialId: string): void {
     if (this.isEmbedded) return;
     this.isSelectionMode = true;
     this.selectedNoteIds = new Set([initialId]);
     if (this.fab) this.fab.setVisible(false);
-    this.renderGrid();
+    this.syncSelectionUI();
     window.history.pushState({ screen: "selection" }, "");
   }
 
@@ -135,19 +146,19 @@ export class HomeViewComponent {
     this.isSelectionMode = false;
     this.selectedNoteIds.clear();
     if (this.fab) this.fab.setVisible(true);
-    this.renderGrid();
+    this.syncSelectionUI();
   }
 
   private handleSelectNote(id: string, selected: boolean): void {
     if (selected) this.selectedNoteIds.add(id); else this.selectedNoteIds.delete(id);
-    this.renderGrid();
+    this.syncSelectionUI();
   }
 
   private toggleSelectAll(): void {
     const currentNotes = this.notesService.filterNotes(this.searchQuery, this.activeFolder);
     if (this.selectedNoteIds.size === currentNotes.length) this.selectedNoteIds.clear();
     else currentNotes.forEach((n) => this.selectedNoteIds.add(n.id));
-    this.renderGrid();
+    this.syncSelectionUI();
   }
 
   private promptNewFolder(): void {
@@ -162,10 +173,27 @@ export class HomeViewComponent {
     });
   }
 
+  private handleRenameSelected(): void {
+    if (this.selectedNoteIds.size !== 1) return;
+    const noteId = Array.from(this.selectedNoteIds)[0];
+    const currentNote = this.notesService.getRegistry().notes[noteId];
+    if (!currentNote) return;
+    new RenameModalComponent({
+      currentTitle: currentNote.title,
+      onConfirm: async (newTitle) => {
+        const updated = await this.notesService.renameNote(noteId, newTitle);
+        if (updated) {
+          this.exitSelectionMode();
+          await this.refresh();
+        }
+      },
+    });
+  }
+
   private async handleHideSelected(): Promise<void> {
-    const ids = Array.from(this.selectedNoteIds);
-    await this.notesService.setHidden(ids, true);
+    await this.notesService.setHidden(Array.from(this.selectedNoteIds), true);
     this.exitSelectionMode();
+    this.renderGrid();
   }
 
   private async handlePinSelected(): Promise<void> {
@@ -174,17 +202,18 @@ export class HomeViewComponent {
     const allPinned = ids.every((id) => reg.notes[id]?.isPinned);
     await this.notesService.setPinned(ids, !allPinned);
     this.exitSelectionMode();
+    this.renderGrid();
   }
 
   private handleMoveSelected(): void {
     const ids = Array.from(this.selectedNoteIds);
-    const reg = this.notesService.getRegistry();
     new FolderModalComponent({
       mode: "move",
-      existingFolders: reg.folders,
+      existingFolders: this.notesService.getRegistry().folders,
       onConfirm: async (dest) => {
         await this.notesService.moveNotes(ids, dest);
         this.exitSelectionMode();
+        this.renderGrid();
       },
     });
   }
@@ -194,12 +223,18 @@ export class HomeViewComponent {
     if (confirm(`Delete ${ids.length} selected note(s)?`)) {
       await this.notesService.deleteNotes(ids);
       this.exitSelectionMode();
+      this.renderGrid();
     }
   }
 
-  setVisible(visible: boolean): void {
+  setVisible(visible: boolean, shouldRefresh = true): void {
     this.element.style.display = visible ? "flex" : "none";
-    if (visible) this.refresh();
+    if (visible && shouldRefresh) this.refresh();
+  }
+
+  async showAndRefresh(): Promise<void> {
+    this.element.style.display = "flex";
+    await this.refresh();
   }
 
   animateEnter(): void {

@@ -15,6 +15,7 @@ export class HomeNoteGridComponent {
   private notes: NoteItem[] = [];
   private selectedIds: Set<string> = new Set();
   private isSelectionMode = false;
+  private lastLongPressTime = 0;
   private unbindCleanups: (() => void)[] = [];
 
   constructor(container: HTMLElement, callbacks: HomeNoteGridCallbacks, disableSelection = false) {
@@ -30,6 +31,23 @@ export class HomeNoteGridComponent {
     this.isSelectionMode = isSelectionMode;
     this.selectedIds = selectedIds;
     this.render();
+  }
+
+  updateSelectionState(isSelectionMode: boolean, selectedIds: Set<string>): void {
+    this.isSelectionMode = isSelectionMode;
+    this.selectedIds = selectedIds;
+    const cards = this.element.querySelectorAll<HTMLElement>(".home-note-card");
+    cards.forEach((card) => {
+      const id = card.getAttribute("data-id") || "";
+      const isSelected = this.selectedIds.has(id);
+      card.classList.toggle("selected", isSelected);
+      card.classList.remove("touch-pressed");
+      const checkEl = card.querySelector<HTMLElement>(".home-card-check");
+      if (checkEl) {
+        checkEl.style.display = this.isSelectionMode ? "flex" : "none";
+        checkEl.classList.toggle("checked", isSelected);
+      }
+    });
   }
 
   private formatDate(timestamp: number): string {
@@ -90,10 +108,12 @@ export class HomeNoteGridComponent {
         moveTolerancePx: 12,
         onLongPress: () => {
           if (!this.disableSelection && !this.isSelectionMode) {
+            this.lastLongPressTime = Date.now();
             this.callbacks.onEnterSelectionMode(note.id);
           }
         },
         onClick: () => {
+          if (Date.now() - this.lastLongPressTime < 450) return;
           if (!this.disableSelection && this.isSelectionMode) {
             const next = !this.selectedIds.has(note.id);
             this.callbacks.onSelectNote(note.id, next);

@@ -1,4 +1,5 @@
 export interface HomeSelectionBarCallbacks {
+  onRename: () => void;
   onHide: () => void;
   onPin: () => void;
   onMove: () => void;
@@ -22,12 +23,12 @@ export class HomeSelectionBarComponent {
   private render(): void {
     this.element.innerHTML = `
       <div class="home-selection-pill disabled">
-        <button class="home-sel-btn" id="home-sel-hide" title="Hide/Archive">
+        <button class="home-sel-btn" id="home-sel-rename" title="Rename title">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
           </svg>
-          <span class="home-sel-label">Hide</span>
+          <span class="home-sel-label">Rename</span>
         </button>
         <button class="home-sel-btn" id="home-sel-pin" title="Pin note">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -44,6 +45,13 @@ export class HomeSelectionBarComponent {
           </svg>
           <span class="home-sel-label">Move to</span>
         </button>
+        <button class="home-sel-btn" id="home-sel-hide" title="Hide/Archive">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span class="home-sel-label">Hide</span>
+        </button>
         <button class="home-sel-btn" id="home-sel-delete" title="Delete note">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
@@ -56,6 +64,7 @@ export class HomeSelectionBarComponent {
   }
 
   private bindEvents(): void {
+    this.element.querySelector("#home-sel-rename")?.addEventListener("click", () => this.callbacks.onRename());
     this.element.querySelector("#home-sel-hide")?.addEventListener("click", () => this.callbacks.onHide());
     this.element.querySelector("#home-sel-pin")?.addEventListener("click", () => this.callbacks.onPin());
     this.element.querySelector("#home-sel-move")?.addEventListener("click", () => this.callbacks.onMove());
@@ -65,6 +74,11 @@ export class HomeSelectionBarComponent {
   setEnabled(enabled: boolean): void {
     const pill = this.element.querySelector(".home-selection-pill");
     pill?.classList.toggle("disabled", !enabled);
+  }
+
+  setSingleSelected(single: boolean): void {
+    const renameBtn = this.element.querySelector("#home-sel-rename");
+    renameBtn?.classList.toggle("disabled", !single);
   }
 
   setVisible(visible: boolean): void {

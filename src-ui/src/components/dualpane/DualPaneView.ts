@@ -8,6 +8,7 @@ import { formatDisplayTitle } from "../../utils/pathUtils";
 export interface DualPaneCallbacks {
   onOpenLeft: () => void;
   onOpenRight: () => void;
+  onOpenFileRight?: () => void;
   onNewRight?: () => void;
   onCloseDualPane: () => void;
   onActivePaneChange: (pane: "left" | "right") => void;
@@ -175,6 +176,7 @@ export class DualPaneView {
 
     this.emptyDropzone = new DualPaneEmptyDropzone({
       onOpen: () => this.callbacks.onOpenRight(),
+      onOpenFile: () => this.callbacks.onOpenFileRight?.(),
       onNew: () => this.callbacks.onNewRight?.(),
     });
     this.rightHostEl.appendChild(this.emptyDropzone.getElement());
