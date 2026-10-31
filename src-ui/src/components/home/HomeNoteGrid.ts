@@ -3,7 +3,7 @@ import { bindLongPress } from "../../utils/touchGesture";
 import { icons } from "../../utils/monochromeIcons";
 
 export interface HomeNoteGridCallbacks {
-  onOpenNote: (note: NoteItem) => void;
+  onOpenNote: (note: NoteItem, originRect?: DOMRect) => void;
   onSelectNote: (noteId: string, selected: boolean) => void;
   onEnterSelectionMode: (initialNoteId: string) => void;
 }
@@ -11,13 +11,15 @@ export interface HomeNoteGridCallbacks {
 export class HomeNoteGridComponent {
   private element: HTMLElement;
   private callbacks: HomeNoteGridCallbacks;
+  private disableSelection: boolean;
   private notes: NoteItem[] = [];
   private selectedIds: Set<string> = new Set();
   private isSelectionMode = false;
   private unbindCleanups: (() => void)[] = [];
 
-  constructor(container: HTMLElement, callbacks: HomeNoteGridCallbacks) {
+  constructor(container: HTMLElement, callbacks: HomeNoteGridCallbacks, disableSelection = false) {
     this.callbacks = callbacks;
+    this.disableSelection = disableSelection;
     this.element = document.createElement("div");
     this.element.className = "home-note-grid";
     container.appendChild(this.element);
@@ -76,7 +78,7 @@ export class HomeNoteGridComponent {
         <div class="home-card-footer">
           <span class="home-card-date">${this.formatDate(note.updatedAt)}</span>
           <div class="home-card-check${isSelected ? " checked" : ""}" style="display: ${this.isSelectionMode ? "flex" : "none"}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <svg class="home-check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </div>
@@ -87,21 +89,34 @@ export class HomeNoteGridComponent {
         thresholdMs: 450,
         moveTolerancePx: 12,
         onLongPress: () => {
-          if (!this.isSelectionMode) {
+          if (!this.disableSelection && !this.isSelectionMode) {
             this.callbacks.onEnterSelectionMode(note.id);
           }
         },
         onClick: () => {
-          if (this.isSelectionMode) {
+          if (!this.disableSelection && this.isSelectionMode) {
             const next = !this.selectedIds.has(note.id);
             this.callbacks.onSelectNote(note.id, next);
           } else {
-            this.callbacks.onOpenNote(note);
+            const rect = card.getBoundingClientRect();
+            this.callbacks.onOpenNote(note, rect);
           }
         },
       });
 
-      this.unbindCleanups.push(unbind);
+      const onDown = () => card.classList.add("touch-pressed");
+      const onUp = () => card.classList.remove("touch-pressed");
+      card.addEventListener("pointerdown", onDown, { passive: true });
+      card.addEventListener("pointerup", onUp, { passive: true });
+      card.addEventListener("pointercancel", onUp, { passive: true });
+      card.addEventListener("pointerleave", onUp, { passive: true });
+
+      this.unbindCleanups.push(unbind, () => {
+        card.removeEventListener("pointerdown", onDown);
+        card.removeEventListener("pointerup", onUp);
+        card.removeEventListener("pointercancel", onUp);
+        card.removeEventListener("pointerleave", onUp);
+      });
       this.element.appendChild(card);
     }
   }
@@ -120,4 +135,3 @@ export class HomeNoteGridComponent {
     this.element.remove();
   }
 }
-

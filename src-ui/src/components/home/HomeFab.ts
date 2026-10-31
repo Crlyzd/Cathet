@@ -1,6 +1,6 @@
 export interface HomeFabCallbacks {
-  onNewNote: () => void;
-  onOpenFile: () => void;
+  onNewNote: (originRect?: DOMRect) => void;
+  onOpenFile: (originRect?: DOMRect) => void;
 }
 
 export class HomeFabComponent {
@@ -28,13 +28,13 @@ export class HomeFabComponent {
     this.element.innerHTML = `
       <div class="home-fab-options" style="display: none;">
         <button class="home-fab-opt-pill" id="home-fab-open-file">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
           </svg>
           <span>Open file</span>
         </button>
         <button class="home-fab-opt-pill" id="home-fab-new-note">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 20h9"></path>
             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
           </svg>
@@ -42,7 +42,10 @@ export class HomeFabComponent {
         </button>
       </div>
       <button class="home-fab-btn" id="home-fab-main" title="Create / Open">
-        <span class="home-fab-icon">+</span>
+        <svg class="home-fab-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
       </button>
     `;
   }
@@ -60,14 +63,16 @@ export class HomeFabComponent {
 
     this.element.querySelector("#home-fab-new-note")?.addEventListener("click", (e) => {
       e.stopPropagation();
+      const rect = (this.element.querySelector("#home-fab-new-note") as HTMLElement)?.getBoundingClientRect();
       this.collapse();
-      this.callbacks.onNewNote();
+      this.callbacks.onNewNote(rect);
     });
 
     this.element.querySelector("#home-fab-open-file")?.addEventListener("click", (e) => {
       e.stopPropagation();
+      const rect = (this.element.querySelector("#home-fab-open-file") as HTMLElement)?.getBoundingClientRect();
       this.collapse();
-      this.callbacks.onOpenFile();
+      this.callbacks.onOpenFile(rect);
     });
   }
 
@@ -85,6 +90,13 @@ export class HomeFabComponent {
     const options = this.element.querySelector(".home-fab-options") as HTMLElement;
     options.style.display = "flex";
     this.element.classList.add("expanded");
+
+    const pills = this.element.querySelectorAll<HTMLElement>(".home-fab-opt-pill");
+    pills.forEach((p) => {
+      p.classList.remove("anim-pill-enter");
+      void p.offsetWidth;
+      p.classList.add("anim-pill-enter");
+    });
   }
 
   collapse(): void {
@@ -106,4 +118,3 @@ export class HomeFabComponent {
     this.element.remove();
   }
 }
-

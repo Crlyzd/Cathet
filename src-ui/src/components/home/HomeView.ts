@@ -14,9 +14,9 @@ export interface HomeViewOptions {
   containerElement?: HTMLElement;
   notesService: NotesService;
   isEmbedded?: boolean;
-  onOpenNote: (note: NoteItem) => void;
-  onNewNote: (folder: string) => void;
-  onOpenFile: (folder: string) => void;
+  onOpenNote: (note: NoteItem, originRect?: DOMRect) => void;
+  onNewNote: (folder: string, originRect?: DOMRect) => void;
+  onOpenFile: (folder: string, originRect?: DOMRect) => void;
 }
 
 export class HomeViewComponent {
@@ -28,7 +28,7 @@ export class HomeViewComponent {
   private header!: HomeHeaderComponent;
   private categoryTabs!: HomeCategoryTabsComponent;
   private noteGrid!: HomeNoteGridComponent;
-  private selectionBar!: HomeSelectionBarComponent;
+  private selectionBar?: HomeSelectionBarComponent;
   private fab?: HomeFabComponent;
 
   private activeFolder = "All";
@@ -44,6 +44,7 @@ export class HomeViewComponent {
     const parent = options.containerElement || document.getElementById(options.containerId || "app") || document.body;
     this.element = document.createElement("div");
     this.element.className = `home-view-container${this.isEmbedded ? " home-view-embedded" : ""}`;
+    this.element.addEventListener("contextmenu", (e) => e.preventDefault());
     parent.appendChild(this.element);
 
     this.initSubcomponents();
@@ -74,23 +75,27 @@ export class HomeViewComponent {
       onRequestNewFolder: () => this.promptNewFolder(),
     });
 
-    this.noteGrid = new HomeNoteGridComponent(this.element, {
-      onOpenNote: (n) => this.options.onOpenNote(n),
-      onSelectNote: (id, sel) => this.handleSelectNote(id, sel),
-      onEnterSelectionMode: (id) => this.enterSelectionMode(id),
-    });
-
-    this.selectionBar = new HomeSelectionBarComponent(this.element, {
-      onHide: () => this.handleHideSelected(),
-      onPin: () => this.handlePinSelected(),
-      onMove: () => this.handleMoveSelected(),
-      onDelete: () => this.handleDeleteSelected(),
-    });
+    this.noteGrid = new HomeNoteGridComponent(
+      this.element,
+      {
+        onOpenNote: (n, rect) => this.options.onOpenNote(n, rect),
+        onSelectNote: (id, sel) => this.handleSelectNote(id, sel),
+        onEnterSelectionMode: (id) => this.enterSelectionMode(id),
+      },
+      this.isEmbedded
+    );
 
     if (!this.isEmbedded) {
+      this.selectionBar = new HomeSelectionBarComponent(this.element, {
+        onHide: () => this.handleHideSelected(),
+        onPin: () => this.handlePinSelected(),
+        onMove: () => this.handleMoveSelected(),
+        onDelete: () => this.handleDeleteSelected(),
+      });
+
       this.fab = new HomeFabComponent(this.element, {
-        onNewNote: () => this.options.onNewNote(this.activeFolder),
-        onOpenFile: () => this.options.onOpenFile(this.activeFolder),
+        onNewNote: (rect) => this.options.onNewNote(this.activeFolder, rect),
+        onOpenFile: (rect) => this.options.onOpenFile(this.activeFolder, rect),
       });
     }
   }
@@ -105,17 +110,28 @@ export class HomeViewComponent {
     const filtered = this.notesService.filterNotes(this.searchQuery, this.activeFolder);
     this.noteGrid.setNotes(filtered, this.isSelectionMode, this.selectedNoteIds);
     this.header.setSelectionMode(this.isSelectionMode, this.selectedNoteIds.size, filtered.length);
-    this.selectionBar.setVisible(this.isSelectionMode && this.selectedNoteIds.size > 0);
+    this.selectionBar?.setVisible(this.isSelectionMode);
+    this.selectionBar?.setEnabled(this.selectedNoteIds.size > 0);
+  }
+
+  isSelectionActive(): boolean {
+    return this.isSelectionMode;
   }
 
   private enterSelectionMode(initialId: string): void {
+    if (this.isEmbedded) return;
     this.isSelectionMode = true;
     this.selectedNoteIds = new Set([initialId]);
     if (this.fab) this.fab.setVisible(false);
     this.renderGrid();
+    window.history.pushState({ screen: "selection" }, "");
   }
 
-  exitSelectionMode(): void {
+  exitSelectionMode(syncHistory = true): void {
+    if (syncHistory && window.history.state?.screen === "selection") {
+      window.history.back();
+      return;
+    }
     this.isSelectionMode = false;
     this.selectedNoteIds.clear();
     if (this.fab) this.fab.setVisible(true);
@@ -124,14 +140,14 @@ export class HomeViewComponent {
 
   private handleSelectNote(id: string, selected: boolean): void {
     if (selected) this.selectedNoteIds.add(id); else this.selectedNoteIds.delete(id);
-    if (this.selectedNoteIds.size === 0) this.exitSelectionMode(); else this.renderGrid();
+    this.renderGrid();
   }
 
   private toggleSelectAll(): void {
     const currentNotes = this.notesService.filterNotes(this.searchQuery, this.activeFolder);
     if (this.selectedNoteIds.size === currentNotes.length) this.selectedNoteIds.clear();
     else currentNotes.forEach((n) => this.selectedNoteIds.add(n.id));
-    if (this.selectedNoteIds.size === 0) this.exitSelectionMode(); else this.renderGrid();
+    this.renderGrid();
   }
 
   private promptNewFolder(): void {
@@ -200,9 +216,8 @@ export class HomeViewComponent {
     this.header.destroy();
     this.categoryTabs.destroy();
     this.noteGrid.destroy();
-    this.selectionBar.destroy();
+    this.selectionBar?.destroy();
     this.fab?.destroy();
     this.element.remove();
   }
 }
-
