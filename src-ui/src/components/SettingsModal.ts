@@ -59,6 +59,10 @@ export class SettingsModalComponent {
     if (this.isVisible) return;
     this.isVisible = true;
 
+    (document.activeElement as HTMLElement)?.blur();
+    window.getSelection()?.removeAllRanges();
+    document.body.classList.add("is-modal-open");
+
     if (!this.settingsView) {
       const currentTheme = this.themeService.getTheme();
       const currentFont = this.fontService.getCurrentFont();
@@ -112,6 +116,7 @@ export class SettingsModalComponent {
       });
     }
 
+    void this.overlay.offsetHeight;
     this.overlay.classList.add("visible");
   }
 
@@ -119,6 +124,7 @@ export class SettingsModalComponent {
     if (!this.isVisible) return;
     this.isVisible = false;
     this.overlay.classList.remove("visible");
+    document.body.classList.remove("is-modal-open");
   }
 
   toggle(): void {

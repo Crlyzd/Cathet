@@ -116,7 +116,12 @@ export class MobileMenuDrawerComponent {
       </div>
     `;
 
+    (document.activeElement as HTMLElement)?.blur();
+    window.getSelection()?.removeAllRanges();
+    document.body.classList.add("is-modal-open");
+
     this.attachItemHandlers(state);
+    void this.overlay.offsetHeight;
     this.overlay.classList.add("visible");
     this.isVisible = true;
   }
@@ -143,6 +148,7 @@ export class MobileMenuDrawerComponent {
   hide(): void {
     if (!this.isVisible) return;
     this.overlay.classList.remove("visible");
+    document.body.classList.remove("is-modal-open");
     this.isVisible = false;
   }
 

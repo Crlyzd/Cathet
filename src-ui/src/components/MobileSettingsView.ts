@@ -41,7 +41,14 @@ export class MobileSettingsView {
 
   public updateState(partial: Partial<MobileSettingsState>): void {
     this.state = { ...this.state, ...partial };
-    this.render();
+    this.container.querySelector("#tile-theme-dark")?.classList.toggle("active", this.state.theme === "dark");
+    this.container.querySelector("#tile-theme-light")?.classList.toggle("active", this.state.theme === "light");
+    const fontSelect = this.container.querySelector("#mobile-font-select") as HTMLSelectElement | null;
+    if (fontSelect && fontSelect.value !== this.state.fontId) fontSelect.value = this.state.fontId;
+    const chkPreview = this.container.querySelector("#chk-always-preview") as HTMLInputElement | null;
+    if (chkPreview) chkPreview.checked = this.state.alwaysPreview;
+    const chkSnap = this.container.querySelector("#chk-snap-scroll") as HTMLInputElement | null;
+    if (chkSnap) chkSnap.checked = this.state.snapScroll;
   }
 
   private render(): void {
