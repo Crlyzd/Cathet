@@ -31,7 +31,7 @@ use crate::encoding::decode_text_bytes;
 
 #[tauri::command]
 pub async fn read_text_file(path: String) -> Result<FilePayload, String> {
-    if path.starts_with("content://") {
+    if path.starts_with("content://") || (cfg!(target_os = "android") && path.starts_with("file://")) {
         let (display_name, raw_bytes) = crate::commands::android_fs::read_content_uri(&path)?;
         let content = decode_text_bytes(&raw_bytes)?;
         let file_size = raw_bytes.len() as u64;
@@ -58,7 +58,7 @@ pub async fn read_text_file(path: String) -> Result<FilePayload, String> {
 
 #[tauri::command]
 pub async fn write_text_file(path: String, content: String) -> Result<(), String> {
-    if path.starts_with("content://") {
+    if path.starts_with("content://") || (cfg!(target_os = "android") && path.starts_with("file://")) {
         return crate::commands::android_fs::write_content_uri(&path, content.as_bytes());
     }
     fs::write(path, content).map_err(|e| e.to_string())
@@ -66,7 +66,7 @@ pub async fn write_text_file(path: String, content: String) -> Result<(), String
 
 #[tauri::command]
 pub async fn is_file_readonly(path: String) -> Result<bool, String> {
-    if path.starts_with("content://") {
+    if path.starts_with("content://") || (cfg!(target_os = "android") && path.starts_with("file://")) {
         return Ok(false);
     }
     let metadata = fs::metadata(&path).map_err(|e| e.to_string())?;
@@ -77,18 +77,19 @@ pub async fn is_file_readonly(path: String) -> Result<bool, String> {
 pub async fn show_open_dialog(app_handle: AppHandle) -> Result<Option<FilePayload>, String> {
     let (tx, rx) = tokio::sync::oneshot::channel();
 
-    app_handle
-        .dialog()
-        .file()
+    let builder = app_handle.dialog().file();
+    #[cfg(not(target_os = "android"))]
+    let builder = builder
         .add_filter("All Supported Documents", FILTER_ALL_SUPPORTED)
         .add_filter("Markdown (*.md)", FILTER_MARKDOWN)
         .add_filter("Text & Logs (*.txt, *.log)", FILTER_TEXT_LOGS)
         .add_filter("Data & Config (*.json, *.yaml, *.toml, ...)", FILTER_DATA_CONFIG)
         .add_filter("Source Code (*.js, *.ts, *.rs, *.py, ...)", FILTER_CODE)
-        .add_filter("All Files (*.*)", FILTER_ALL)
-        .pick_file(move |file_path| {
-            let _ = tx.send(file_path);
-        });
+        .add_filter("All Files (*.*)", FILTER_ALL);
+
+    builder.pick_file(move |file_path| {
+        let _ = tx.send(file_path);
+    });
 
     let selected = rx.await.map_err(|e| e.to_string())?;
 
@@ -114,13 +115,12 @@ pub async fn show_save_dialog(
         _ => "Untitled.txt".to_string(),
     };
 
-    let builder = app_handle
-        .dialog()
-        .file()
+    let builder = app_handle.dialog().file().set_file_name(&target_name);
+    #[cfg(not(target_os = "android"))]
+    let builder = builder
         .add_filter("Markdown Document (*.md)", FILTER_MARKDOWN)
         .add_filter("Plain Text (*.txt)", &["txt"])
-        .add_filter("All Files (*.*)", FILTER_ALL)
-        .set_file_name(&target_name);
+        .add_filter("All Files (*.*)", FILTER_ALL);
 
     builder.save_file(move |file_path| {
         let _ = tx.send(file_path);

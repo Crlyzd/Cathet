@@ -11,14 +11,10 @@ pub struct NoteMetadataRecord {
     pub title: String,
     pub folder: String,
     pub snippet: String,
-    #[serde(rename = "isPinned")]
-    pub is_pinned: bool,
-    #[serde(rename = "isHidden")]
-    pub is_hidden: bool,
-    #[serde(rename = "updatedAt")]
-    pub updated_at: u64,
-    #[serde(rename = "fileSize")]
-    pub file_size: u64,
+    #[serde(rename = "isPinned")] pub is_pinned: bool,
+    #[serde(rename = "isHidden")] pub is_hidden: bool,
+    #[serde(rename = "updatedAt")] pub updated_at: u64,
+    #[serde(rename = "fileSize")] pub file_size: u64,
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
@@ -28,8 +24,7 @@ pub struct NotesRegistry {
 }
 
 fn get_notes_root(app_handle: &AppHandle) -> Result<PathBuf, String> {
-    let data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
-    let notes_dir = data_dir.join("notes");
+    let notes_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?.join("notes");
     if !notes_dir.exists() { fs::create_dir_all(&notes_dir).map_err(|e| e.to_string())?; }
     Ok(notes_dir)
 }
@@ -48,13 +43,8 @@ fn extract_title_and_snippet(content: &str, fallback_name: &str) -> (String, Str
     if lines.is_empty() { return (fallback_name.to_string(), String::new()); }
     let raw_title = lines[0].trim_start_matches('#').trim();
     let title = if raw_title.starts_with("file:///") || raw_title.contains('/') || raw_title.contains('\\') {
-        let clean_path = raw_title.trim_start_matches("file:///");
-        clean_path.split(['/', '\\']).filter(|s| !s.is_empty()).last().unwrap_or(fallback_name).to_string()
-    } else if raw_title.is_empty() {
-        fallback_name.to_string()
-    } else {
-        raw_title.to_string()
-    };
+        raw_title.trim_start_matches("file:///").split(['/', '\\']).filter(|s| !s.is_empty()).last().unwrap_or(fallback_name).to_string()
+    } else if raw_title.is_empty() { fallback_name.to_string() } else { raw_title.to_string() };
     let body = if lines.len() > 1 { lines[1..].join(" ") } else { String::new() };
     let snippet = if body.chars().count() > 120 { body.chars().take(120).collect::<String>() + "..." } else { body };
     (title, snippet)
@@ -123,20 +113,23 @@ pub async fn save_note(
     id: Option<String>,
     content: String,
     folder: Option<String>,
+    title: Option<String>,
 ) -> Result<NoteMetadataRecord, String> {
     let root = get_notes_root(&app_handle)?;
     let mut reg = load_registry(&root);
     let target_folder = folder.unwrap_or_default();
+    let custom_title = title.map(|t| t.trim().to_string()).filter(|t| !t.is_empty());
 
-    let (rel_path, abs_path, title, snippet) = if let Some(existing_id) = id.filter(|s| !s.is_empty()) {
+    let (rel_path, abs_path, final_title, snippet) = if let Some(existing_id) = id.filter(|s| !s.is_empty()) {
         let abs = root.join(&existing_id);
         let stem = abs.file_stem().and_then(|s| s.to_str()).unwrap_or("Untitled Note");
-        let (t, s) = extract_title_and_snippet(&content, stem);
-        (existing_id, abs, t, s)
+        let (extracted_t, s) = extract_title_and_snippet(&content, stem);
+        let kept_t = custom_title.or_else(|| reg.notes.get(&existing_id).map(|r| r.title.clone()).filter(|t| !t.is_empty() && t != "Untitled Note")).unwrap_or(extracted_t);
+        (existing_id, abs, kept_t, s)
     } else {
-        let (t, s) = extract_title_and_snippet(&content, "Untitled Note");
-        let base_name = sanitize_filename(&t);
-        let file_name = format!("{}.md", base_name);
+        let (extracted_t, s) = extract_title_and_snippet(&content, "Untitled Note");
+        let t = custom_title.unwrap_or(extracted_t);
+        let file_name = format!("{}.md", sanitize_filename(&t));
         let (rel, abs) = if target_folder.is_empty() || target_folder == "All" {
             (file_name.clone(), root.join(&file_name))
         } else {
@@ -152,7 +145,7 @@ pub async fn save_note(
     let (is_pinned, is_hidden) = reg.notes.get(&rel_path).map(|r| (r.is_pinned, r.is_hidden)).unwrap_or((false, false));
 
     let record = NoteMetadataRecord {
-        id: rel_path.clone(), title, folder: target_folder, snippet, is_pinned, is_hidden,
+        id: rel_path.clone(), title: final_title, folder: target_folder, snippet, is_pinned, is_hidden,
         updated_at: current_timestamp(), file_size: size,
     };
     reg.notes.insert(rel_path, record.clone());
@@ -161,13 +154,30 @@ pub async fn save_note(
 }
 
 #[tauri::command]
+pub async fn rename_note(app_handle: AppHandle, id: String, new_title: String) -> Result<NoteMetadataRecord, String> {
+    let clean_title = new_title.trim().to_string();
+    if clean_title.is_empty() { return Err("Title cannot be empty".to_string()); }
+    let root = get_notes_root(&app_handle)?;
+    let mut reg = load_registry(&root);
+    let mut record = reg.notes.remove(&id).ok_or_else(|| "Note not found".to_string())?;
+    let src_path = root.join(&id);
+    let file_name = format!("{}.md", sanitize_filename(&clean_title));
+    let dest_path = if record.folder.is_empty() || record.folder == "All" { root.join(&file_name) } else { root.join(&record.folder).join(&file_name) };
+    let final_path = if src_path != dest_path && !dest_path.exists() && fs::rename(&src_path, &dest_path).is_ok() { dest_path } else { src_path };
+    let new_id = final_path.strip_prefix(&root).unwrap_or(&final_path).to_string_lossy().replace('\\', "/");
+    record.id = new_id.clone();
+    record.title = clean_title;
+    record.updated_at = current_timestamp();
+    reg.notes.insert(new_id, record.clone());
+    save_registry(&root, &reg)?;
+    Ok(record)
+}
+
+#[tauri::command]
 pub async fn delete_notes(app_handle: AppHandle, ids: Vec<String>) -> Result<(), String> {
     let root = get_notes_root(&app_handle)?;
     let mut reg = load_registry(&root);
-    for id in &ids {
-        let _ = fs::remove_file(root.join(id));
-        reg.notes.remove(id);
-    }
+    for id in &ids { let _ = fs::remove_file(root.join(id)); reg.notes.remove(id); }
     save_registry(&root, &reg)
 }
 
@@ -175,14 +185,9 @@ pub async fn delete_notes(app_handle: AppHandle, ids: Vec<String>) -> Result<(),
 pub async fn move_notes(app_handle: AppHandle, ids: Vec<String>, target_folder: String) -> Result<(), String> {
     let root = get_notes_root(&app_handle)?;
     let mut reg = load_registry(&root);
-    let dest_dir = if target_folder.is_empty() || target_folder == "All" {
-        root.clone()
-    } else {
-        let d = root.join(&target_folder);
-        let _ = fs::create_dir_all(&d);
-        d
+    let dest_dir = if target_folder.is_empty() || target_folder == "All" { root.clone() } else {
+        let d = root.join(&target_folder); let _ = fs::create_dir_all(&d); d
     };
-
     for id in ids {
         if let Some(mut record) = reg.notes.remove(&id) {
             let src_path = root.join(&id);
@@ -219,8 +224,7 @@ pub async fn set_note_hidden(app_handle: AppHandle, ids: Vec<String>, hidden: bo
 #[tauri::command]
 pub async fn create_folder(app_handle: AppHandle, folder_name: String) -> Result<(), String> {
     let root = get_notes_root(&app_handle)?;
-    let folder_dir = root.join(&folder_name);
-    fs::create_dir_all(folder_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(root.join(&folder_name)).map_err(|e| e.to_string())?;
     let mut reg = load_registry(&root);
     if !reg.folders.contains(&folder_name) {
         reg.folders.push(folder_name);
@@ -237,11 +241,8 @@ pub async fn read_note(app_handle: AppHandle, id: String) -> Result<crate::comma
 }
 
 #[tauri::command]
-pub async fn import_external_file(
-    app_handle: AppHandle,
-    source_path: String,
-    folder: Option<String>,
-) -> Result<NoteMetadataRecord, String> {
-    let content = crate::commands::file::read_text_file(source_path).await?.content;
-    save_note(app_handle, None, content, folder).await
+pub async fn import_external_file(app_handle: AppHandle, source_path: String, folder: Option<String>) -> Result<NoteMetadataRecord, String> {
+    let res = crate::commands::file::read_text_file(source_path).await?;
+    let stem = res.display_name.as_deref().and_then(|n| n.rsplit_once('.').map(|(s, _)| s).or(Some(n))).map(|s| s.to_string());
+    save_note(app_handle, None, res.content, folder, stem).await
 }

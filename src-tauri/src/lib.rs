@@ -13,7 +13,7 @@ use commands::file::{
 };
 use commands::notes::{
     create_folder, delete_notes, import_external_file, list_notes, move_notes, read_note,
-    save_note, set_note_hidden, set_note_pinned,
+    rename_note, save_note, set_note_hidden, set_note_pinned,
 };
 use commands::memory::trim_memory;
 use commands::updater::{
@@ -108,6 +108,7 @@ pub fn run() {
             list_notes,
             read_note,
             save_note,
+            rename_note,
             delete_notes,
             move_notes,
             set_note_pinned,

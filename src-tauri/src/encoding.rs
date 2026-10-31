@@ -50,8 +50,8 @@ fn decode_windows_ansi(bytes: &[u8]) -> Result<String, String> {
 }
 
 #[cfg(not(windows))]
-fn decode_windows_ansi(_bytes: &[u8]) -> Result<String, String> {
-    Err(ERR_UNSUPPORTED_DATA.to_string())
+fn decode_windows_ansi(bytes: &[u8]) -> Result<String, String> {
+    Ok(bytes.iter().map(|&b| b as char).collect())
 }
 
 /// Decodes raw file bytes into a UTF-8 String using a zero-bloat pipeline:
