@@ -1,3 +1,5 @@
+import { PlatformService } from "../../services/platformService";
+
 export interface DualPaneEmptyCallbacks {
   onOpen: () => void;
   onNew: () => void;
@@ -10,6 +12,7 @@ export class DualPaneEmptyDropzone {
   private element: HTMLElement;
 
   constructor(callbacks: DualPaneEmptyCallbacks) {
+    const isMobile = PlatformService.getInstance().isAndroid();
     this.element = document.createElement("div");
     this.element.className = "dualpane-empty";
     this.element.innerHTML = `
@@ -21,15 +24,19 @@ export class DualPaneEmptyDropzone {
           <polyline points="9 15 12 12 15 15"></polyline>
         </svg>
         <span class="dualpane-empty-title">Secondary Document</span>
-        <span class="dualpane-empty-desc">Drop a text or markdown file here, or choose an existing document.</span>
+        <span class="dualpane-empty-desc">${
+          isMobile
+            ? "Choose an existing note from Home or start a new document."
+            : "Drop a text or markdown file here, or choose an existing document."
+        }</span>
         <div class="dualpane-empty-actions">
-          <button class="dualpane-empty-btn dualpane-empty-btn-primary" id="dualpane-empty-new-btn" title="New Document">
+          <button class="dualpane-empty-btn dualpane-empty-btn-primary" id="dualpane-empty-browse-btn" title="${isMobile ? "Browse Notes (Home)" : "Open Document..."}">
+            <span class="dualpane-empty-btn-full">${isMobile ? "Home" : "Open Document..."}</span>
+            <span class="dualpane-empty-btn-compact">${isMobile ? "Home" : "Open"}</span>
+          </button>
+          <button class="dualpane-empty-btn dualpane-empty-btn-secondary" id="dualpane-empty-new-btn" title="New Document">
             <span class="dualpane-empty-btn-full">New Document</span>
             <span class="dualpane-empty-btn-compact">New</span>
-          </button>
-          <button class="dualpane-empty-btn dualpane-empty-btn-secondary" id="dualpane-empty-browse-btn" title="Open Document...">
-            <span class="dualpane-empty-btn-full">Open Document...</span>
-            <span class="dualpane-empty-btn-compact">Open</span>
           </button>
         </div>
       </div>

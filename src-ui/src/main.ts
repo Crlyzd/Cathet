@@ -44,6 +44,7 @@ class CathetApp {
   private homeCoord: HomeCoordinator | null = null;
   private currentFilePath: string | null = null;
   private isAlwaysOnTop = false;
+  private isClosingDualPane = false;
 
   constructor() { this.init(); }
 
@@ -252,6 +253,7 @@ class CathetApp {
   }
 
   private toggleDualPane(): void {
+    if (this.isClosingDualPane) return;
     const host = document.getElementById("editor-container")!;
     if (!this.dualPaneService.isDualPane()) {
       this.dualPaneService.setDualPane(true);
@@ -266,11 +268,11 @@ class CathetApp {
             this.mobileCoord?.setActionBarVisible(false);
             window.history.pushState({ dualPicker: "left" }, "");
             const inst = this.homeCoord.createEmbeddedHome(hostEl, async (note) => {
+              const read = await this.notesService.readNote(note.id);
+              const content = read?.content || note.snippet;
               this.dualPaneView!.clearEmbeddedHome("left");
               this.dualPaneView!.getHeaderLeft().setBackVisible(false);
               this.mobileCoord?.setActionBarVisible(true);
-              const read = await this.notesService.readNote(note.id);
-              const content = read?.content || note.snippet;
               this.currentFilePath = `notes/${note.id}`;
               const cleanTitle = formatDisplayTitle(note.title);
               this.dualPaneService.setLeftPath(this.currentFilePath, cleanTitle);
@@ -292,11 +294,11 @@ class CathetApp {
             this.mobileCoord?.setActionBarVisible(false);
             window.history.pushState({ dualPicker: "right" }, "");
             const inst = this.homeCoord.createEmbeddedHome(hostEl, async (note) => {
+              const read = await this.notesService.readNote(note.id);
+              const content = read?.content || note.snippet;
               this.dualPaneView!.clearEmbeddedHome("right");
               this.dualPaneView!.getHeaderRight().setBackVisible(false);
               this.mobileCoord?.setActionBarVisible(true);
-              const read = await this.notesService.readNote(note.id);
-              const content = read?.content || note.snippet;
               const path = `notes/${note.id}`;
               const cleanTitle = formatDisplayTitle(note.title);
               this.dualPaneService.setRightPath(path, cleanTitle);
@@ -333,22 +335,6 @@ class CathetApp {
         onTitleChange: () => this.topBar.setTitle(this.dualPaneService.getFormattedTitle()),
         onSyncChange: (s) => this.mobileCoord?.setSyncState(s, this.dualPaneService.getSnapScroll()),
       });
-      if (PlatformService.getInstance().isAndroid() && this.homeCoord) {
-        this.dualPaneView.clearEmbeddedHome("right");
-        const rightHost = this.dualPaneView.getHostRight();
-        this.dualPaneView.getHeaderRight().setBackVisible(false);
-        const inst = this.homeCoord.createEmbeddedHome(rightHost, async (note) => {
-          this.dualPaneView?.clearEmbeddedHome("right");
-          const read = await this.notesService.readNote(note.id);
-          const content = read?.content || note.snippet;
-          const path = `notes/${note.id}`;
-          const cleanTitle = formatDisplayTitle(note.title);
-          this.dualPaneService.setRightPath(path, cleanTitle);
-          const isMd = this.previewService.shouldOpenInPreview(cleanTitle);
-          this.dualPaneView?.mountRightEditor(content, path, isMd, this.fontService.getCurrentFont().family);
-        });
-        this.dualPaneView.setEmbeddedHome("right", inst);
-      }
       this.dualPaneView.setLeftTitle(formatDisplayTitle(this.currentFilePath));
       this.dualPaneView.setSnapScroll(this.dualPaneService.getSnapScroll());
       this.mobileCoord?.setSyncState(this.dualPaneView.isSyncLocked(), this.dualPaneService.getSnapScroll());
@@ -357,11 +343,21 @@ class CathetApp {
       this.dualPaneService.setDualPane(false);
       this.dualPaneService.setRightPath(null);
       this.dualPaneService.setActivePane("left");
-      this.dualPaneView?.destroy();
-      this.dualPaneView = null;
-      host.innerHTML = "";
-      host.appendChild(this.editor.getWrapperEl());
-      this.windowService.setMinSize(200, 300);
+      if (this.dualPaneView) {
+        this.isClosingDualPane = true;
+        this.dualPaneView.animateClose(() => {
+          this.dualPaneView?.destroy();
+          this.dualPaneView = null;
+          host.innerHTML = "";
+          host.appendChild(this.editor.getWrapperEl());
+          this.windowService.setMinSize(200, 300);
+          this.isClosingDualPane = false;
+        });
+      } else {
+        host.innerHTML = "";
+        host.appendChild(this.editor.getWrapperEl());
+        this.windowService.setMinSize(200, 300);
+      }
     }
     this.mobileCoord?.setDualPaneState(this.dualPaneService.isDualPane());
     this.topBar.setTitle(this.dualPaneService.getFormattedTitle());

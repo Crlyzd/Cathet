@@ -3,7 +3,6 @@ import { DualPaneHeader } from "./DualPaneHeader";
 import { DualPaneSplitter } from "./DualPaneSplitter";
 import { DualPaneEmptyDropzone } from "./DualPaneEmptyDropzone";
 import { SyncScrollController } from "../../utils/syncScrollController";
-import { PlatformService } from "../../services/platformService";
 import { formatDisplayTitle } from "../../utils/pathUtils";
 
 export interface DualPaneCallbacks {
@@ -62,13 +61,8 @@ export class DualPaneView {
     this.leftPaneEl.append(this.headerLeft.getElement(), this.leftHostEl);
 
     this.splitter = new DualPaneSplitter(
-      this.rootEl,
-      (pct) => this.setSplitRatio(pct),
-      () => {
-        const locked = this.scrollSync.toggleLock();
-        this.callbacks.onSyncChange?.(locked);
-        return locked;
-      },
+      this.rootEl, (pct) => this.setSplitRatio(pct),
+      () => { const l = this.scrollSync.toggleLock(); this.callbacks.onSyncChange?.(l); return l; },
       this.scrollSync.isLocked()
     );
 
@@ -87,6 +81,15 @@ export class DualPaneView {
 
     this.rootEl.append(this.leftPaneEl, this.splitter.getElement(), this.rightPaneEl);
     this.container.appendChild(this.rootEl);
+
+    this.rightPaneEl.classList.add("entering");
+    this.splitter.getElement().classList.add("entering");
+    const onEnter = () => {
+      this.rightPaneEl.classList.remove("entering");
+      this.splitter.getElement().classList.remove("entering");
+    };
+    this.rightPaneEl.addEventListener("animationend", onEnter, { once: true });
+    setTimeout(onEnter, 250);
 
     this.leftHostEl.appendChild(this.editorLeft.getWrapperEl());
     this.showEmptyRightPane();
@@ -118,59 +121,40 @@ export class DualPaneView {
   setRightTitle(title: string): void { this.headerRight.setTitle(formatDisplayTitle(title)); }
   setLeftPreviewActive(active: boolean): void { this.headerLeft.setPreviewActive(active); }
 
-  setSnapScroll(enabled: boolean): void {
-    this.scrollSync.setSnapScroll(enabled);
-    this.splitter.setSnapScroll(enabled);
-  }
-
+  setSnapScroll(enabled: boolean): void { this.scrollSync.setSnapScroll(enabled); this.splitter.setSnapScroll(enabled); }
   toggleLock(): boolean {
     const locked = this.scrollSync.toggleLock();
     this.splitter.setSyncLocked(locked);
     this.callbacks.onSyncChange?.(locked);
     return locked;
   }
-
   setSyncLocked(locked: boolean): void {
     if (this.scrollSync.isLocked() !== locked) this.scrollSync.toggleLock();
     this.splitter.setSyncLocked(locked);
     this.callbacks.onSyncChange?.(locked);
   }
-
   isSyncLocked(): boolean { return this.scrollSync.isLocked(); }
-
   toggleLeftPreview(): void {
-    const isMd = this.editorLeft.toggleMarkdownPreview();
-    this.headerLeft.setPreviewActive(isMd);
+    this.headerLeft.setPreviewActive(this.editorLeft.toggleMarkdownPreview());
     this.scrollSync.resync("left");
   }
-
   toggleRightPreview(): void {
     if (!this.editorRight) return;
-    const isMd = this.editorRight.toggleMarkdownPreview();
-    this.headerRight.setPreviewActive(isMd);
+    this.headerRight.setPreviewActive(this.editorRight.toggleMarkdownPreview());
     this.scrollSync.resync("right");
   }
 
   setEmbeddedHome(pane: "left" | "right", instance: any): void {
-    if (pane === "left") {
-      if (this.embeddedHomeLeft && this.embeddedHomeLeft !== instance) this.embeddedHomeLeft.destroy?.();
-      this.embeddedHomeLeft = instance;
-    } else {
-      if (this.embeddedHomeRight && this.embeddedHomeRight !== instance) this.embeddedHomeRight.destroy?.();
-      this.embeddedHomeRight = instance;
-    }
+    const cur = pane === "left" ? this.embeddedHomeLeft : this.embeddedHomeRight;
+    if (cur && cur !== instance) cur.destroy?.();
+    if (pane === "left") this.embeddedHomeLeft = instance; else this.embeddedHomeRight = instance;
   }
 
   clearEmbeddedHome(pane: "left" | "right"): void {
-    if (pane === "left" && this.embeddedHomeLeft) {
-      this.embeddedHomeLeft.destroy?.();
-      this.embeddedHomeLeft = null;
-    } else if (pane === "right" && this.embeddedHomeRight) {
-      this.embeddedHomeRight.destroy?.();
-      this.embeddedHomeRight = null;
-    }
-    const host = pane === "left" ? this.leftHostEl : this.rightHostEl;
-    host.innerHTML = "";
+    const cur = pane === "left" ? this.embeddedHomeLeft : this.embeddedHomeRight;
+    cur?.destroy?.();
+    if (pane === "left") this.embeddedHomeLeft = null; else this.embeddedHomeRight = null;
+    (pane === "left" ? this.leftHostEl : this.rightHostEl).innerHTML = "";
   }
 
   hasEmbeddedHome(): boolean {
@@ -185,16 +169,15 @@ export class DualPaneView {
       this.editorLeft.setTouchZoomOptions(undefined);
     }
     this.clearEmbeddedHome("right");
+    if (this.emptyDropzone) { this.emptyDropzone.destroy(); this.emptyDropzone = null; }
     this.headerRight.setTitle("Empty");
     this.headerRight.setPreviewActive(false);
 
-    if (!PlatformService.getInstance().isAndroid()) {
-      this.emptyDropzone = new DualPaneEmptyDropzone({
-        onOpen: () => this.callbacks.onOpenRight(),
-        onNew: () => this.callbacks.onNewRight?.(),
-      });
-      this.rightHostEl.appendChild(this.emptyDropzone.getElement());
-    }
+    this.emptyDropzone = new DualPaneEmptyDropzone({
+      onOpen: () => this.callbacks.onOpenRight(),
+      onNew: () => this.callbacks.onNewRight?.(),
+    });
+    this.rightHostEl.appendChild(this.emptyDropzone.getElement());
   }
 
   mountRightEditor(content: string, path: string | null, shouldPreview: boolean, font: string): EditorComponent {
@@ -225,6 +208,18 @@ export class DualPaneView {
   getHeaderLeft(): DualPaneHeader { return this.headerLeft; }
   getHeaderRight(): DualPaneHeader { return this.headerRight; }
   getSplitterPosition(): number { return this.splitter.getElement().getBoundingClientRect().left; }
+  animateClose(callback: () => void): void {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      callback();
+      return;
+    }
+    this.rightPaneEl.classList.add("exiting");
+    this.splitter.getElement().classList.add("exiting");
+    let called = false;
+    const finish = () => { if (!called) { called = true; callback(); } };
+    this.rightPaneEl.addEventListener("animationend", finish, { once: true });
+    setTimeout(finish, 170);
+  }
 
   destroy(): void {
     this.clearEmbeddedHome("left");
