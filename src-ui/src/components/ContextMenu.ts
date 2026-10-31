@@ -1,3 +1,5 @@
+import { PlatformService } from "../services/platformService";
+
 export interface ContextMenuItem {
   id: string;
   label: string;
@@ -26,6 +28,7 @@ export class ContextMenuComponent {
   show(x: number, y: number, items: ContextMenuItem[]): void {
     this.hide();
 
+    const isMobile = PlatformService.getInstance().isMobile();
     const menuEl = document.createElement("div");
     menuEl.className = "context-menu";
 
@@ -38,7 +41,7 @@ export class ContextMenuComponent {
         const iconHtml = item.iconSvg
           ? `<span class="context-menu-icon">${item.iconSvg}</span>`
           : `<span class="context-menu-icon"></span>`;
-        const shortcutHtml = item.shortcut
+        const shortcutHtml = !isMobile && item.shortcut
           ? `<span class="context-menu-shortcut">${item.shortcut}</span>`
           : "";
 
@@ -59,7 +62,7 @@ export class ContextMenuComponent {
     this.isVisible = true;
 
     // Viewport bounding clamping
-    const menuWidth = 220;
+    const menuWidth = isMobile ? 160 : 220;
     const estimatedHeight = items.length * 34 + 16;
     const clampedX = Math.max(6, Math.min(x, window.innerWidth - menuWidth - 6));
     const clampedY = Math.max(6, Math.min(y, window.innerHeight - estimatedHeight - 6));

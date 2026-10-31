@@ -203,6 +203,10 @@ export class MobileActionBarComponent {
     return this.syncMode;
   }
 
+  setVisible(visible: boolean): void {
+    this.element.style.display = visible ? "block" : "none";
+  }
+
   destroy(): void {
     if (this.collapseTimer) clearTimeout(this.collapseTimer);
     this.element.remove();

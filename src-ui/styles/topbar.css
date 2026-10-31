@@ -24,7 +24,8 @@
 
 /* Drag Region displaying File Name */
 .topbar-drag-area {
-  flex: 1;
+  flex: 0 1 auto;
+  max-width: 65%;
   min-width: 0;
   height: 100%;
   display: block;
@@ -39,6 +40,31 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-right: auto;
+}
+
+/* Back Button (‹) */
+.back-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--col-text-muted);
+  transition: all 0.15s ease;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--col-text);
+}
+
+.back-btn:active {
+  transform: scale(0.92);
 }
 
 /* Dot Menu Button (●) */

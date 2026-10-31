@@ -29,3 +29,29 @@ export function unwrapQuotedPath(text: string, normalizeSlashes: boolean = false
   }
   return path;
 }
+
+/**
+ * Formats a clean human-readable title for documents and headers,
+ * stripping URI schemes (file:///), internal notes/ prefixes, and escaped paths.
+ */
+export function formatDisplayTitle(raw: string | null | undefined): string {
+  if (!raw) return "Untitled";
+  let s = raw.trim();
+  if (s.startsWith("notes/")) s = s.slice(6);
+  if (s.startsWith("file:///")) {
+    try {
+      s = decodeURIComponent(s.replace(/^file:\/\/\//, ""));
+    } catch {}
+  }
+  const lastSlash = Math.max(s.lastIndexOf("/"), s.lastIndexOf("\\"));
+  if (lastSlash !== -1) {
+    s = s.slice(lastSlash + 1);
+  }
+  if (s.startsWith("file___")) {
+    const parts = s.split(/_+/);
+    if (parts.length > 1) {
+      s = parts[parts.length - 1];
+    }
+  }
+  return s || "Untitled";
+}

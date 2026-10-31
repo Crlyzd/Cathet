@@ -9,6 +9,7 @@ import { invoke } from "@tauri-apps/api/core";
 export interface SettingsModalCallbacks {
   onOpenTutorial: () => void;
   onFontChanged?: (fontFamily: string) => void;
+  onSnapScrollChange?: (enabled: boolean) => void;
 }
 
 export class SettingsModalComponent {
@@ -92,6 +93,7 @@ export class SettingsModalComponent {
           onSnapScrollChange: async (enabled) => {
             this.dualPaneService.setSnapScroll(enabled);
             this.settingsView?.updateState({ snapScroll: enabled });
+            this.callbacks.onSnapScrollChange?.(enabled);
             await emit("cathet:snap-scroll-change", enabled);
           },
           onOpenTutorial: () => {
@@ -125,6 +127,11 @@ export class SettingsModalComponent {
     } else {
       this.show();
     }
+  }
+
+  updateSnapScroll(enabled: boolean): void {
+    this.dualPaneService.setSnapScroll(enabled);
+    this.settingsView?.updateState({ snapScroll: enabled });
   }
 
   destroy(): void {

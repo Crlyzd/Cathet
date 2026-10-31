@@ -6,6 +6,8 @@ import { handleEditorPaste } from "../utils/editorPasteHandler";
 import { captureScrollRatio, restoreScrollRatio } from "../utils/scrollSync";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { attachTouchZoom, TouchZoomOptions } from "../utils/touchZoomHandler";
+import { PlatformService } from "../services/platformService";
 
 export class EditorComponent {
   private container: HTMLElement;
@@ -22,6 +24,8 @@ export class EditorComponent {
       this.adjustZoom(e.deltaY < 0 ? 10 : -10);
     }
   };
+  private touchZoomCleanup: (() => void) | null = null;
+  private touchZoomOptions?: TouchZoomOptions;
 
   constructor(container: string | HTMLElement) {
     const el = typeof container === "string" ? document.getElementById(container) : container;
@@ -77,6 +81,10 @@ export class EditorComponent {
         replaceBrokenImageWithFallback(target as HTMLImageElement);
       }
     }, true);
+
+    if (PlatformService.getInstance().isAndroid()) {
+      this.touchZoomCleanup = attachTouchZoom(this.wrapperEl, this, () => this.touchZoomOptions);
+    }
   }
 
   adjustZoom(deltaPercent: number): void {
@@ -86,7 +94,19 @@ export class EditorComponent {
 
   getWrapperEl(): HTMLElement { return this.wrapperEl; }
   getEditorEl(): HTMLElement { return this.editorEl; }
-  destroy(): void { window.removeEventListener("wheel", this.wheelHandler); }
+  getZoomLevel(): number { return this.zoomLevel; }
+  setZoomLevel(percent: number): void {
+    this.zoomLevel = Math.max(50, Math.min(300, Math.round(percent)));
+    this.editorEl.style.fontSize = `${14 * (this.zoomLevel / 100)}px`;
+  }
+  setTouchZoomOptions(options?: TouchZoomOptions): void { this.touchZoomOptions = options; }
+  destroy(): void {
+    window.removeEventListener("wheel", this.wheelHandler);
+    if (this.touchZoomCleanup) {
+      this.touchZoomCleanup();
+      this.touchZoomCleanup = null;
+    }
+  }
   setFontFamily(family: string): void { this.editorEl.style.fontFamily = family; }
   setDocumentPath(path: string | null): void { this.documentPath = path; }
   getIsMarkdownPreview(): boolean { return this.isMarkdownPreview; }

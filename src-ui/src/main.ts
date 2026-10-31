@@ -14,7 +14,11 @@ import { DragDropService } from "./services/dragDropService";
 import { PreviewService } from "./services/previewService";
 import { DualPaneService } from "./services/dualPaneService";
 import { MobileCoordinator } from "./services/mobileCoordinator";
+import { PlatformService } from "./services/platformService";
+import { NotesService } from "./services/notesService";
+import { HomeCoordinator } from "./services/homeCoordinator";
 import { globalEventBus } from "./utils/eventBus";
+import { formatDisplayTitle } from "./utils/pathUtils";
 import { registerShortcuts } from "./utils/shortcuts";
 import { buildContextMenuItems } from "./utils/contextMenuItems";
 import { buildMainMenuItems } from "./utils/mainMenuItems";
@@ -36,6 +40,8 @@ class CathetApp {
   private dropOverlay = new DropOverlayComponent("app");
   private dualPaneView: DualPaneView | null = null;
   private mobileCoord: MobileCoordinator | null = null;
+  private notesService = new NotesService();
+  private homeCoord: HomeCoordinator | null = null;
   private currentFilePath: string | null = null;
   private isAlwaysOnTop = false;
 
@@ -60,7 +66,12 @@ class CathetApp {
       onAlwaysOnTopChanged: (s) => { this.isAlwaysOnTop = s; },
       onUpdateAvailable: (a) => { this.topBar.setUpdateAvailable(a); },
       onLoadTutorial: () => this.loadTutorialDocument(),
-      onSnapScrollChanged: (s) => { this.dualPaneService.setSnapScroll(s); this.dualPaneView?.setSnapScroll(s); },
+      onSnapScrollChanged: (s) => {
+        this.dualPaneService.setSnapScroll(s);
+        this.dualPaneView?.setSnapScroll(s);
+        const isLocked = this.dualPaneView ? this.dualPaneView.isSyncLocked() : true;
+        this.mobileCoord?.setSyncState(s ? true : isLocked, s);
+      },
     });
 
     this.mobileCoord = new MobileCoordinator({
@@ -75,15 +86,80 @@ class CathetApp {
             this.dualPaneService.setSnapScroll(false);
             this.dualPaneView.setSnapScroll(false);
             this.dualPaneView.setSyncLocked(true);
+            this.mobileCoord?.updateSettingsSnapScroll(false);
           } else if (mode === "snap") {
             this.dualPaneService.setSnapScroll(true);
             this.dualPaneView.setSnapScroll(true);
             this.dualPaneView.setSyncLocked(true);
+            this.mobileCoord?.updateSettingsSnapScroll(true);
           } else {
             this.dualPaneView.setSyncLocked(false);
           }
         }
       },
+      onSnapScrollChanged: (s) => {
+        this.dualPaneService.setSnapScroll(s);
+        if (this.dualPaneView) {
+          if (s) {
+            this.dualPaneView.setSyncLocked(true);
+            this.dualPaneView.setSnapScroll(true);
+            this.mobileCoord?.setSyncState(true, true);
+          } else {
+            this.dualPaneView.setSnapScroll(false);
+            this.mobileCoord?.setSyncState(this.dualPaneView.isSyncLocked(), false);
+          }
+        } else {
+          this.mobileCoord?.setSyncState(true, s);
+        }
+      },
+    });
+
+    this.homeCoord = new HomeCoordinator({
+      notesService: this.notesService,
+      topBar: this.topBar,
+      editor: this.editor,
+      previewService: this.previewService,
+      fontService: this.fontService,
+      getMobileCoordinator: () => this.mobileCoord,
+      onOpenExternalPicker: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
+      onNavigateHome: () => {
+        if (this.dualPaneService.isDualPane()) this.toggleDualPane();
+      },
+      onNoteSelectedForEditor: (content, noteId, title) => {
+        this.currentFilePath = `notes/${noteId}`;
+        this.dualPaneService.setLeftPath(this.currentFilePath, title);
+        const shouldPreview = this.previewService.shouldOpenInPreview(title);
+        this.editor.loadDocument(content, this.currentFilePath, shouldPreview);
+        this.mobileCoord?.setMarkdownState(shouldPreview);
+      },
+    });
+
+    window.addEventListener("blur", () => {
+      if (PlatformService.getInstance().isAndroid()) {
+        this.homeCoord?.autoSaveCurrentNote();
+      }
+    });
+
+    window.addEventListener("popstate", () => {
+      if (this.dualPaneView?.hasEmbeddedHome()) {
+        this.dualPaneView.clearEmbeddedHome("left");
+        this.dualPaneView.clearEmbeddedHome("right");
+        this.dualPaneView.getHeaderLeft().setBackVisible(false);
+        this.dualPaneView.getHeaderRight().setBackVisible(false);
+        const hostLeft = this.dualPaneView.getHostLeft();
+        if (!hostLeft.contains(this.editor.getWrapperEl())) {
+          hostLeft.innerHTML = "";
+          hostLeft.appendChild(this.editor.getWrapperEl());
+        }
+        if (this.dualPaneView.getEditorRight()) {
+          const hostRight = this.dualPaneView.getHostRight();
+          hostRight.innerHTML = "";
+          hostRight.appendChild(this.dualPaneView.getEditorRight()!.getWrapperEl());
+        } else {
+          this.dualPaneView.showEmptyRightPane();
+        }
+        this.mobileCoord?.setActionBarVisible(true);
+      }
     });
 
     this.registerShortcuts();
@@ -182,14 +258,98 @@ class CathetApp {
       this.dualPaneService.setLeftPath(this.currentFilePath);
       this.editor.getWrapperEl().remove();
       this.dualPaneView = new DualPaneView(host, this.editor, {
-        onOpenLeft: () => this.fetchAndApply(() => this.fileService.promptOpen(), "left"),
-        onOpenRight: () => this.fetchAndApply(() => this.fileService.promptOpen(), "right"),
+        onOpenLeft: () => {
+          if (PlatformService.getInstance().isAndroid() && this.homeCoord) {
+            this.dualPaneView!.clearEmbeddedHome("left");
+            const hostEl = this.dualPaneView!.getHostLeft();
+            this.dualPaneView!.getHeaderLeft().setBackVisible(true);
+            this.mobileCoord?.setActionBarVisible(false);
+            window.history.pushState({ dualPicker: "left" }, "");
+            const inst = this.homeCoord.createEmbeddedHome(hostEl, async (note) => {
+              this.dualPaneView!.clearEmbeddedHome("left");
+              this.dualPaneView!.getHeaderLeft().setBackVisible(false);
+              this.mobileCoord?.setActionBarVisible(true);
+              const read = await this.notesService.readNote(note.id);
+              const content = read?.content || note.snippet;
+              this.currentFilePath = `notes/${note.id}`;
+              const cleanTitle = formatDisplayTitle(note.title);
+              this.dualPaneService.setLeftPath(this.currentFilePath, cleanTitle);
+              const isMd = this.previewService.shouldOpenInPreview(cleanTitle);
+              this.editor.loadDocument(content, this.currentFilePath, isMd);
+              this.dualPaneView!.setLeftTitle(cleanTitle);
+              this.dualPaneView!.setLeftPreviewActive(isMd);
+            });
+            this.dualPaneView!.setEmbeddedHome("left", inst);
+          } else {
+            this.fetchAndApply(() => this.fileService.promptOpen(), "left");
+          }
+        },
+        onOpenRight: () => {
+          if (PlatformService.getInstance().isAndroid() && this.homeCoord) {
+            this.dualPaneView!.clearEmbeddedHome("right");
+            const hostEl = this.dualPaneView!.getHostRight();
+            this.dualPaneView!.getHeaderRight().setBackVisible(true);
+            this.mobileCoord?.setActionBarVisible(false);
+            window.history.pushState({ dualPicker: "right" }, "");
+            const inst = this.homeCoord.createEmbeddedHome(hostEl, async (note) => {
+              this.dualPaneView!.clearEmbeddedHome("right");
+              this.dualPaneView!.getHeaderRight().setBackVisible(false);
+              this.mobileCoord?.setActionBarVisible(true);
+              const read = await this.notesService.readNote(note.id);
+              const content = read?.content || note.snippet;
+              const path = `notes/${note.id}`;
+              const cleanTitle = formatDisplayTitle(note.title);
+              this.dualPaneService.setRightPath(path, cleanTitle);
+              const isMd = this.previewService.shouldOpenInPreview(cleanTitle);
+              this.dualPaneView!.mountRightEditor(content, path, isMd, this.fontService.getCurrentFont().family);
+            });
+            this.dualPaneView!.setEmbeddedHome("right", inst);
+          } else {
+            this.fetchAndApply(() => this.fileService.promptOpen(), "right");
+          }
+        },
+        onBackLeft: () => {
+          this.dualPaneView!.clearEmbeddedHome("left");
+          this.dualPaneView!.getHeaderLeft().setBackVisible(false);
+          const hostEl = this.dualPaneView!.getHostLeft();
+          hostEl.innerHTML = "";
+          hostEl.appendChild(this.editor.getWrapperEl());
+          this.mobileCoord?.setActionBarVisible(true);
+        },
+        onBackRight: () => {
+          this.dualPaneView!.clearEmbeddedHome("right");
+          this.dualPaneView!.getHeaderRight().setBackVisible(false);
+          if (this.dualPaneView!.getEditorRight()) {
+            const hostEl = this.dualPaneView!.getHostRight();
+            hostEl.innerHTML = "";
+            hostEl.appendChild(this.dualPaneView!.getEditorRight()!.getWrapperEl());
+          } else {
+            this.dualPaneView!.showEmptyRightPane();
+          }
+          this.mobileCoord?.setActionBarVisible(true);
+        },
         onNewRight: () => { this.dualPaneService.setRightPath(null); this.dualPaneView?.mountRightEditor("", null, false, this.fontService.getCurrentFont().family).focus(); this.topBar.setTitle(this.dualPaneService.getFormattedTitle()); },
         onCloseDualPane: () => this.toggleDualPane(), onActivePaneChange: (p) => this.dualPaneService.setActivePane(p),
         onTitleChange: () => this.topBar.setTitle(this.dualPaneService.getFormattedTitle()),
         onSyncChange: (s) => this.mobileCoord?.setSyncState(s, this.dualPaneService.getSnapScroll()),
       });
-      this.dualPaneView.setLeftTitle(this.currentFilePath?.split(/[/\\]/).pop() || "Untitled");
+      if (PlatformService.getInstance().isAndroid() && this.homeCoord) {
+        this.dualPaneView.clearEmbeddedHome("right");
+        const rightHost = this.dualPaneView.getHostRight();
+        this.dualPaneView.getHeaderRight().setBackVisible(false);
+        const inst = this.homeCoord.createEmbeddedHome(rightHost, async (note) => {
+          this.dualPaneView?.clearEmbeddedHome("right");
+          const read = await this.notesService.readNote(note.id);
+          const content = read?.content || note.snippet;
+          const path = `notes/${note.id}`;
+          const cleanTitle = formatDisplayTitle(note.title);
+          this.dualPaneService.setRightPath(path, cleanTitle);
+          const isMd = this.previewService.shouldOpenInPreview(cleanTitle);
+          this.dualPaneView?.mountRightEditor(content, path, isMd, this.fontService.getCurrentFont().family);
+        });
+        this.dualPaneView.setEmbeddedHome("right", inst);
+      }
+      this.dualPaneView.setLeftTitle(formatDisplayTitle(this.currentFilePath));
       this.dualPaneView.setSnapScroll(this.dualPaneService.getSnapScroll());
       this.mobileCoord?.setSyncState(this.dualPaneView.isSyncLocked(), this.dualPaneService.getSnapScroll());
       this.windowService.setMinSize(350, 350);
@@ -248,7 +408,16 @@ class CathetApp {
 
   private async loadInitialFile(): Promise<void> {
     const result = await this.fileService.getInitialFile();
-    if (result) this.applyLoadedFile(result, "left");
+    if (result) {
+      if (PlatformService.getInstance().isAndroid()) {
+        const imported = await this.notesService.importExternalFile(result.path);
+        if (imported) {
+          this.homeCoord?.openNote(imported);
+          return;
+        }
+      }
+      this.applyLoadedFile(result, "left");
+    }
   }
 
   private async saveDocument(asNew: boolean): Promise<void> {
@@ -261,7 +430,8 @@ class CathetApp {
       return;
     }
     const text = ed.getText();
-    const saved = asNew ? await this.fileService.promptSaveAs(text) : await this.fileService.saveFile(curPath, text);
+    const defaultName = (this.topBar.getTitle() || "Untitled").replace(/(\.txt|\.md)$/, "") + ".txt";
+    const saved = asNew ? await this.fileService.promptSaveAs(text, defaultName) : await this.fileService.saveFile(curPath, text);
     if (saved) {
       ed.markSaved();
       const name = saved.split(/[/\\]/).pop() || "Untitled";

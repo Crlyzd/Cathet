@@ -14,6 +14,7 @@ export interface MobileCoordinatorActions {
   onOpenTutorial: () => void;
   onFontChanged: (fontFamily: string) => void;
   onToggleSync?: (mode: MobileSyncMode) => void;
+  onSnapScrollChanged?: (enabled: boolean) => void;
 }
 
 export class MobileCoordinator {
@@ -34,6 +35,7 @@ export class MobileCoordinator {
     this.settingsModal = new SettingsModalComponent({
       onOpenTutorial: this.actions.onOpenTutorial,
       onFontChanged: this.actions.onFontChanged,
+      onSnapScrollChange: (enabled) => this.actions.onSnapScrollChanged?.(enabled),
     });
 
     listen("cathet:open-settings-modal", () => {
@@ -86,12 +88,20 @@ export class MobileCoordinator {
     this.actionBar?.setDualPaneState(isDual);
   }
 
+  setActionBarVisible(visible: boolean): void {
+    this.actionBar?.setVisible(visible);
+  }
+
   setSyncState(isLocked: boolean, snapScroll?: boolean): void {
     this.actionBar?.setSyncState(isLocked, snapScroll);
   }
 
   isMobile(): boolean {
     return this.platform.isMobile();
+  }
+
+  updateSettingsSnapScroll(enabled: boolean): void {
+    this.settingsModal?.updateSnapScroll(enabled);
   }
 
   destroy(): void {

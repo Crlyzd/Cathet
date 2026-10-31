@@ -91,9 +91,9 @@ export class FileService {
   /**
    * Prompts user with native Save As file dialog and saves content.
    */
-  async promptSaveAs(content: string): Promise<string | null> {
+  async promptSaveAs(content: string, defaultName?: string): Promise<string | null> {
     try {
-      const targetPath = await invoke<string | null>("show_save_dialog");
+      const targetPath = await invoke<string | null>("show_save_dialog", { defaultName });
       if (!targetPath) return null;
       await invoke("write_text_file", { path: targetPath, content });
       return targetPath;
