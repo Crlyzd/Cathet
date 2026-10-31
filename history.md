@@ -608,3 +608,23 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/styles/home.css`: Added compact embedded layout styles and flex container expansion for split pane note grid.
   - `src-ui/src/main.ts`: Wired dual picker lifecycle, dock auto-hide, popstate back listener, dual pane teardown on home navigation, and clean title formatting.
   - `history.md`: Recorded change log entry.
+
+### 2026-10-31: UI/UX Enhancements & 60fps Motion Suite (R1–R5)
+- **Summary**:
+  1. **Virtual Keyboard Flash Suppression (R1)**: Eliminated soft keyboard flashing when opening notes in Markdown Preview mode and prevented automatic keyboard deployment in Edit mode until user taps the text area. Defended with immediate active element/selection blur in `homeCoordinator.ts` and `Editor.ts` `loadDocument()`, while keeping autofocus readiness intact for new notes via FAB.
+  2. **Atomic Note Transition & Stale Content Elimination (R2)**: Eliminated previous note content flashing on note open by inverting `openNote()` to read note data asynchronously while Home remains visible, rendering target note into Editor DOM before revealing `#editor-container`. Purged stale editor content (`loadDocument("", null, false)`) and reset active note ID on `navigateBackToHome()`.
+  3. **Dual Pane Options Card & Android Touch Adaptation (R3)**: Replaced forced embedded Home on Android with an interactive secondary options card in `DualPaneEmptyDropzone` featuring "Home" (browse notes) and "New Document" (blank editor). Re-enabled dropzone on Android in `DualPaneView.showEmptyRightPane()` and wired secondary back button (`<`) / Android hardware back (`popstate`) to return directly to the options card.
+  4. **Fluid 60fps Motion Suite (R4)**: Added tactile spring press (`scale(0.96)`) on note card touch. Added 220ms slide-up & fade-in for note open (`editorEnterSlide`), 140ms slide-down & fade-out for note close (`editorExitSlide`) paired with 180ms Home scale-fade entrance (`homeFadeScale`). Added 220ms slide-and-fade entrance for Dual Pane (`dualPaneEnterRight` / `dualPaneEnterBottom`) and 150ms exit transition (`dualPaneExitRight` / `dualPaneExitBottom`) before teardown. Fully integrated `@media (prefers-reduced-motion: reduce)` across all styles and JS lifecycle timers.
+  5. **Modularity & Anti-Monolith Compliance (R5)**: Extracted `src-ui/src/utils/editorClipboard.ts` (39 lines) for `cut()`, `copy()`, `paste()` from `Editor.ts`, shrinking `Editor.ts` from 266 to 226 lines. Streamlined `DualPaneView.ts` to 240 lines, `HomeView.ts` to 209 lines, and `homeCoordinator.ts` to 213 lines, strictly keeping all touched TypeScript files under the 250-line maximum. Verified 0 errors across workspace with `npx tsc --noEmit`.
+- **Files Modified / Added**:
+  - `src-ui/src/utils/editorClipboard.ts`: Created clipboard handler helper (39 lines).
+  - `src-ui/src/components/Editor.ts`: Added blur defense, simplified `setContent`, and delegated clipboard operations (226 lines).
+  - `src-ui/src/services/homeCoordinator.ts`: Inverted `openNote` atomic load, added exit animations, state purge, and concurrency guard (213 lines).
+  - `src-ui/src/components/home/HomeView.ts`: Added `animateEnter()` view entrance (209 lines).
+  - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`: Adapted for touch with "Home" and "New Document" options card (69 lines).
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Enabled dropzone on Android, added constructor `.entering`, and `animateClose()` exit coordinator (240 lines).
+  - `src-ui/src/main.ts`: Removed forced Android home, inverted dual note read timing, added `isClosingDualPane` guard, and wired animated dual pane close.
+  - `src-ui/styles/home.css`: Added card tactile spring press, enter/exit keyframes, and reduced-motion queries.
+  - `src-ui/styles/dualpane.css`: Added dual pane entrance/exit keyframes (desktop row + mobile column), splitter fade, and reduced-motion queries.
+  - `history.md`: Appended changelog entry per Rule 13.
+
