@@ -107,16 +107,20 @@ pub async fn show_save_dialog(
 ) -> Result<Option<String>, String> {
     let (tx, rx) = tokio::sync::oneshot::channel();
 
-    let mut builder = app_handle
+    let target_name = match default_name {
+        Some(ref name) if !name.trim().is_empty() => {
+            if !name.contains('.') { format!("{}.txt", name.trim()) } else { name.trim().to_string() }
+        }
+        _ => "Untitled.txt".to_string(),
+    };
+
+    let builder = app_handle
         .dialog()
         .file()
         .add_filter("Markdown Document (*.md)", FILTER_MARKDOWN)
         .add_filter("Plain Text (*.txt)", &["txt"])
-        .add_filter("All Files (*.*)", FILTER_ALL);
-
-    if let Some(name) = default_name {
-        builder = builder.set_file_name(&name);
-    }
+        .add_filter("All Files (*.*)", FILTER_ALL)
+        .set_file_name(&target_name);
 
     builder.save_file(move |file_path| {
         let _ = tx.send(file_path);
@@ -125,7 +129,12 @@ pub async fn show_save_dialog(
     let selected = rx.await.map_err(|e| e.to_string())?;
 
     if let Some(path) = selected {
-        Ok(Some(path.to_string()))
+        let mut path_str = path.to_string();
+        let path_obj = std::path::Path::new(&path_str);
+        if path_obj.extension().is_none() && !path_str.ends_with('/') && !path_str.ends_with('\\') {
+            path_str.push_str(".txt");
+        }
+        Ok(Some(path_str))
     } else {
         Ok(None)
     }

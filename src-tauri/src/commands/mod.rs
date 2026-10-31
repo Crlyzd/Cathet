@@ -3,6 +3,7 @@ pub mod association;
 pub mod file;
 pub mod memory;
 pub mod migration;
+pub mod notes;
 pub mod updater;
 pub mod vibrancy;
 pub mod window;
