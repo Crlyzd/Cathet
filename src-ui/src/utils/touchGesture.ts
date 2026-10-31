@@ -16,9 +16,11 @@ export function bindLongPress(element: HTMLElement, options: LongPressOptions): 
   let startX = 0;
   let startY = 0;
   let isLongPressTriggered = false;
+  let activePointerId: number | null = null;
 
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0 && e.pointerType === "mouse") return;
+    activePointerId = e.pointerId;
     isLongPressTriggered = false;
     startX = e.clientX;
     startY = e.clientY;
@@ -34,12 +36,15 @@ export function bindLongPress(element: HTMLElement, options: LongPressOptions): 
   };
 
   const onPointerMove = (e: PointerEvent) => {
-    if (!timer) return;
+    if (activePointerId !== e.pointerId) return;
     const dx = Math.abs(e.clientX - startX);
     const dy = Math.abs(e.clientY - startY);
     if (dx > tolerance || dy > tolerance) {
-      clearTimeout(timer);
-      timer = null;
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      activePointerId = null;
     }
   };
 
@@ -48,7 +53,15 @@ export function bindLongPress(element: HTMLElement, options: LongPressOptions): 
       clearTimeout(timer);
       timer = null;
     }
-    if (!isLongPressTriggered && options.onClick) {
+    if (activePointerId !== e.pointerId) return;
+    activePointerId = null;
+    if (isLongPressTriggered) {
+      e.preventDefault();
+      e.stopPropagation();
+      isLongPressTriggered = false;
+      return;
+    }
+    if (options.onClick) {
       options.onClick(e);
     }
   };
@@ -58,6 +71,7 @@ export function bindLongPress(element: HTMLElement, options: LongPressOptions): 
       clearTimeout(timer);
       timer = null;
     }
+    activePointerId = null;
     isLongPressTriggered = false;
   };
 
@@ -74,4 +88,3 @@ export function bindLongPress(element: HTMLElement, options: LongPressOptions): 
     element.removeEventListener("pointercancel", onPointerCancel);
   };
 }
-

@@ -31,8 +31,22 @@ export function unwrapQuotedPath(text: string, normalizeSlashes: boolean = false
 }
 
 /**
+ * Strips the trailing file extension from a file name (e.g. "notes.md" -> "notes"),
+ * preserving dotfiles like ".gitignore".
+ */
+export function stripFileExtension(fileName: string): string {
+  if (!fileName) return "";
+  const trimmed = fileName.trim();
+  const lastDot = trimmed.lastIndexOf(".");
+  if (lastDot > 0) {
+    return trimmed.slice(0, lastDot);
+  }
+  return trimmed;
+}
+
+/**
  * Formats a clean human-readable title for documents and headers,
- * stripping URI schemes (file:///), internal notes/ prefixes, and escaped paths.
+ * stripping URI schemes (file:///), internal notes/ prefixes, escaped paths, and file extensions.
  */
 export function formatDisplayTitle(raw: string | null | undefined): string {
   if (!raw) return "Untitled";
@@ -53,5 +67,6 @@ export function formatDisplayTitle(raw: string | null | undefined): string {
       s = parts[parts.length - 1];
     }
   }
+  s = stripFileExtension(s);
   return s || "Untitled";
 }
