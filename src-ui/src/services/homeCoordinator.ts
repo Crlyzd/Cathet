@@ -31,6 +31,7 @@ export class HomeCoordinator {
   private currentNoteId: string | null = null;
   private currentFolder = "";
   private isHomeVisible = false;
+  private isOpeningNote = false;
 
   constructor(options: HomeCoordinatorOptions) {
     this.options = options;
@@ -62,13 +63,14 @@ export class HomeCoordinator {
     return this.isHomeVisible;
   }
 
-  showHome(): void {
+  showHome(animate = false): void {
     if (!this.homeView) return;
     this.isHomeVisible = true;
     this.topBar.setBackVisible(false);
     this.setEditorContainerVisible(false);
     this.options.getMobileCoordinator?.()?.setActionBarVisible(false);
     this.homeView.setVisible(true);
+    if (animate) this.homeView.animateEnter?.();
   }
 
   async navigateBackToHome(): Promise<void> {
@@ -77,11 +79,32 @@ export class HomeCoordinator {
     } catch (err) {
       console.warn("Auto-save skipped during navigation:", err);
     }
-    this.options.onNavigateHome?.();
-    this.showHome();
+
+    const ed = document.getElementById("editor-container");
+    const top = document.getElementById("topbar-container");
+    const onExit = () => {
+      ed?.classList.remove("anim-editor-exit");
+      top?.classList.remove("anim-editor-exit");
+      this.editor.loadDocument("", null, false);
+      this.currentNoteId = null;
+      this.options.onNavigateHome?.();
+      this.showHome(true);
+    };
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !ed) {
+      onExit();
+    } else {
+      ed.classList.add("anim-editor-exit");
+      top?.classList.add("anim-editor-exit");
+      let called = false;
+      const finish = () => { if (!called) { called = true; onExit(); } };
+      ed.addEventListener("animationend", finish, { once: true });
+      setTimeout(finish, 160);
+    }
   }
 
   async autoSaveCurrentNote(): Promise<void> {
+    if (this.isHomeVisible) return;
     const text = this.editor.getText().trim();
     if (!text) return; // Don't save empty notes
 
@@ -93,25 +116,37 @@ export class HomeCoordinator {
   }
 
   async openNote(note: NoteItem): Promise<void> {
-    this.isHomeVisible = false;
-    this.currentNoteId = note.id;
-    this.currentFolder = note.folder;
-    if (this.homeView) this.homeView.setVisible(false);
-
-    this.setEditorContainerVisible(true);
-    this.options.getMobileCoordinator?.()?.setActionBarVisible(true);
-    this.topBar.setBackVisible(true);
-    this.topBar.setTitle(note.title);
-
-    let content = "";
+    if (this.isOpeningNote) return;
+    this.isOpeningNote = true;
     try {
-      const res = await this.notesService.readNote(note.id);
-      content = res?.content || note.snippet;
-    } catch {
-      content = note.snippet;
-    }
+      (document.activeElement as HTMLElement)?.blur();
+      window.getSelection()?.removeAllRanges();
 
-    this.options.onNoteSelectedForEditor(content, note.id, note.title);
+      let content = "";
+      try {
+        const res = await this.notesService.readNote(note.id);
+        content = res?.content || note.snippet;
+      } catch {
+        content = note.snippet;
+      }
+
+      this.currentNoteId = note.id;
+      this.currentFolder = note.folder;
+      this.options.onNoteSelectedForEditor(content, note.id, note.title);
+
+      this.topBar.setTitle(note.title);
+      this.topBar.setBackVisible(true);
+
+      this.isHomeVisible = false;
+      if (this.homeView) this.homeView.setVisible(false);
+
+      this.setEditorContainerVisible(true);
+      this.options.getMobileCoordinator?.()?.setActionBarVisible(true);
+
+      this.triggerEditorEnterAnimation();
+    } finally {
+      this.isOpeningNote = false;
+    }
   }
 
   openNewNote(folder = ""): void {
@@ -126,7 +161,27 @@ export class HomeCoordinator {
     this.topBar.setTitle("Untitled Note");
 
     this.editor.loadDocument("", null, false);
+    this.triggerEditorEnterAnimation();
     this.editor.focus();
+  }
+
+  private triggerEditorEnterAnimation(): void {
+    const ed = document.getElementById("editor-container");
+    const top = document.getElementById("topbar-container");
+    if (!ed || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    ed.classList.remove("anim-editor-enter", "anim-editor-exit");
+    top?.classList.remove("anim-editor-enter", "anim-editor-exit");
+    void ed.offsetWidth;
+    ed.classList.add("anim-editor-enter");
+    top?.classList.add("anim-editor-enter");
+
+    const clearAnim = () => {
+      ed.classList.remove("anim-editor-enter");
+      top?.classList.remove("anim-editor-enter");
+    };
+    ed.addEventListener("animationend", clearAnim, { once: true });
+    setTimeout(clearAnim, 250);
   }
 
   getCurrentNoteId(): string | null {

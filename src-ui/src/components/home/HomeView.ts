@@ -186,6 +186,16 @@ export class HomeViewComponent {
     if (visible) this.refresh();
   }
 
+  animateEnter(): void {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    this.element.classList.remove("anim-home-enter");
+    void this.element.offsetWidth;
+    this.element.classList.add("anim-home-enter");
+    const onEnd = () => this.element.classList.remove("anim-home-enter");
+    this.element.addEventListener("animationend", onEnd, { once: true });
+    setTimeout(onEnd, 200);
+  }
+
   destroy(): void {
     this.header.destroy();
     this.categoryTabs.destroy();
