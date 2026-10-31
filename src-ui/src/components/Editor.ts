@@ -1,10 +1,10 @@
 import { parseMarkdown } from "../utils/markdown";
-import { tsvToMarkdownTable } from "../utils/htmlToMarkdown";
+import { editorCut, editorCopy, editorPaste } from "../utils/editorClipboard";
 import { serializeEditorContent, renderEditorTextWithPills, attachPillClickHandler } from "../utils/base64Fold";
 import { replaceBrokenImageWithFallback } from "../utils/brokenImageFallback";
 import { handleEditorPaste } from "../utils/editorPasteHandler";
 import { captureScrollRatio, restoreScrollRatio } from "../utils/scrollSync";
-import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
+
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { attachTouchZoom, TouchZoomOptions } from "../utils/touchZoomHandler";
 import { PlatformService } from "../services/platformService";
@@ -112,18 +112,7 @@ export class EditorComponent {
   getIsMarkdownPreview(): boolean { return this.isMarkdownPreview; }
 
   setContent(content: string): void {
-    this.rawContent = content;
-    this.savedContent = content;
-    if (this.isMarkdownPreview) {
-      this.editorEl.innerHTML = parseMarkdown(this.rawContent, this.documentPath);
-    } else {
-      this.editorEl.classList.remove("markdown-preview");
-      if (this.rawContent.includes("data:image/")) {
-        this.editorEl.innerHTML = renderEditorTextWithPills(this.rawContent);
-      } else {
-        this.editorEl.innerText = this.rawContent;
-      }
-    }
+    this.loadDocument(content, this.documentPath, this.isMarkdownPreview);
   }
 
   loadDocument(content: string, path: string | null = null, previewMode: boolean = false): void {
@@ -144,6 +133,9 @@ export class EditorComponent {
         this.editorEl.innerText = this.rawContent;
       }
     }
+    this.editorEl.blur();
+    (document.activeElement as HTMLElement)?.blur();
+    window.getSelection()?.removeAllRanges();
   }
 
   getText(): string {
@@ -225,42 +217,9 @@ export class EditorComponent {
   undo(): void { if (!this.isMarkdownPreview) { this.editorEl.focus(); document.execCommand("undo", false); } }
   redo(): void { if (!this.isMarkdownPreview) { this.editorEl.focus(); document.execCommand("redo", false); } }
 
-  async cut(): Promise<void> {
-    if (this.isMarkdownPreview) return;
-    const text = this.getSelectedText();
-    if (text) {
-      try { await writeText(text); } catch (_) {}
-      this.editorEl.focus();
-      document.execCommand("delete", false);
-    }
-  }
-
-  async copy(): Promise<void> {
-    const text = this.getSelectedText();
-    if (text) {
-      try { await writeText(text); } catch (_) {}
-    }
-  }
-
-  async paste(): Promise<void> {
-    if (this.isMarkdownPreview) return;
-    try {
-      const text = await readText();
-      if (text) {
-        this.editorEl.focus();
-        if (text.includes("\t")) {
-          const tableMd = tsvToMarkdownTable(text);
-          if (tableMd) {
-            document.execCommand("insertText", false, tableMd);
-            return;
-          }
-        }
-        document.execCommand("insertText", false, text);
-      }
-    } catch (err) {
-      console.error("Failed to read native clipboard:", err);
-    }
-  }
+  async cut(): Promise<void> { await editorCut(this.editorEl, this.getSelectedText(), this.isMarkdownPreview); }
+  async copy(): Promise<void> { await editorCopy(this.getSelectedText()); }
+  async paste(): Promise<void> { await editorPaste(this.editorEl, this.isMarkdownPreview); }
 
   focus(): void { this.editorEl.focus(); }
 }
