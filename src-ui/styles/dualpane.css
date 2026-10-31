@@ -157,6 +157,41 @@
   color: #ef4444;
 }
 
+/* Borderless Back Chevron in Dual Pane Header */
+.dualpane-back-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--col-text);
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  outline: none;
+}
+
+.dualpane-back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .dualpane-back-btn:hover {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.dualpane-back-btn:active {
+  transform: scale(0.92);
+}
+
+.dualpane-back-btn svg {
+  display: block;
+  flex-shrink: 0;
+}
+
 [data-theme="light"] .dualpane-btn {
   background: rgba(15, 23, 42, 0.05);
 }

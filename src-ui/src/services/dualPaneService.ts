@@ -1,3 +1,5 @@
+import { formatDisplayTitle } from "../utils/pathUtils";
+
 /**
  * DualPaneService — Tracks Dual Pane state, active document paths, and title bar formatting.
  */
@@ -78,11 +80,11 @@ export class DualPaneService {
   }
 
   getFormattedTitle(): string {
-    const leftName = this.leftTitle || (this.leftPath ? this.leftPath.split(/[/\\]/).pop() || "Untitled" : "Untitled");
+    const leftName = formatDisplayTitle(this.leftTitle || this.leftPath || "Untitled");
     if (!this.active) {
       return leftName;
     }
-    const rightName = this.rightTitle || (this.rightPath ? this.rightPath.split(/[/\\]/).pop() || "Untitled" : "Empty");
+    const rightName = formatDisplayTitle(this.rightTitle || this.rightPath || "Empty");
     return `${leftName} ⇄ ${rightName} (Dual Pane)`;
   }
 }

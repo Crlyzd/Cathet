@@ -80,6 +80,16 @@ export class SyncScrollController {
 
   setSnapScroll(enabled: boolean): void {
     this.snapScroll = enabled;
+    if (this.locked && this.leftEl && this.rightEl) {
+      if (this.snapScroll) {
+        this.ratioOffset = 0;
+        this.resync("left");
+      } else {
+        const rLeft = captureScrollRatio(this.leftEl);
+        const rRight = captureScrollRatio(this.rightEl);
+        this.ratioOffset = rRight - rLeft;
+      }
+    }
   }
 
   getSnapScroll(): boolean {
