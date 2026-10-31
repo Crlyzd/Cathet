@@ -155,11 +155,14 @@
   border-radius: 16px;
   height: 165px; box-sizing: border-box;
   cursor: pointer;
-  transition: transform 0.1s ease, border-color 0.15s ease;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.15s ease;
   overflow: hidden;
   color: #ffffff;
 }
-.home-note-card:active { transform: scale(0.98); }
+.home-note-card:active {
+  transform: scale(0.96);
+  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
+}
 .home-note-card.selected { border-color: #ffffff; background: rgba(255, 255, 255, 0.12); }
 
 [data-theme="light"] .home-note-card {
@@ -267,3 +270,69 @@
 }
 [data-theme="dark"] .theme-ripple-overlay { background: #121418; }
 [data-theme="light"] .theme-ripple-overlay { background: #f4f5f8; }
+
+/* ==========================================================================
+   Fluid 60fps Motion Suite: Note Open/Close Transitions
+   ========================================================================== */
+
+@keyframes editorEnterSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes editorExitSlide {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@keyframes homeFadeScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.anim-editor-enter {
+  animation: editorEnterSlide 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.anim-editor-exit {
+  animation: editorExitSlide 140ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.anim-home-enter {
+  animation: homeFadeScale 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  .home-note-card,
+  .home-note-card:active,
+  .anim-editor-enter,
+  .anim-editor-exit,
+  .anim-home-enter {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+

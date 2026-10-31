@@ -634,3 +634,102 @@ body.is-dragging .dualpane-empty {
     font-size: 10px;
   }
 }
+
+/* ==========================================================================
+   Dual Pane Fluid 60fps Entrance & Exit Motion Suite
+   ========================================================================== */
+
+@keyframes dualPaneEnterRight {
+  0% {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes dualPaneExitRight {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes dualPaneEnterBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dualPaneExitBottom {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes splitterFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes splitterFadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.dualpane-pane-right.entering {
+  animation: dualPaneEnterRight 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.dualpane-pane-right.exiting {
+  animation: dualPaneExitRight 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.dualpane-splitter.entering {
+  animation: splitterFadeIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity;
+}
+
+.dualpane-splitter.exiting {
+  animation: splitterFadeOut 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity;
+}
+
+@media (max-width: 600px) {
+  .dualpane-pane-right.entering { animation-name: dualPaneEnterBottom; }
+  .dualpane-pane-right.exiting { animation-name: dualPaneExitBottom; }
+}
+
+body.is-mobile .dualpane-pane-right.entering { animation-name: dualPaneEnterBottom; }
+body.is-mobile .dualpane-pane-right.exiting { animation-name: dualPaneExitBottom; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dualpane-pane-right.entering,
+  .dualpane-pane-right.exiting,
+  .dualpane-splitter.entering,
+  .dualpane-splitter.exiting {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
