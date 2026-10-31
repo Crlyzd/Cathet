@@ -694,22 +694,22 @@ body.is-dragging .dualpane-empty {
 }
 
 .dualpane-pane-right.entering {
-  animation: dualPaneEnterRight 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: dualPaneEnterRight 340ms cubic-bezier(0.2, 0, 0, 1) forwards;
   will-change: transform, opacity;
 }
 
 .dualpane-pane-right.exiting {
-  animation: dualPaneExitRight 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: dualPaneExitRight 280ms cubic-bezier(0.2, 0, 0, 1) forwards;
   will-change: transform, opacity;
 }
 
 .dualpane-splitter.entering {
-  animation: splitterFadeIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: splitterFadeIn 340ms cubic-bezier(0.2, 0, 0, 1) forwards;
   will-change: opacity;
 }
 
 .dualpane-splitter.exiting {
-  animation: splitterFadeOut 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: splitterFadeOut 280ms cubic-bezier(0.2, 0, 0, 1) forwards;
   will-change: opacity;
 }
 
