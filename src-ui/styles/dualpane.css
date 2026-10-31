@@ -453,6 +453,23 @@ body.is-dragging .dualpane-empty {
   flex-wrap: wrap;
 }
 
+.dualpane-empty-actions.is-mobile-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+}
+
+.dualpane-empty-actions.is-mobile-actions .dualpane-empty-btn {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.dualpane-empty-actions.is-mobile-actions #dualpane-empty-new-btn {
+  grid-column: 1 / -1;
+}
+
 .dualpane-empty-btn {
   box-sizing: border-box;
   min-width: 0;

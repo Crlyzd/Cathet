@@ -125,6 +125,18 @@ body {
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
+.workspace-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  background-color: var(--col-bg-main);
+}
+
 /* Frosted Glass Dialog & Alert Modals */
 .glass-dialog-overlay {
   position: fixed;

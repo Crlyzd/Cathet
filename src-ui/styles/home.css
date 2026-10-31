@@ -216,7 +216,7 @@
 .home-card-body {
   font-size: 13px; color: rgba(255, 255, 255, 0.55); line-height: 1.4;
   flex: 1; overflow: hidden; display: -webkit-box;
-  -webkit-line-clamp: 4; -webkit-box-orient: vertical; word-break: break-word;
+  -webkit-line-clamp: 4; line-clamp: 4; -webkit-box-orient: vertical; word-break: break-word;
 }
 [data-theme="light"] .home-card-body { color: #4b5563; }
 
@@ -338,6 +338,7 @@
   transition: transform 0.15s ease, background-color 0.15s ease;
 }
 .home-sel-btn:active { transform: scale(0.94); background: rgba(255, 255, 255, 0.08); }
+.home-sel-btn.disabled { opacity: 0.38; pointer-events: none; }
 [data-theme="light"] .home-sel-btn:active { background: rgba(0, 0, 0, 0.06); }
 .home-sel-label { font-size: 12px; font-weight: 500; }
 

@@ -92,7 +92,31 @@ This document serves as the living project documentation and institutional memor
 
 ---
 
+### [Mistake] 2026-11-01: Fake Tile Overlay Enlarging Instead of Scaling Actual Editor/Preview Workspace & Missing Dual-Pane Open File Wiring
+- **Context**: Previously, `ContainerTransform.expand` created a synthetic `div.container-transform-overlay` with `#1e2026` background, a `48px` total header (`box-sizing: border-box` with `padding-top: 24px`), and raw `15px` text, then swapped it with the real `#topbar-container` (`72px+` total height) and `#editor-container` (`14px` text or rendered Markdown Preview, `#0f1117` background) at `380ms` while also calling `editor.focus()`. This caused a ~24–36px abrupt vertical drop and color/typography glitch when the animation ended. Additionally, in Dual Pane on Android, `DualPaneEmptyDropzone` lacked an `Open File` button and `applyLoadedFile` failed to resolve `content://` `displayName` for preview detection and right-pane titles.
+- **User Correction**: *"1. when in single mode, then opening dual panel, there should be an option to open file. make sure it can open file, because your open file usually CANNOT open any fucking files, check history... 2. when opening a tiles, immedeatly adopt the color of the actual editor/preview mode to the tiles. also, when the animation almost edns, there is a abrupt drop/glitch. looks like the way you apply animation is enlarging the tiles? instaed of using the actual editor/preview and make it small, then animation to the bigger screen?"*
+- **Corrective Guardrail**:
+  1. NEVER build a synthetic ghost DOM overlay for tile expansion/collapse. Wrap `#topbar-container` and `#editor-container` in `#workspace-shell`, immediately adopt the actual editor/preview background color (`#0f1117` dark / `#f8fafc` light) on the tapped tile, and animate the actual live `#workspace-shell` using `transform: translate3d(...) scale(s)` and `clip-path: inset(...)` to `scale(1)` so there is zero DOM handover and zero layout drop at the end of the animation.
+  2. Whenever adding an "Open File" button, verify the complete end-to-end pipeline (`promptOpen` -> `displayName` resolution -> `shouldOpenInPreview(name)` -> unmounting empty/embedded states -> mounting editor into target pane -> setting header title).
+
+---
+
 ## Project Changes Log
+
+### 2026-11-01: Android Dual-Pane Open File Integration, SAF Filter Fix & True `#workspace-shell` Container Morph
+- **Summary**: Implemented end-to-end Dual Pane file opening on Android and replaced synthetic overlay expansion with true `#workspace-shell` scaling:
+  1. **True Workspace Container Morph (`#workspace-shell`)**: Wrapped `#topbar-container` and `#editor-container` in `#workspace-shell`. When opening a tile, the tapped card immediately adopts the actual editor/preview background color (`#0f1117` dark / `#f8fafc` light), and `#workspace-shell` (with the live `TopBar` and `Editor` in Edit or Markdown Preview mode already loaded in its final flex layout) is scaled down (`translate3d(dx, dy, 0) scale(s)`) and clipped (`inset(...)`) to the tile's exact bounding rect at $t=0\text{ms}$, animating smoothly to `scale(1)` over 380ms. Eliminated the end-of-animation 24px–36px header drop, color snap, and unwanted `editor.focus()` jump on existing notes.
+  2. **Android Dual-Pane "Open File" Card Action**: Added an explicit `Open File` button alongside `Home` and `New Document` in `DualPaneEmptyDropzone.ts` with a 2-row balanced grid layout (`dualpane.css`), removed the accidental background click trap on mobile, and wired `onOpenFileRight` in `DualPaneView.ts` and `main.ts`.
+  3. **End-to-End `content://` & `file://` Open File Pipeline**: Gated desktop extension filters off on Android (`#[cfg(not(target_os = "android"))]`) in `file.rs` so Android SAF (`DocumentsUI`) never greys out `.md` or code files; added `file://` URI routing and single-byte Latin-1 fallback in `encoding.rs` and `FileHelper.kt`; updated `applyLoadedFile` and `targetPane` in `main.ts` to resolve `displayName` for Markdown preview detection, set pane titles properly, clear embedded Home views, and default to the right pane when empty.
+  Maintained strict anti-monolith line counts (< 250 lines/file: `containerTransform.ts` = 185 lines, `homeCoordinator.ts` = 247 lines, `DualPaneEmptyDropzone.ts` = 84 lines, `DualPaneView.ts` = 241 lines). Verified with `npx tsc --noEmit` and `cargo check`.
+- **Files Modified**:
+  - `index.html`, `src-ui/styles/main.css`, `src-ui/styles/mobile.css`: Added `#workspace-shell` wrapper and flex layout rules.
+  - `src-ui/src/utils/containerTransform.ts`: Replaced synthetic overlay with 120fps `#workspace-shell` scale + clip-path morph (185 lines).
+  - `src-ui/src/services/homeCoordinator.ts`: Immediate tile color adoption, `#workspace-shell` visibility lifecycle, removed unwanted focus jump on existing notes (247 lines).
+  - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`, `src-ui/src/components/dualpane/DualPaneView.ts`, `src-ui/styles/dualpane.css`: Added 2-row `Home` / `Open File` / `New Document` layout on Android.
+  - `src-ui/src/main.ts`: Wired `onOpenFileRight`, smart `targetPane()`, and full `displayName` + embedded Home cleanup in `applyLoadedFile`.
+  - `src-tauri/src/commands/file.rs`, `src-tauri/src/encoding.rs`, `src-tauri/gen/android/app/src/main/java/com/cathet/app/FileHelper.kt`: Gated desktop extension filters on Android, routed `file://` URIs, and added Latin-1 fallback.
+  - `history.md`: Recorded mistake guardrail and change log entry.
 
 ### 2026-11-01: Equalized 380ms Motion Duration & Fixed FAB + Button Collapse Dock
 - **Summary**: Resolved back button timing disparity and fixed missing collapse animation for new notes and opened files:
@@ -779,4 +803,58 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/styles/home.css`: Added card tactile spring press, enter/exit keyframes, and reduced-motion queries.
   - `src-ui/styles/dualpane.css`: Added dual pane entrance/exit keyframes (desktop row + mobile column), splitter fade, and reduced-motion queries.
   - `history.md`: Appended changelog entry per Rule 13.
+
+### 2026-11-01: Pre-Animation Scrollbar Suppression, Extension-Free File Titles, Persistent Long-Press Check & Rename, and Xiaomi Dual-Layer Collapse Animation
+- **Summary**:
+  1. **Pre-Animation Scrollbar Suppression**: Added `.is-animating-transform` on `document.body` synchronously before `#workspace-shell` is revealed or collapsed, enforcing `overflow: hidden !important`, `scrollbar-width: none !important`, and `::-webkit-scrollbar { display: none !important }` across `#workspace-shell`, `#editor-container`, `.editor-wrapper`, `.editor-content`, and `.home-note-grid` during the entire 380ms morph.
+  2. **Extension-Free File Titles**: Added `stripFileExtension()` in `pathUtils.ts` and integrated it into `formatDisplayTitle` and `main.ts` so opened files display their name without extension (e.g. `notes.md` -> `notes`) in the TopBar and Dual Pane headers while preserving raw extension checks for `previewService.shouldOpenInPreview()`.
+  3. **Persistent Checkmark on Long-Press Release (`[Mistake]` Guardrail)**: Fixed a bug where releasing the finger after a 450ms long-press unchecked the newly selected tile because `renderGrid()` recreated card DOM nodes mid-gesture and `touchGesture.ts` fired `onClick` on `pointerup` without verifying `activePointerId`. Added `activePointerId` tracking in `touchGesture.ts`, `lastLongPressTime` cooldown guard, and in-place `updateSelectionState()` in `HomeNoteGrid.ts` and `HomeView.ts`.
+  4. **Long-Press Tile Rename Title**: Added `Rename` button (`#home-sel-rename`) to `HomeSelectionBar.ts` (enabled when 1 tile is selected), created `RenameModal.ts`, added `renameNote()` to `notesService.ts`, and implemented `rename_note` Tauri command in `src-tauri/src/commands/notes.rs` (renaming the `.md` file on disk and preserving custom titles across subsequent `save_note` calls).
+  5. **Xiaomi HyperOS Dual-Layer Collapse Animation (Frames 66–74)**: Updated `ContainerTransform.collapse()` and `HomeCoordinator.navigateBackToHome()` so pressing Back from Editor/Preview to Home awaits `showAndRefresh()`, mounts a floating clone of the target tile in front (`z-index: 210`) starting offset to the top-left (`translate3d(-24px, -84px, 0)`) and gliding into its grid slot (`translate3d(0, 0, 0)`), while `#workspace-shell` (`z-index: 200`) shrinks behind it into `targetRect` as inner editor content fades out over 140ms.
+- **Files Modified / Added**:
+  - `src-ui/src/utils/containerTransform.ts`: Added pre-animation scrollbar class and Xiaomi dual-layer collapse animation (247 lines).
+  - `src-ui/src/services/homeCoordinator.ts`: Added pre-animation scrollbar class and awaited `showAndRefresh()` before collapse (247 lines).
+  - `src-ui/styles/mobile.css`: Added `.is-animating-transform` scrollbar suppression rules.
+  - `src-ui/src/utils/pathUtils.ts`: Added `stripFileExtension()` and integrated into `formatDisplayTitle()` (72 lines).
+  - `src-ui/src/main.ts`: Preserved raw filename for preview check while passing extension-free title to headers.
+  - `src-ui/src/utils/touchGesture.ts`: Tracked `activePointerId` and suppressed `onClick` after long-press release (87 lines).
+  - `src-ui/src/components/home/HomeNoteGrid.ts`: Added `updateSelectionState()` and `lastLongPressTime` guard (157 lines).
+  - `src-ui/src/components/home/HomeSelectionBar.ts`: Added `Rename` button and `setSingleSelected()` (88 lines).
+  - `src-ui/src/components/home/RenameModal.ts`: Created frosted glass modal for renaming note titles (70 lines).
+  - `src-ui/src/components/home/HomeView.ts`: Wired `onRename`, in-place `syncSelectionUI()`, and `showAndRefresh()` (244 lines).
+  - `src-ui/styles/home.css`: Added `.home-sel-btn.disabled` styling.
+  - `src-tauri/src/commands/notes.rs`: Added `rename_note` command and custom title preservation on save (246 lines).
+  - `src-tauri/src/lib.rs`: Registered `rename_note` in invoke handler.
+  - `history.md`: Appended changelog entry per Rule 13.
+
+### 2026-11-01: Dual Pane Home Persistence & Secondary Island Dock Clearance
+- **Summary**:
+  1. **Explicit Filename Title Support in `save_note`**: Extended `save_note` in `src-tauri/src/commands/notes.rs` and `NotesService.saveNote` in `src-ui/src/services/notesService.ts` with an optional `title` parameter so external files opened on Android retain their extension-free filename as their Home note title.
+  2. **Immediate Home Persistence When Opening Files**: Updated `applyLoadedFile` in `src-ui/src/main.ts` so opening any external file on Android (from Dual Pane `Open File`, Single Mode, or Home FAB) immediately saves it into Home with its extension-free filename and links `notes/${saved.id}` to that pane.
+  3. **Second Panel (`right` pane) Auto-Save Lifecycle**: Added `autoSaveRightPane()` in `src-ui/src/main.ts` and `onBeforeNavigateHome` in `src-ui/src/services/homeCoordinator.ts` so new documents (`New Document`) and edited notes in the second panel automatically save into Home when closing Dual Pane, navigating Back to Home, switching documents in the right pane, on app `blur`, or on explicit Save.
+  4. **Balanced Initial Dual Pane Split & Secondary Island Dock Clearance**: Adjusted initial mobile `.dualpane-pane-left` split in `src-ui/styles/mobile.css` from `50%` to `43%` and added dock-aware bottom inset (`padding-bottom: calc(86px + env(safe-area-inset-bottom, 16px))`) and compact spacing to `.dualpane-empty` / `.dualpane-empty-card` so the `Secondary Document` island sits centered above the floating bottom dock without colliding with it.
+- **Files Modified**:
+  - `src-tauri/src/commands/notes.rs`: Added `title: Option<String>` to `save_note` (249 lines).
+  - `src-ui/src/services/notesService.ts`: Added optional `title?: string` to `saveNote()` (162 lines).
+  - `src-ui/src/services/homeCoordinator.ts`: Added `onBeforeNavigateHome` hook and `getCurrentFolder()` (247 lines).
+  - `src-ui/src/main.ts`: Added `autoSaveRightPane()` and immediate Home persistence in `applyLoadedFile()`.
+  - `src-ui/styles/mobile.css`: Adjusted mobile `.dualpane-pane-left` split (`43%`) and added dock clearance to `.dualpane-empty` / `.dualpane-empty-card`.
+  - `history.md`: Appended changelog entry per Rule 13.
+
+### 2026-11-01: Amplified Curved Tile Collapse Trajectory & Settings Sheet Text Bleed-Through Fix
+- **Summary**:
+  1. **Amplified Top-Left Origin & Quadratic Bézier Curve (`containerTransform.ts`)**: Expanded the floating tile starting offset in `ContainerTransform.collapse()` from `(-24px, -84px)` to `(-84px, -150px)` and replaced linear 2-point interpolation with a 6-keyframe quadratic Bézier curve (`P0 = (-84, -150)` -> `P1 = (-12, -135)` -> `P2 = (0, 0)`) over `400ms` so the tile visibly launches far up-left and sweeps along a smooth right-down arc into its slot.
+  2. **Eliminated Editor Text Flashing / Bleed-Through on Settings Open (`SettingsModal.ts`, `MobileSettingsView.ts`, `MobileMenuDrawer.ts`, `mobile.css`)**: Replaced the parent `.settings-modal-overlay` / `.mobile-drawer-overlay` `opacity: 0 -> 1` transition with a `background-color` scrim transition (`opacity: 1` always) so Chromium does not wrap `.settings-modal-sheet` in an offscreen alpha `RenderSurface`. Promoted `.settings-modal-sheet` with `translate3d(0, 100%, 0)`, `backface-visibility: hidden`, and `isolation: isolate`, updated `MobileSettingsView.updateState()` in-place instead of wiping `innerHTML` on frame 0, and added `blur()` + `body.is-modal-open` editor layer demotion in `SettingsModal.show()` and `MobileMenuDrawer.show()`.
+- **Files Modified**:
+  - `src-ui/src/utils/containerTransform.ts`: Updated `tileClone` collapse keyframes to `(-84px, -150px)` origin and 6-point quadratic Bézier curve (235 lines).
+  - `src-ui/src/components/MobileSettingsView.ts`: Updated `updateState()` to mutate controls in-place without wiping `innerHTML` (229 lines).
+  - `src-ui/src/components/SettingsModal.ts`: Added editor blur, `body.is-modal-open` toggle, and pre-animation layout flush (147 lines).
+  - `src-ui/src/components/MobileMenuDrawer.ts`: Added editor blur, `body.is-modal-open` toggle, and pre-animation layout flush (162 lines).
+  - `src-ui/styles/mobile.css`: Replaced parent `opacity` transition with `background-color` transition, added `translate3d` + `backface-visibility: hidden` + `isolation: isolate` on `.settings-modal-sheet`, added `body.is-modal-open` layer demotion, and removed stray closing brace inside `.mobile-action-btn`.
+  - `src-ui/styles/home.css`: Added standard `line-clamp: 4` alongside `-webkit-line-clamp: 4` on `.home-card-body`.
+  - `history.md`: Appended changelog entry per Rule 13.
+
+
+
+
 
