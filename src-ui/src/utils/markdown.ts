@@ -218,13 +218,13 @@ function formatInline(text: string, documentPath?: string | null): string {
   // 3. Linked image badges: [![alt](imgUrl)](linkUrl)
   s = s.replace(/\[!\[([^\]]*)\]\(([^)]+)\)\]\(([^)]+)\)/g, (_, alt, imgUrl, linkUrl) => {
     const resolvedImg = resolveImageSrc(imgUrl, documentPath);
-    return `<a href="${linkUrl}" target="_blank" rel="noopener"><img src="${resolvedImg}" alt="${alt}" loading="lazy" /></a>`;
+    return `<a href="${linkUrl}" target="_blank" rel="noopener"><img src="${resolvedImg}" alt="${alt}" loading="lazy" decoding="async" /></a>`;
   });
 
   // 4. Standalone Markdown images: ![alt](imgUrl)
   s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, imgUrl) => {
     const resolvedImg = resolveImageSrc(imgUrl, documentPath);
-    return `<img src="${resolvedImg}" alt="${alt}" loading="lazy" />`;
+    return `<img src="${resolvedImg}" alt="${alt}" loading="lazy" decoding="async" />`;
   });
 
   // 5. Standard Markdown links: [text](linkUrl)

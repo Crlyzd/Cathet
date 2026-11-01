@@ -1,7 +1,11 @@
 /**
  * themeTransition.ts — Expanding circular reveal theme transition
  * High-performance 120fps circular clip-path mask transition powered by View Transitions API.
+ * Includes concurrency mutex & cancellation to eliminate jank & GPU framebuffer pile-up.
  */
+
+let activeTransition: any = null;
+let isTransitioning = false;
 
 export async function executeCircularThemeTransition(
   origin: { x: number; y: number },
@@ -14,14 +18,30 @@ export async function executeCircularThemeTransition(
   );
 
   const doc = document as any;
-  if (typeof doc.startViewTransition === "function") {
-    const transition = doc.startViewTransition(() => {
-      toggleFn();
-    });
 
+  // If a transition is already in flight, skip/abort prior to prevent GPU framebuffer pile-up
+  if (isTransitioning && activeTransition) {
     try {
+      if (typeof activeTransition.skipTransition === "function") {
+        activeTransition.skipTransition();
+      }
+    } catch {
+      // Ignore abort errors
+    }
+    toggleFn();
+    return;
+  }
+
+  if (typeof doc.startViewTransition === "function") {
+    isTransitioning = true;
+    try {
+      const transition = doc.startViewTransition(() => {
+        toggleFn();
+      });
+      activeTransition = transition;
+
       await transition.ready;
-      document.documentElement.animate(
+      const anim = document.documentElement.animate(
         {
           clipPath: [
             `circle(0px at ${x}px ${y}px)`,
@@ -29,13 +49,18 @@ export async function executeCircularThemeTransition(
           ],
         },
         {
-          duration: 420,
+          duration: 380,
           easing: "cubic-bezier(0.2, 0, 0, 1)",
           pseudoElement: "::view-transition-new(root)",
         }
       );
+
+      await anim.finished.catch(() => {});
     } catch {
-      // Ignore if cancelled
+      // Fallback
+    } finally {
+      isTransitioning = false;
+      activeTransition = null;
     }
     return;
   }
@@ -43,3 +68,4 @@ export async function executeCircularThemeTransition(
   // Direct toggle fallback if View Transitions API is not supported
   toggleFn();
 }
+

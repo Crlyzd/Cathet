@@ -32,16 +32,6 @@ export class MobileCoordinator {
   private init(): void {
     this.platform.applyPlatformClasses();
 
-    this.settingsModal = new SettingsModalComponent({
-      onOpenTutorial: this.actions.onOpenTutorial,
-      onFontChanged: this.actions.onFontChanged,
-      onSnapScrollChange: (enabled) => this.actions.onSnapScrollChanged?.(enabled),
-    });
-
-    listen("cathet:open-settings-modal", () => {
-      this.settingsModal?.show();
-    }).catch(console.error);
-
     if (this.platform.isMobile()) {
       this.actionBar = new MobileActionBarComponent("app", {
         onToggleMarkdown: this.actions.onToggleMarkdown,
@@ -54,22 +44,51 @@ export class MobileCoordinator {
 
       // Auto-collapse dock on editor scrolling so it never obscures reading or typing
       document.addEventListener("scroll", () => this.actionBar?.collapse(), { capture: true, passive: true });
-
-      this.menuDrawer = new MobileMenuDrawerComponent({
-        onNewDocument: this.actions.onNewDocument,
-        onOpen: this.actions.onOpen,
-        onSave: this.actions.onSave,
-        onSaveAs: this.actions.onSaveAs,
-        onToggleDualPane: this.actions.onToggleDualPane,
-        onToggleMarkdown: this.actions.onToggleMarkdown,
-        onOpenSettings: () => this.openSettings(),
-      });
     }
+
+    // Stagger heavy secondary modals (Settings & Drawer) off Frame 0 to eliminate cold boot jank
+    const mountSecondary = () => {
+      if (!this.settingsModal) {
+        this.settingsModal = new SettingsModalComponent({
+          onOpenTutorial: this.actions.onOpenTutorial,
+          onFontChanged: this.actions.onFontChanged,
+          onSnapScrollChange: (enabled) => this.actions.onSnapScrollChanged?.(enabled),
+        });
+      }
+      if (this.platform.isMobile() && !this.menuDrawer) {
+        this.menuDrawer = new MobileMenuDrawerComponent({
+          onNewDocument: this.actions.onNewDocument,
+          onOpen: this.actions.onOpen,
+          onSave: this.actions.onSave,
+          onSaveAs: this.actions.onSaveAs,
+          onToggleDualPane: this.actions.onToggleDualPane,
+          onToggleMarkdown: this.actions.onToggleMarkdown,
+          onOpenSettings: () => this.openSettings(),
+        });
+      }
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(mountSecondary);
+    } else {
+      setTimeout(mountSecondary, 350);
+    }
+
+    listen("cathet:open-settings-modal", () => {
+      this.openSettings();
+    }).catch(console.error);
   }
 
   openSettings(): void {
+    if (!this.settingsModal) {
+      this.settingsModal = new SettingsModalComponent({
+        onOpenTutorial: this.actions.onOpenTutorial,
+        onFontChanged: this.actions.onFontChanged,
+        onSnapScrollChange: (enabled) => this.actions.onSnapScrollChanged?.(enabled),
+      });
+    }
     this.menuDrawer?.hideInstant();
-    this.settingsModal?.show();
+    this.settingsModal.show();
   }
 
   openMenu(state: MobileDrawerState): void {

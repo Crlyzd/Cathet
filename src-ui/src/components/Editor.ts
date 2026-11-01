@@ -142,6 +142,18 @@ export class EditorComponent {
     return this.isMarkdownPreview ? this.rawContent : serializeEditorContent(this.editorEl);
   }
 
+  /**
+   * Clears active document DOM and memory to release uncompressed GPU textures and bitmaps.
+   */
+  clearDocument(): void {
+    this.rawContent = "";
+    this.savedContent = "";
+    this.documentPath = null;
+    this.editorEl.innerHTML = "";
+    this.editorEl.classList.remove("markdown-preview");
+    this.editorEl.setAttribute("contenteditable", "true");
+  }
+
   toggleMarkdownPreview(): boolean {
     const scrollRatio = captureScrollRatio(this.wrapperEl);
 

@@ -413,7 +413,6 @@ body.is-mobile[data-theme="light"] .mobile-drawer-overlay,
   isolation: isolate;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  will-change: transform;
   transform: translate3d(0, 100%, 0);
   transition: transform 0.34s cubic-bezier(0.2, 0, 0, 1);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
@@ -429,6 +428,7 @@ body.is-mobile[data-theme="light"] .mobile-drawer-sheet {
 
 .settings-modal-overlay.visible .settings-modal-sheet,
 .mobile-drawer-overlay.visible .mobile-drawer-sheet {
+  will-change: transform;
   transform: translate3d(0, 0, 0);
 }
 

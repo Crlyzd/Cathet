@@ -85,7 +85,7 @@ export class HomeCoordinator {
     const ed = document.getElementById("editor-container");
     const onExit = () => {
       document.body.classList.remove("is-animating-transform");
-      this.editor.loadDocument("", null, false);
+      this.editor.clearDocument();
       this.currentNoteId = null;
       this.lastOriginRect = null;
       this.options.onNavigateHome?.();
