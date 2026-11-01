@@ -58,6 +58,8 @@ export class SettingsModalComponent {
     const currentTheme = this.themeService.getTheme();
     const currentFont = this.fontService.getCurrentFont();
 
+    const isHighRefresh = localStorage.getItem("cathet:high-refresh") !== "false";
+
     this.settingsView = new MobileSettingsView(
       this.contentContainer,
       {
@@ -65,6 +67,7 @@ export class SettingsModalComponent {
         fontId: currentFont.id,
         alwaysPreview: this.previewService.getAlwaysPreview(),
         snapScroll: this.dualPaneService.getSnapScroll(),
+        highRefreshRate: isHighRefresh,
         fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
       },
       {
@@ -90,6 +93,11 @@ export class SettingsModalComponent {
           this.settingsView?.updateState({ snapScroll: enabled });
           this.callbacks.onSnapScrollChange?.(enabled);
           await emit("cathet:snap-scroll-change", enabled);
+        },
+        onHighRefreshRateChange: async (enabled) => {
+          localStorage.setItem("cathet:high-refresh", enabled ? "true" : "false");
+          this.settingsView?.updateState({ highRefreshRate: enabled });
+          await invoke("set_refresh_rate", { hz: enabled ? 120 : 60 }).catch(console.error);
         },
         onOpenTutorial: () => {
           this.hide();
@@ -130,6 +138,7 @@ export class SettingsModalComponent {
       fontId: this.fontService.getCurrentFont().id,
       alwaysPreview: this.previewService.getAlwaysPreview(),
       snapScroll: this.dualPaneService.getSnapScroll(),
+      highRefreshRate: localStorage.getItem("cathet:high-refresh") !== "false",
     });
 
     this.overlay.classList.add("visible");

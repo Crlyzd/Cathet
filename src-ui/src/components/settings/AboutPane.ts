@@ -77,8 +77,8 @@ export class AboutPaneComponent {
                 ${icons.external}
               </button>
               <span class="capsule-slash">/</span>
-              <button class="capsule-link link-coffee" id="link-paypal">
-                <span>PayPal</span>
+              <button class="capsule-link link-coffee" id="link-kofi">
+                <span>Ko-fi</span>
                 ${icons.external}
               </button>
             </div>
@@ -129,8 +129,8 @@ export class AboutPaneComponent {
       openUrl("https://saweria.co/curlyzed");
     });
 
-    this.container.querySelector("#link-paypal")?.addEventListener("click", () => {
-      openUrl("https://paypal.me/BagusMassani");
+    this.container.querySelector("#link-kofi")?.addEventListener("click", () => {
+      openUrl("https://ko-fi.com/curlyzed");
     });
 
     this.container.querySelector("#link-bug")?.addEventListener("click", () => {

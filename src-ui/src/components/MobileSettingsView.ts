@@ -7,6 +7,7 @@ export interface MobileSettingsState {
   fontId: string;
   alwaysPreview: boolean;
   snapScroll: boolean;
+  highRefreshRate: boolean;
   fonts: { id: string; name: string }[];
 }
 
@@ -15,6 +16,7 @@ export interface MobileSettingsCallbacks {
   onFontChange: (fontId: string) => void;
   onAlwaysPreviewChange: (enabled: boolean) => void;
   onSnapScrollChange: (enabled: boolean) => void;
+  onHighRefreshRateChange: (enabled: boolean) => void;
   onOpenTutorial: () => void;
   onClose: () => void;
 }
@@ -49,6 +51,8 @@ export class MobileSettingsView {
     if (chkPreview) chkPreview.checked = this.state.alwaysPreview;
     const chkSnap = this.container.querySelector("#chk-snap-scroll") as HTMLInputElement | null;
     if (chkSnap) chkSnap.checked = this.state.snapScroll;
+    const chkRefresh = this.container.querySelector("#chk-high-refresh") as HTMLInputElement | null;
+    if (chkRefresh) chkRefresh.checked = this.state.highRefreshRate;
   }
 
   private render(): void {
@@ -121,6 +125,17 @@ export class MobileSettingsView {
               </label>
             </div>
 
+            <div class="mobile-settings-row">
+              <div class="mobile-settings-row-left">
+                <span class="mobile-settings-row-title">High Refresh Rate (120Hz)</span>
+                <span class="mobile-settings-row-subtitle">Smooth animations vs 60Hz battery saver</span>
+              </div>
+              <label class="switch-control">
+                <input type="checkbox" id="chk-high-refresh" ${this.state.highRefreshRate ? "checked" : ""} />
+                <span class="switch-track"></span>
+              </label>
+            </div>
+
             <div class="mobile-settings-row" id="row-open-tutorial" style="cursor: pointer;">
               <div class="mobile-settings-row-left">
                 <span class="mobile-settings-row-title">Offline Interactive Guide</span>
@@ -158,8 +173,8 @@ export class MobileSettingsView {
               <button class="mobile-about-btn" id="btn-about-saweria">
                 ${icons.coffee}<span>Saweria ↗</span>
               </button>
-              <button class="mobile-about-btn" id="btn-about-paypal">
-                ${icons.coffee}<span>PayPal ↗</span>
+              <button class="mobile-about-btn" id="btn-about-kofi">
+                ${icons.coffee}<span>Ko-fi ↗</span>
               </button>
             </div>
 
@@ -206,6 +221,11 @@ export class MobileSettingsView {
       this.callbacks.onSnapScrollChange(chkSnap.checked);
     });
 
+    const chkRefresh = this.container.querySelector("#chk-high-refresh") as HTMLInputElement | null;
+    chkRefresh?.addEventListener("change", () => {
+      this.callbacks.onHighRefreshRateChange(chkRefresh.checked);
+    });
+
     this.container.querySelector("#row-open-tutorial")?.addEventListener("click", () => {
       this.callbacks.onOpenTutorial();
     });
@@ -219,7 +239,7 @@ export class MobileSettingsView {
     openLink("btn-about-github", "https://github.com/Crlyzd/Cathet");
     openLink("btn-about-website", "https://kaleksanan.my.id");
     openLink("btn-about-saweria", "https://saweria.co/crlyzd");
-    openLink("btn-about-paypal", "https://paypal.me/kaleksanan");
+    openLink("btn-about-kofi", "https://ko-fi.com/curlyzed");
     openLink("btn-about-bug", "https://github.com/Crlyzd/Cathet/issues/new");
   }
 
