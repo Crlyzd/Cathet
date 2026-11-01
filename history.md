@@ -11,13 +11,14 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
-### [Mistake] 2026-11-01: Manual Edits to Tauri Generated Kotlin Files Overwritten by Tauri Build CLI
-- **Context**: When attempting to implement the Commit Content API, edits to `onCreateInputConnection` were added directly to `RustWebView.kt` in `src-tauri/gen/android/app/src/main/java/com/cathet/app/generated/`. Running `tauri android build` automatically regenerated the `generated/` package from Tauri CLI templates, wiping out manual edits to `onCreateInputConnection` right before Gradle compilation.
-- **User Correction**: User re-tested after build and reported *"bruh what?"* with screenshot showing Gboard still displaying *"Cathet does not support image pasting here"*.
-- **Root Cause**: The Tauri Android build CLI automatically regenerates `src-tauri/gen/android/app/src/main/java/com/cathet/app/generated/` from internal templates during `tauri android build`/`dev`, wiping out manual edits in the `generated/` package before Gradle compilation.
+### [Mistake] 2026-11-01: Manual Edits & PreBuild Tasks Overwritten Mid-Build by `rustBuild*` (`tauri android android-studio-script`)
+- **Context**: First, manual edits to `RustWebView.kt` were wiped by `tauri android build`. Next, a standalone Gradle task `patchRustWebView` wired to `preBuild` and `compile*Kotlin` ran at the start of the Gradle build (before `preBuild`), and 1 second later `:app:rustBuildArm64Release` executed `npm run -- tauri android android-studio-script`, which invoked `wry`'s `build.rs` and overwrote `RustWebView.kt` mid-build. Because Gradle only executes a standalone task once per build graph, `patchRustWebView` did not re-run before `compileUniversalReleaseKotlin`, resulting in an unpatched `RustWebView.class` inside the release APK.
+- **User Correction**: User re-tested after build and reported *"bruh what?"* / *"it still doesnt work bro"* with screenshot showing Gboard still displaying *"Cathet does not support image pasting here"*.
+- **Root Cause**: During `assembleUniversalRelease`, the `:app:rustBuild*` tasks invoke `tauri android android-studio-script` AFTER `preBuild`, regenerating `src-tauri/gen/android/app/src/main/java/com/cathet/app/generated/RustWebView.kt` in the middle of the Gradle execution phase. Any standalone task that already ran before `preBuild` is marked `EXECUTED` by Gradle and will not run a second time before `compile*Kotlin`.
 - **Corrective Guardrail**:
-  1. NEVER rely solely on static edits inside `generated/` packages for Tauri mobile.
-  2. Implement an automated Gradle build hook (`patchRustWebView` in `app/build.gradle.kts` wired into `preBuild` and Kotlin compile tasks) that dynamically injects necessary overrides into generated files during the Gradle execution phase, AFTER Tauri CLI template generation and BEFORE bytecode compilation.
+  1. NEVER wire generated-file patching solely as a standalone task dependency of `preBuild`.
+  2. Attach `doLast { applyRustWebViewPatch() }` directly to all `rustBuild*` tasks AND attach `mustRunAfter(rustTasks)` + `doFirst { applyRustWebViewPatch() }` directly to all `compile*Kotlin` tasks in `afterEvaluate`.
+  3. Always verify the final packaged `classes.dex` inside `release/cathet-v<ver>-android.apk` (not just isolated `compileUniversalReleaseKotlin`) to confirm the override survived `rustBuild*` and R8 minification.
 
 ### [Mistake] 2026-11-01: Premature Home View Unmounting, Static Top Bar Mutation & Overlay Fading in Tile Expansion
 - **Context**: Attempting to implement tile expansion, the agent added opacity fades (`overlay.animate([{ opacity: 1 }, { opacity: 0 }])`) at the end of the animation and prematurely revealed the underlying editor or popped the top bar. This destroyed the physical illusion that the expanding tile IS the actual interactive workspace.
@@ -893,15 +894,17 @@ This document serves as the living project documentation and institutional memor
 
 ### 2026-11-01: Gboard Clipboard Drawer Paste & Direct Commit Content API Integration
 - **Summary**:
-  1. **Direct Base64 Injection in `RustWebView`**: Updated `patchRustWebView` in `src-tauri/gen/android/app/build.gradle.kts` to encode committed image bytes to Base64 and evaluate `window.__cathet_insert_committed_base64('$mime', '$b64')` immediately upon keyboard commit, alongside `FileHelper.setPendingCommitImage` fallback.
-  2. **Safe Permission Request & Wildcard MIME Support**: Unconditionally requested `inputContentInfo.requestPermission()` inside `try-catch` to handle Gboard clipboard drawer items where `flags == 0`, and added `image/*` to supported content MIME types so stickers, GIFs, and screenshots are fully accepted by Gboard.
-  3. **Robust Caret & Lost-Selection Handling (`insertHtmlAtCaretOrEnd`)**: Added `insertHtmlAtCaretOrEnd` in `src-ui/src/utils/editorPasteHandler.ts` using `createContextualFragment()`. When Gboard clipboard drawer temporarily steals focus and drops the DOM selection range (`rangeCount === 0`), it falls back to appending cleanly at the editor end rather than failing silently with `document.execCommand("insertHTML")`.
-  4. **Direct Commit Base64 Listener**: Implemented `window.__cathet_insert_committed_base64` in `setupKeyboardCommitListener` in `src-ui/src/utils/editorPasteHandler.ts` to convert incoming Base64 directly to a `File` and pass it through the existing WebP compression and collapsible pill badge pipeline.
+  1. **Direct Base64 Injection in `RustWebView`**: Updated `applyRustWebViewPatch()` in `src-tauri/gen/android/app/build.gradle.kts` to encode committed image bytes to Base64 and evaluate `window.__cathet_insert_committed_base64('$mime', '$b64')` immediately upon keyboard commit, alongside `FileHelper.setPendingCommitImage` fallback.
+  2. **Post-`rustBuild*` & Pre-`compile*Kotlin` Patching Guarantee**: Wired `applyRustWebViewPatch()` into `doLast` on all `rustBuild*` tasks and `mustRunAfter(rustTasks)` + `doFirst` on all `compile*Kotlin` tasks so `tauri android android-studio-script` (`wry`'s `build.rs`) cannot wipe `RustWebView.kt` between `preBuild` and `compileUniversalReleaseKotlin`. Added `-keep class com.cathet.app.RustWebView` in `proguard-rules.pro`.
+  3. **Safe Permission Request & Wildcard MIME Support**: Unconditionally requested `inputContentInfo.requestPermission()` inside `try-catch` without premature `releasePermission()` in `finally`, read content stream directly via `contentResolver.openInputStream(uri)`, and added `image/*` to supported content MIME types so stickers, GIFs, and screenshots are accepted by Gboard.
+  4. **Robust Caret & Lost-Selection Handling (`insertHtmlAtCaretOrEnd`)**: Added `insertHtmlAtCaretOrEnd` in `src-ui/src/utils/editorPasteHandler.ts` using `createContextualFragment()`. When Gboard clipboard drawer temporarily steals focus and drops the DOM selection range (`rangeCount === 0`), it falls back to appending cleanly at the editor end rather than failing silently with `document.execCommand("insertHTML")`.
+  5. **Direct Commit Base64 Listener**: Implemented `window.__cathet_insert_committed_base64` in `setupKeyboardCommitListener` in `src-ui/src/utils/editorPasteHandler.ts` to convert incoming Base64 directly to a `File` and pass it through the existing WebP compression and collapsible pill badge pipeline.
 - **Files Modified**:
-  - `src-tauri/gen/android/app/build.gradle.kts`: Added safe permission handling, `image/*` MIME support, and direct Base64 evaluation in `patchRustWebView` (184 lines).
-  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/generated/RustWebView.kt`: Regenerated via `patchRustWebView` hook with updated `onCreateInputConnection` override (159 lines).
+  - `src-tauri/gen/android/app/build.gradle.kts`: Added `applyRustWebViewPatch()` hooked to `rustBuild*.doLast` and `compile*Kotlin.doFirst` (191 lines).
+  - `src-tauri/gen/android/app/proguard-rules.pro`: Added `-keep class com.cathet.app.RustWebView { public *; }` (20 lines).
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/generated/RustWebView.kt`: Patched with `onCreateInputConnection` override (153 lines).
   - `src-ui/src/utils/editorPasteHandler.ts`: Implemented `insertHtmlAtCaretOrEnd` and `window.__cathet_insert_committed_base64` direct receiver (244 lines).
-  - `history.md`: Appended changelog entry per Rule 13.
+  - `history.md`: Appended mistake guardrail and changelog entry per Rule 13.
 
 
 
