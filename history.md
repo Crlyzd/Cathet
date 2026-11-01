@@ -103,6 +103,27 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-01: Commit Content API for Gboard Clipboard, Stickers & GIFs on Android
+- **Summary**: Implemented native Android Commit Content API support (`InputConnection.commitContent` and `EditorInfoCompat.setContentMimeTypes`) in Cathet, enabling direct keyboard clipboard image pasting, animated GIFs, and stickers:
+  1. **Native Commit Content API in `RustWebView`**: Overrode `onCreateInputConnection` in `RustWebView.kt` to declare supported image MIME types (`image/png`, `image/jpeg`, `image/jpg`, `image/webp`, `image/gif`) on `EditorInfoCompat.setContentMimeTypes()`. Wrapped the `InputConnection` using `InputConnectionCompat.createWrapper` to intercept `onCommitContent`, grant temporary read URI permissions (`INPUT_CONTENT_GRANT_READ_URI_PERMISSION`), stream the image bytes over `ContentResolver` into `FileHelper.setPendingCommitImage()`, release permissions, and post an evaluation event to the webview (`window.__cathet_on_commit_image_ready`).
+  2. **Gboard Keyboard Feature Activation**: Declaring image MIME types on the active `InputConnection` eliminates the *"Cathet does not support image pasting here"* toast when tapping copied images/screenshots in Gboard's Clipboard drawer, and automatically enables the previously greyed-out **GIF** and **Sticker (🖼️)** buttons in Gboard's emoji/media picker.
+  3. **JNI Staging Bridge & IPC Command**: Added `setPendingCommitImage`, `getPendingCommitMime`, and `getPendingCommitBytes` in `FileHelper.kt`. Added `read_android_pending_commit_image` in `android_fs.rs` and exposed `get_pending_commit_image` Tauri command in `file.rs` and `lib.rs`.
+  4. **Frontend Commit Hook & Markdown Pill Insertion**: Added `setupKeyboardCommitListener` in `editorPasteHandler.ts`, registered globally in `main.ts` for both single editor and dual pane. Fetches committed bytes over Tauri IPC, formats them as a standard `File`, and feeds directly into `processAndInsertImageFile`, preserving animated GIF frames without recompression, downscaling/compressing WebP stickers/photos, and inserting frosted glass pill badges (`[ 📷 WEBP ~... KB ▾ ]`).
+  5. **Git Tracking & Build Configuration**: Updated `.gitignore` and `src-tauri/gen/android/app/.gitignore` so that custom Android Kotlin files (`FileHelper.kt`, `MainActivity.kt`, and `RustWebView.kt`) and configurations are tracked in git while Gradle build outputs and caches (`.gradle`, `build`, `.cxx`) remain strictly ignored.
+  All files remain under 250 lines (`FileHelper.kt` = 173 lines, `RustWebView.kt` = 155 lines, `android_fs.rs` = 225 lines, `file.rs` = 236 lines, `lib.rs` = 123 lines, `editorPasteHandler.ts` = 199 lines, `Editor.ts` = 234 lines). Clean compilation with `npx tsc --noEmit`, `cargo check`, and Gradle `compileDebugKotlin`.
+- **Files Modified**:
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/generated/RustWebView.kt`: Implemented `onCreateInputConnection` with `EditorInfoCompat.setContentMimeTypes` and `InputConnectionCompat.createWrapper` (155 lines).
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/FileHelper.kt`: Added pending commit image staging and fallback getters (173 lines).
+  - `src-tauri/gen/android/app/.gitignore`: Unignored `RustWebView.kt` while keeping generated boilerplate ignored.
+  - `src-tauri/src/commands/android_fs.rs`: Added `read_android_pending_commit_image` JNI bridge (225 lines).
+  - `src-tauri/src/commands/file.rs`: Added `get_pending_commit_image` command (236 lines).
+  - `src-tauri/src/lib.rs`: Registered `get_pending_commit_image` in invoke handler (123 lines).
+  - `src-ui/src/utils/editorPasteHandler.ts`: Implemented `setupKeyboardCommitListener` (199 lines).
+  - `src-ui/src/components/Editor.ts`: Added `setRawContent` method (234 lines).
+  - `src-ui/src/main.ts`: Connected `setupKeyboardCommitListener` in `init()` for active editor.
+  - `.gitignore`: Updated to track Android wrapper source files.
+  - `history.md`: Documented changes and Commit Content API architecture.
+
 ### 2026-11-01: Android Settings 120fps Optimization & Native Clipboard / Gboard Image Pasting
 - **Summary**: Implemented Android-wide 120fps fluid Settings opening and full clipboard/Gboard image pasting support with 1:1 desktop parity:
   1. **Android Settings 120fps Transition Polish**: Pre-mounted `MobileSettingsView` during idle time (`requestIdleCallback` / 120ms timeout) so opening the sheet incurs zero DOM parsing or image decoding hitch on Frame 1. Added `decoding="async"` to the app icon image. Removed momentum scroll and text-selection invalidation rules (`-webkit-overflow-scrolling: auto` & `user-select: none`) from `body.is-modal-open`, keeping only `pointer-events: none` on `#workspace-shell`. Converted the backdrop scrim to GPU-composited `opacity` transitions (`will-change: opacity`). Added `hideInstant()` to `MobileMenuDrawerComponent` so opening Settings from the 3-dot drawer snaps the drawer shut instantly with zero delay, dedicating 100% of GPU compositing to the Settings slide-up animation.
