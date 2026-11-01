@@ -223,3 +223,22 @@ pub fn read_android_clipboard_image() -> Result<Option<(String, Vec<u8>)>, Strin
 pub fn read_android_pending_commit_image() -> Result<Option<(String, Vec<u8>)>, String> {
     Ok(None)
 }
+
+#[cfg(target_os = "android")]
+pub fn set_android_refresh_rate(hz: i32) -> Result<(), String> {
+    with_jni_context(|env, _ctx, helper_cls| {
+        env.call_static_method(
+            helper_cls,
+            "setRefreshRate",
+            "(I)V",
+            &[JValue::Int(hz)],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    })
+}
+
+#[cfg(not(target_os = "android"))]
+pub fn set_android_refresh_rate(_hz: i32) -> Result<(), String> {
+    Ok(())
+}

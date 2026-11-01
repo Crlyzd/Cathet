@@ -10,6 +10,11 @@ object FileHelper {
     private var pendingCommitBytes: ByteArray? = null
 
     @JvmStatic
+    fun setRefreshRate(targetHz: Int) {
+        MainActivity.setRefreshRateHz(targetHz)
+    }
+
+    @JvmStatic
     fun setInitialUri(uri: String?) {
         initialUri = uri
     }

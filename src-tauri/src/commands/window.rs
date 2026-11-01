@@ -149,3 +149,8 @@ pub async fn set_window_min_size(
     }
     Ok(())
 }
+
+#[tauri::command]
+pub async fn set_refresh_rate(hz: i32) -> Result<(), String> {
+    crate::commands::android_fs::set_android_refresh_rate(hz)
+}
