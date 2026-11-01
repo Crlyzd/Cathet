@@ -891,18 +891,18 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/styles/mobile.css`: Adjusted mobile `.dualpane-pane-left` split (`43%`) and added dock clearance to `.dualpane-empty` / `.dualpane-empty-card`.
   - `history.md`: Appended changelog entry per Rule 13.
 
-### 2026-11-01: Amplified Curved Tile Collapse Trajectory & Settings Sheet Text Bleed-Through Fix
+### 2026-11-01: Gboard Clipboard Drawer Paste & Direct Commit Content API Integration
 - **Summary**:
-  1. **Amplified Top-Left Origin & Quadratic Bézier Curve (`containerTransform.ts`)**: Expanded the floating tile starting offset in `ContainerTransform.collapse()` from `(-24px, -84px)` to `(-84px, -150px)` and replaced linear 2-point interpolation with a 6-keyframe quadratic Bézier curve (`P0 = (-84, -150)` -> `P1 = (-12, -135)` -> `P2 = (0, 0)`) over `400ms` so the tile visibly launches far up-left and sweeps along a smooth right-down arc into its slot.
-  2. **Eliminated Editor Text Flashing / Bleed-Through on Settings Open (`SettingsModal.ts`, `MobileSettingsView.ts`, `MobileMenuDrawer.ts`, `mobile.css`)**: Replaced the parent `.settings-modal-overlay` / `.mobile-drawer-overlay` `opacity: 0 -> 1` transition with a `background-color` scrim transition (`opacity: 1` always) so Chromium does not wrap `.settings-modal-sheet` in an offscreen alpha `RenderSurface`. Promoted `.settings-modal-sheet` with `translate3d(0, 100%, 0)`, `backface-visibility: hidden`, and `isolation: isolate`, updated `MobileSettingsView.updateState()` in-place instead of wiping `innerHTML` on frame 0, and added `blur()` + `body.is-modal-open` editor layer demotion in `SettingsModal.show()` and `MobileMenuDrawer.show()`.
+  1. **Direct Base64 Injection in `RustWebView`**: Updated `patchRustWebView` in `src-tauri/gen/android/app/build.gradle.kts` to encode committed image bytes to Base64 and evaluate `window.__cathet_insert_committed_base64('$mime', '$b64')` immediately upon keyboard commit, alongside `FileHelper.setPendingCommitImage` fallback.
+  2. **Safe Permission Request & Wildcard MIME Support**: Unconditionally requested `inputContentInfo.requestPermission()` inside `try-catch` to handle Gboard clipboard drawer items where `flags == 0`, and added `image/*` to supported content MIME types so stickers, GIFs, and screenshots are fully accepted by Gboard.
+  3. **Robust Caret & Lost-Selection Handling (`insertHtmlAtCaretOrEnd`)**: Added `insertHtmlAtCaretOrEnd` in `src-ui/src/utils/editorPasteHandler.ts` using `createContextualFragment()`. When Gboard clipboard drawer temporarily steals focus and drops the DOM selection range (`rangeCount === 0`), it falls back to appending cleanly at the editor end rather than failing silently with `document.execCommand("insertHTML")`.
+  4. **Direct Commit Base64 Listener**: Implemented `window.__cathet_insert_committed_base64` in `setupKeyboardCommitListener` in `src-ui/src/utils/editorPasteHandler.ts` to convert incoming Base64 directly to a `File` and pass it through the existing WebP compression and collapsible pill badge pipeline.
 - **Files Modified**:
-  - `src-ui/src/utils/containerTransform.ts`: Updated `tileClone` collapse keyframes to `(-84px, -150px)` origin and 6-point quadratic Bézier curve (235 lines).
-  - `src-ui/src/components/MobileSettingsView.ts`: Updated `updateState()` to mutate controls in-place without wiping `innerHTML` (229 lines).
-  - `src-ui/src/components/SettingsModal.ts`: Added editor blur, `body.is-modal-open` toggle, and pre-animation layout flush (147 lines).
-  - `src-ui/src/components/MobileMenuDrawer.ts`: Added editor blur, `body.is-modal-open` toggle, and pre-animation layout flush (162 lines).
-  - `src-ui/styles/mobile.css`: Replaced parent `opacity` transition with `background-color` transition, added `translate3d` + `backface-visibility: hidden` + `isolation: isolate` on `.settings-modal-sheet`, added `body.is-modal-open` layer demotion, and removed stray closing brace inside `.mobile-action-btn`.
-  - `src-ui/styles/home.css`: Added standard `line-clamp: 4` alongside `-webkit-line-clamp: 4` on `.home-card-body`.
+  - `src-tauri/gen/android/app/build.gradle.kts`: Added safe permission handling, `image/*` MIME support, and direct Base64 evaluation in `patchRustWebView` (184 lines).
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/generated/RustWebView.kt`: Regenerated via `patchRustWebView` hook with updated `onCreateInputConnection` override (159 lines).
+  - `src-ui/src/utils/editorPasteHandler.ts`: Implemented `insertHtmlAtCaretOrEnd` and `window.__cathet_insert_committed_base64` direct receiver (244 lines).
   - `history.md`: Appended changelog entry per Rule 13.
+
 
 
 
