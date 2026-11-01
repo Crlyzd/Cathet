@@ -10,6 +10,7 @@ import {
 import { createBase64PillHtml, serializeEditorContent } from "./base64Fold";
 import { isQuotedFilePath, unwrapQuotedPath } from "./pathUtils";
 import { showGlassDialog } from "../components/GlassDialog";
+import { invoke } from "@tauri-apps/api/core";
 
 export function isCursorInsideLinkOrImage(): boolean {
   const sel = window.getSelection();
@@ -24,6 +25,46 @@ export function isCursorInsideLinkOrImage(): boolean {
   );
 }
 
+/**
+ * Validates, compresses, and inserts an image file as a collapsible Base64 pill badge.
+ */
+export async function processAndInsertImageFile(
+  targetFile: File,
+  editorEl: HTMLElement,
+  onContentUpdated: (newContent: string) => void
+): Promise<boolean> {
+  if (!isSupportedImage(targetFile)) {
+    const ext = getFileExtension(targetFile) || targetFile.type || "unknown";
+    await showGlassDialog({
+      type: "warning",
+      title: "Unsupported Image Format",
+      message: `"${targetFile.name || "Pasted image"}" is in an unsupported format (${ext.toUpperCase()}). Supported formats: PNG, JPEG, WebP, GIF, SVG, BMP, ICO, and AVIF.`,
+    });
+    return false;
+  }
+
+  if (isImageTooLarge(targetFile)) {
+    await showGlassDialog({
+      type: "warning",
+      title: "Image Exceeds Limit",
+      message: `Pasted image is ${formatFileSizeMb(targetFile.size)} MB. The maximum embedded size is 15 MB to keep documents fast. Please link an external file instead.`,
+    });
+    return false;
+  }
+
+  try {
+    const dataUrl = await optimizePastedImage(targetFile);
+    const pillHtml = createBase64PillHtml(dataUrl);
+    const mdImgHtml = `![Pasted Image](${pillHtml})`;
+    document.execCommand("insertHTML", false, mdImgHtml);
+    onContentUpdated(serializeEditorContent(editorEl));
+    return true;
+  } catch (err) {
+    console.error("Failed to optimize and insert image:", err);
+    return false;
+  }
+}
+
 export function handleEditorPaste(
   e: ClipboardEvent,
   editorEl: HTMLElement,
@@ -32,7 +73,7 @@ export function handleEditorPaste(
   const clipboardData = e.clipboardData;
   if (!clipboardData) return;
 
-  // 1. Image paste (screenshots or image files from Explorer)
+  // 1. Image paste (screenshots or image files from Explorer / clipboard)
   const items = Array.from(clipboardData.items || []);
   const files = Array.from(clipboardData.files || []);
 
@@ -57,39 +98,32 @@ export function handleEditorPaste(
 
   if (targetFile) {
     e.preventDefault();
-
-    if (!isSupportedImage(targetFile)) {
-      const ext = getFileExtension(targetFile) || targetFile.type || "unknown";
-      showGlassDialog({
-        type: "warning",
-        title: "Unsupported Image Format",
-        message: `"${targetFile.name || "Pasted image"}" is in an unsupported format (${ext.toUpperCase()}). Supported formats: PNG, JPEG, WebP, GIF, SVG, BMP, ICO, and AVIF.`,
-      });
-      return;
-    }
-
-    if (isImageTooLarge(targetFile)) {
-      showGlassDialog({
-        type: "warning",
-        title: "Image Exceeds Limit",
-        message: `Pasted image is ${formatFileSizeMb(targetFile.size)} MB. The maximum embedded size is 15 MB to keep documents fast. Please link an external file instead.`,
-      });
-      return;
-    }
-
-    optimizePastedImage(targetFile)
-      .then((dataUrl) => {
-        const pillHtml = createBase64PillHtml(dataUrl);
-        const mdImgHtml = `![Pasted Image](${pillHtml})`;
-        document.execCommand("insertHTML", false, mdImgHtml);
-        onContentUpdated(serializeEditorContent(editorEl));
-      })
-      .catch(console.error);
+    processAndInsertImageFile(targetFile, editorEl, onContentUpdated).catch(console.error);
     return;
   }
 
-  // 2. Rich HTML paste (convert tables, headings, code to Markdown)
+  // 1b. Android Gboard content:// image paste fallback
   const html = clipboardData.getData("text/html");
+  if (html && html.includes("content://")) {
+    const match = html.match(/<img[^>]+src=["'](content:\/\/[^"']+)["']/i);
+    if (match && match[1]) {
+      e.preventDefault();
+      invoke<{ mimeType: string; bytes: number[] } | null>("read_clipboard_image")
+        .then(async (clipImage) => {
+          if (clipImage && clipImage.bytes && clipImage.bytes.length > 0) {
+            const uint8 = new Uint8Array(clipImage.bytes);
+            const mime = clipImage.mimeType || "image/png";
+            const ext = mime.split("/").pop() || "png";
+            const file = new File([uint8], `gboard_image.${ext}`, { type: mime });
+            await processAndInsertImageFile(file, editorEl, onContentUpdated);
+          }
+        })
+        .catch(console.error);
+      return;
+    }
+  }
+
+  // 2. Rich HTML paste (convert tables, headings, code to Markdown)
   if (html && isHtmlFormatted(html)) {
     e.preventDefault();
     const md = htmlToMarkdown(html);

@@ -217,9 +217,17 @@ export class EditorComponent {
   undo(): void { if (!this.isMarkdownPreview) { this.editorEl.focus(); document.execCommand("undo", false); } }
   redo(): void { if (!this.isMarkdownPreview) { this.editorEl.focus(); document.execCommand("redo", false); } }
 
-  async cut(): Promise<void> { await editorCut(this.editorEl, this.getSelectedText(), this.isMarkdownPreview); }
+  async cut(): Promise<void> {
+    await editorCut(this.editorEl, this.getSelectedText(), this.isMarkdownPreview, (newContent) => {
+      this.rawContent = newContent;
+    });
+  }
   async copy(): Promise<void> { await editorCopy(this.getSelectedText()); }
-  async paste(): Promise<void> { await editorPaste(this.editorEl, this.isMarkdownPreview); }
+  async paste(): Promise<void> {
+    await editorPaste(this.editorEl, this.isMarkdownPreview, (newContent) => {
+      this.rawContent = newContent;
+    });
+  }
 
   focus(): void { this.editorEl.focus(); }
 }
