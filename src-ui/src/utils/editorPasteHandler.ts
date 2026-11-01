@@ -26,6 +26,37 @@ export function isCursorInsideLinkOrImage(): boolean {
 }
 
 /**
+ * Inserts HTML into editorEl at caret, or appends to end if caret was lost during IME focus handover.
+ */
+export function insertHtmlAtCaretOrEnd(editorEl: HTMLElement, html: string): void {
+  editorEl.focus();
+  const sel = window.getSelection();
+  let range: Range | null = null;
+  if (sel && sel.rangeCount > 0) {
+    const candidate = sel.getRangeAt(0);
+    if (editorEl.contains(candidate.commonAncestorContainer)) {
+      range = candidate;
+    }
+  }
+  if (!range) {
+    range = document.createRange();
+    range.selectNodeContents(editorEl);
+    range.collapse(false);
+  }
+  range.deleteContents();
+  const fragment = range.createContextualFragment(html);
+  const lastChild = fragment.lastChild;
+  range.insertNode(fragment);
+  if (lastChild && sel) {
+    const nextRange = document.createRange();
+    nextRange.setStartAfter(lastChild);
+    nextRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(nextRange);
+  }
+}
+
+/**
  * Validates, compresses, and inserts an image file as a collapsible Base64 pill badge.
  */
 export async function processAndInsertImageFile(
@@ -56,7 +87,7 @@ export async function processAndInsertImageFile(
     const dataUrl = await optimizePastedImage(targetFile);
     const pillHtml = createBase64PillHtml(dataUrl);
     const mdImgHtml = `![Pasted Image](${pillHtml})`;
-    document.execCommand("insertHTML", false, mdImgHtml);
+    insertHtmlAtCaretOrEnd(editorEl, mdImgHtml);
     onContentUpdated(serializeEditorContent(editorEl));
     return true;
   } catch (err) {
@@ -157,43 +188,57 @@ export function handleEditorPaste(
   }
 }
 
+function base64ToFile(base64: string, mime: string): File {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const ext = mime.split("/").pop() || "png";
+  return new File([bytes], `keyboard_commit.${ext}`, { type: mime });
+}
+
 /**
  * Sets up global Commit Content API listener for Android soft keyboards (Gboard/IME).
- * Listens for window.__cathet_on_commit_image_ready and inserts the image/sticker/GIF.
  */
 export function setupKeyboardCommitListener(
   getActiveEditorEl: () => HTMLElement | null,
   isMarkdownPreview: () => boolean,
   onContentUpdated: (newContent: string) => void
 ): () => void {
-  const handler = async () => {
+  const insertFile = async (file: File) => {
     if (isMarkdownPreview()) return;
     const editorEl = getActiveEditorEl();
     if (!editorEl) return;
+    await processAndInsertImageFile(file, editorEl, onContentUpdated);
+  };
 
+  const directHandler = (mime: string, base64: string) => {
+    try {
+      insertFile(base64ToFile(base64, mime)).catch(console.error);
+    } catch (err) {
+      console.error("Direct commit base64 error:", err);
+    }
+  };
+
+  const ipcHandler = async () => {
     try {
       const payload = await invoke<{ mimeType: string; bytes: number[] } | null>(
         "get_pending_commit_image"
       );
-      if (!payload || !payload.bytes || payload.bytes.length === 0) return;
-
-      const uint8 = new Uint8Array(payload.bytes);
-      const mime = payload.mimeType || "image/png";
-      const ext = mime.split("/").pop() || "png";
-      const file = new File([uint8], `keyboard_commit.${ext}`, { type: mime });
-
-      editorEl.focus();
-      await processAndInsertImageFile(file, editorEl, onContentUpdated);
+      if (!payload?.bytes?.length) return;
+      const file = new File([new Uint8Array(payload.bytes)], "commit_img", {
+        type: payload.mimeType || "image/png",
+      });
+      await insertFile(file);
     } catch (err) {
-      console.error("Failed handling keyboard commit image:", err);
+      console.error("IPC commit image error:", err);
     }
   };
 
-  (window as any).__cathet_on_commit_image_ready = handler;
+  (window as any).__cathet_insert_committed_base64 = directHandler;
+  (window as any).__cathet_on_commit_image_ready = ipcHandler;
 
   return () => {
-    if ((window as any).__cathet_on_commit_image_ready === handler) {
-      delete (window as any).__cathet_on_commit_image_ready;
-    }
+    delete (window as any).__cathet_insert_committed_base64;
+    delete (window as any).__cathet_on_commit_image_ready;
   };
 }
