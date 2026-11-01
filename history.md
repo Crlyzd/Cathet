@@ -112,6 +112,20 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-01: Agent Rules & Skills Modernization for Cathet v5.1.0 and Antigravity 2.0
+- **Summary**: Updated `AGENTS.md` and all four specialist agent skills (`architect`, `orchestrator`, `coding-specialist`, `code-reviewer`) to match the full v5.1.0 cross-platform state of Cathet and Antigravity 2.0 customization standards, and removed legacy workflow backups:
+  1. **Deleted Legacy Workflows**: Removed `d:\Cathet\.agents\workflows\` (`architect.md.bak`, `code-reviewer.md.bak`, `coding-specialist.md.bak`, `orchestrator.md.bak`) and global `C:\Users\kalek\.gemini\config\global_workflows\` (+ `global_workflows.rar`).
+  2. **Updated `AGENTS.md` to Cathet v5.1.0**: Documented cross-platform Windows (x64/ARM64) and Android (Universal APK) architecture, Dual-Pane (`Ctrl+D`) horizontal/vertical split with 3-state scroll synchronization and right-pane auto-save (`autoSaveRightPane`), Android Notes Homepage (`commands/notes.rs`, `HomeView.ts`, `homeCoordinator.ts`), 120Hz+ hardware refresh rate unlock (`MainActivity.kt`), 380ms zero-fade `#workspace-shell` container morph and Xiaomi dual-layer collapse (`containerTransform.ts`), 420ms `document.startViewTransition` circular theme reveal (`themeTransition.ts`), Gboard Commit Content API (`RustWebView.kt` patched via `applyRustWebViewPatch()` in `build.gradle.kts`, `FileHelper.kt`, `android_fs.rs`, `editorPasteHandler.ts`), and `build.ps1` Android dev/release targets alongside non-blocking synchronous verification rules.
+  3. **Upgraded Workspace & Global `SKILL.md` Definitions for Antigravity 2.0**: Added semantic third-person YAML frontmatter descriptions, `ArtifactMetadata` (`RequestFeedback: true`, `UserFacing: true`) rules for `/architect`, `invoke_subagent` reactive orchestration for `/orchestrator`, synchronous `npx tsc --noEmit` + `cargo check` verification guardrails for `/coding-specialist`, and comprehensive 250-line / JNI / Gradle `rustBuild*` / 120fps motion audit rules for `/code-reviewer`.
+- **Files Modified / Deleted**:
+  - `AGENTS.md`: Updated to v5.1.0 architecture and Antigravity 2.0 standards (134 lines).
+  - `.agents/skills/architect/SKILL.md`: Updated for Antigravity 2.0 artifact metadata and Cathet v5.1.0 scope (68 lines).
+  - `.agents/skills/orchestrator/SKILL.md`: Updated for Antigravity 2.0 subagent coordination and Cathet v5.1.0 scope (66 lines).
+  - `.agents/skills/coding-specialist/SKILL.md`: Updated with synchronous verification and Android/Desktop implementation rules (69 lines).
+  - `.agents/skills/code-reviewer/SKILL.md`: Updated with v5.1.0 audit checklist (65 lines).
+  - `.agents/workflows/*.md.bak`: Deleted legacy workflow directory and backup files.
+  - `history.md`: Appended changelog entry per Rule 13.
+
 ### 2026-11-01: Commit Content API for Gboard Clipboard, Stickers & GIFs on Android
 - **Summary**: Implemented native Android Commit Content API support (`InputConnection.commitContent` and `EditorInfoCompat.setContentMimeTypes`) in Cathet, enabling direct keyboard clipboard image pasting, animated GIFs, and stickers:
   1. **Native Commit Content API in `RustWebView`**: Overrode `onCreateInputConnection` in `RustWebView.kt` to declare supported image MIME types (`image/png`, `image/jpeg`, `image/jpg`, `image/webp`, `image/gif`) on `EditorInfoCompat.setContentMimeTypes()`. Wrapped the `InputConnection` using `InputConnectionCompat.createWrapper` to intercept `onCommitContent`, grant temporary read URI permissions (`INPUT_CONTENT_GRANT_READ_URI_PERMISSION`), stream the image bytes over `ContentResolver` into `FileHelper.setPendingCommitImage()`, release permissions, and post an evaluation event to the webview (`window.__cathet_on_commit_image_ready`).
