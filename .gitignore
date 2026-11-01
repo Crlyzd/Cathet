@@ -16,12 +16,14 @@ target/
 release/
 
 # ── Tauri v2 Generated Mobile Wrappers & Schemas ────────────────
-src-tauri/gen/
+# src-tauri/gen/
 **/gen/android/.gradle/
 **/gen/android/build/
 **/gen/android/app/build/
 **/gen/android/.cxx/
 **/gen/android/local.properties
+*.jks
+*.keystore
 
 # ── Logs & Temporary Files ──────────────────────────────────────
 *.log
