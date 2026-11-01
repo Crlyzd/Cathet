@@ -145,6 +145,20 @@ export class MobileMenuDrawerComponent {
     bindItem("drawer-item-settings", this.callbacks.onOpenSettings);
   }
 
+  hideInstant(): void {
+    if (!this.isVisible) return;
+    this.overlay.style.transition = "none";
+    const sheet = this.overlay.querySelector(".mobile-drawer-sheet") as HTMLElement | null;
+    if (sheet) sheet.style.transition = "none";
+    this.overlay.classList.remove("visible");
+    this.isVisible = false;
+    document.body.classList.remove("is-modal-open");
+    requestAnimationFrame(() => {
+      this.overlay.style.transition = "";
+      if (sheet) sheet.style.transition = "";
+    });
+  }
+
   hide(): void {
     if (!this.isVisible) return;
     this.overlay.classList.remove("visible");

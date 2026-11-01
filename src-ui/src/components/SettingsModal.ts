@@ -39,6 +39,65 @@ export class SettingsModalComponent {
     document.body.appendChild(this.overlay);
 
     this.bindEvents();
+    this.schedulePreMount();
+  }
+
+  private schedulePreMount(): void {
+    const preMount = () => {
+      if (!this.settingsView) this.ensureSettingsView();
+    };
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(preMount);
+    } else {
+      setTimeout(preMount, 120);
+    }
+  }
+
+  private ensureSettingsView(): void {
+    if (this.settingsView) return;
+    const currentTheme = this.themeService.getTheme();
+    const currentFont = this.fontService.getCurrentFont();
+
+    this.settingsView = new MobileSettingsView(
+      this.contentContainer,
+      {
+        theme: currentTheme,
+        fontId: currentFont.id,
+        alwaysPreview: this.previewService.getAlwaysPreview(),
+        snapScroll: this.dualPaneService.getSnapScroll(),
+        fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
+      },
+      {
+        onThemeChange: async (theme) => {
+          this.themeService.setTheme(theme);
+          this.settingsView?.updateState({ theme });
+          await invoke("sync_window_theme", { theme }).catch(console.error);
+          await emit("cathet:theme-change", theme);
+        },
+        onFontChange: async (fontId) => {
+          this.fontService.setFont(fontId);
+          this.settingsView?.updateState({ fontId });
+          this.callbacks.onFontChanged?.(this.fontService.getCurrentFont().family);
+          await emit("cathet:font-change", fontId);
+        },
+        onAlwaysPreviewChange: async (enabled) => {
+          this.previewService.setAlwaysPreview(enabled);
+          this.settingsView?.updateState({ alwaysPreview: enabled });
+          await emit("cathet:always-preview-change", enabled);
+        },
+        onSnapScrollChange: async (enabled) => {
+          this.dualPaneService.setSnapScroll(enabled);
+          this.settingsView?.updateState({ snapScroll: enabled });
+          this.callbacks.onSnapScrollChange?.(enabled);
+          await emit("cathet:snap-scroll-change", enabled);
+        },
+        onOpenTutorial: () => {
+          this.hide();
+          this.callbacks.onOpenTutorial();
+        },
+        onClose: () => this.hide(),
+      }
+    );
   }
 
   private bindEvents(): void {
@@ -59,64 +118,20 @@ export class SettingsModalComponent {
     if (this.isVisible) return;
     this.isVisible = true;
 
-    (document.activeElement as HTMLElement)?.blur();
-    window.getSelection()?.removeAllRanges();
+    const active = document.activeElement as HTMLElement | null;
+    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) {
+      active.blur();
+    }
     document.body.classList.add("is-modal-open");
 
-    if (!this.settingsView) {
-      const currentTheme = this.themeService.getTheme();
-      const currentFont = this.fontService.getCurrentFont();
+    this.ensureSettingsView();
+    this.settingsView?.updateState({
+      theme: this.themeService.getTheme(),
+      fontId: this.fontService.getCurrentFont().id,
+      alwaysPreview: this.previewService.getAlwaysPreview(),
+      snapScroll: this.dualPaneService.getSnapScroll(),
+    });
 
-      this.settingsView = new MobileSettingsView(
-        this.contentContainer,
-        {
-          theme: currentTheme,
-          fontId: currentFont.id,
-          alwaysPreview: this.previewService.getAlwaysPreview(),
-          snapScroll: this.dualPaneService.getSnapScroll(),
-          fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
-        },
-        {
-          onThemeChange: async (theme) => {
-            this.themeService.setTheme(theme);
-            this.settingsView?.updateState({ theme });
-            await invoke("sync_window_theme", { theme }).catch(console.error);
-            await emit("cathet:theme-change", theme);
-          },
-          onFontChange: async (fontId) => {
-            this.fontService.setFont(fontId);
-            this.settingsView?.updateState({ fontId });
-            this.callbacks.onFontChanged?.(this.fontService.getCurrentFont().family);
-            await emit("cathet:font-change", fontId);
-          },
-          onAlwaysPreviewChange: async (enabled) => {
-            this.previewService.setAlwaysPreview(enabled);
-            this.settingsView?.updateState({ alwaysPreview: enabled });
-            await emit("cathet:always-preview-change", enabled);
-          },
-          onSnapScrollChange: async (enabled) => {
-            this.dualPaneService.setSnapScroll(enabled);
-            this.settingsView?.updateState({ snapScroll: enabled });
-            this.callbacks.onSnapScrollChange?.(enabled);
-            await emit("cathet:snap-scroll-change", enabled);
-          },
-          onOpenTutorial: () => {
-            this.hide();
-            this.callbacks.onOpenTutorial();
-          },
-          onClose: () => this.hide(),
-        }
-      );
-    } else {
-      this.settingsView.updateState({
-        theme: this.themeService.getTheme(),
-        fontId: this.fontService.getCurrentFont().id,
-        alwaysPreview: this.previewService.getAlwaysPreview(),
-        snapScroll: this.dualPaneService.getSnapScroll(),
-      });
-    }
-
-    void this.overlay.offsetHeight;
     this.overlay.classList.add("visible");
   }
 

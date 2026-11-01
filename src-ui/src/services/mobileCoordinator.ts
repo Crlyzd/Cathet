@@ -68,7 +68,7 @@ export class MobileCoordinator {
   }
 
   openSettings(): void {
-    this.menuDrawer?.hide();
+    this.menuDrawer?.hideInstant();
     this.settingsModal?.show();
   }
 

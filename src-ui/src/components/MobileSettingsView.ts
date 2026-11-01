@@ -136,7 +136,7 @@ export class MobileSettingsView {
           <div class="mobile-settings-section-title">About & Support</div>
           <div class="mobile-settings-card mobile-about-card">
             <div class="mobile-about-brand">
-              <img src="/app-icon.png" alt="Cathet" />
+              <img src="/app-icon.png" alt="Cathet" decoding="async" />
               <div>
                 <div class="mobile-about-title">Cathet</div>
                 <div class="mobile-about-version">v${APP_VERSION} (Android)</div>
