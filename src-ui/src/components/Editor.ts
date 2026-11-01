@@ -230,4 +230,5 @@ export class EditorComponent {
   }
 
   focus(): void { this.editorEl.focus(); }
+  setRawContent(content: string): void { this.rawContent = content; }
 }

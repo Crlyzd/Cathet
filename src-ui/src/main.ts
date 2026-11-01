@@ -23,6 +23,7 @@ import { registerShortcuts } from "./utils/shortcuts";
 import { buildContextMenuItems } from "./utils/contextMenuItems";
 import { buildMainMenuItems } from "./utils/mainMenuItems";
 import { registerWindowSyncListeners } from "./utils/windowSync";
+import { setupKeyboardCommitListener } from "./utils/editorPasteHandler";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -53,6 +54,12 @@ class CathetApp {
     this.editor.setFontFamily(this.fontService.getCurrentFont().family);
     invoke("sync_window_theme", { theme: this.themeService.getTheme() }).catch(console.error);
     if (this.updateService.hasUpdate()) this.topBar.setUpdateAvailable(true);
+
+    setupKeyboardCommitListener(
+      () => this.getActiveEditor().getEditorEl(),
+      () => this.getActiveEditor().getIsMarkdownPreview(),
+      (content) => this.getActiveEditor().setRawContent(content)
+    );
 
     globalEventBus.on("topbar:toggleMenu", (pos: { x: number; y: number }) => this.openMainMenu(pos.x, pos.y));
     globalEventBus.on("editor:toggleMarkdown", () => this.toggleMarkdown());

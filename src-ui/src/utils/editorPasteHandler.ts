@@ -156,3 +156,44 @@ export function handleEditorPaste(
     return;
   }
 }
+
+/**
+ * Sets up global Commit Content API listener for Android soft keyboards (Gboard/IME).
+ * Listens for window.__cathet_on_commit_image_ready and inserts the image/sticker/GIF.
+ */
+export function setupKeyboardCommitListener(
+  getActiveEditorEl: () => HTMLElement | null,
+  isMarkdownPreview: () => boolean,
+  onContentUpdated: (newContent: string) => void
+): () => void {
+  const handler = async () => {
+    if (isMarkdownPreview()) return;
+    const editorEl = getActiveEditorEl();
+    if (!editorEl) return;
+
+    try {
+      const payload = await invoke<{ mimeType: string; bytes: number[] } | null>(
+        "get_pending_commit_image"
+      );
+      if (!payload || !payload.bytes || payload.bytes.length === 0) return;
+
+      const uint8 = new Uint8Array(payload.bytes);
+      const mime = payload.mimeType || "image/png";
+      const ext = mime.split("/").pop() || "png";
+      const file = new File([uint8], `keyboard_commit.${ext}`, { type: mime });
+
+      editorEl.focus();
+      await processAndInsertImageFile(file, editorEl, onContentUpdated);
+    } catch (err) {
+      console.error("Failed handling keyboard commit image:", err);
+    }
+  };
+
+  (window as any).__cathet_on_commit_image_ready = handler;
+
+  return () => {
+    if ((window as any).__cathet_on_commit_image_ready === handler) {
+      delete (window as any).__cathet_on_commit_image_ready;
+    }
+  };
+}
