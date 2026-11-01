@@ -968,19 +968,16 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/styles/mobile.css`: Adjusted mobile `.dualpane-pane-left` split (`43%`) and added dock clearance to `.dualpane-empty` / `.dualpane-empty-card`.
   - `history.md`: Appended changelog entry per Rule 13.
 
-### 2026-11-01: Gboard Clipboard Drawer Paste & Direct Commit Content API Integration
+### 2026-11-02: Comprehensive Documentation Overhaul for Cathet v5.1.0 Cross-Platform Release
 - **Summary**:
-  1. **Direct Base64 Injection in `RustWebView`**: Updated `applyRustWebViewPatch()` in `src-tauri/gen/android/app/build.gradle.kts` to encode committed image bytes to Base64 and evaluate `window.__cathet_insert_committed_base64('$mime', '$b64')` immediately upon keyboard commit, alongside `FileHelper.setPendingCommitImage` fallback.
-  2. **Post-`rustBuild*` & Pre-`compile*Kotlin` Patching Guarantee**: Wired `applyRustWebViewPatch()` into `doLast` on all `rustBuild*` tasks and `mustRunAfter(rustTasks)` + `doFirst` on all `compile*Kotlin` tasks so `tauri android android-studio-script` (`wry`'s `build.rs`) cannot wipe `RustWebView.kt` between `preBuild` and `compileUniversalReleaseKotlin`. Added `-keep class com.cathet.app.RustWebView` in `proguard-rules.pro`.
-  3. **Safe Permission Request & Wildcard MIME Support**: Unconditionally requested `inputContentInfo.requestPermission()` inside `try-catch` without premature `releasePermission()` in `finally`, read content stream directly via `contentResolver.openInputStream(uri)`, and added `image/*` to supported content MIME types so stickers, GIFs, and screenshots are accepted by Gboard.
-  4. **Robust Caret & Lost-Selection Handling (`insertHtmlAtCaretOrEnd`)**: Added `insertHtmlAtCaretOrEnd` in `src-ui/src/utils/editorPasteHandler.ts` using `createContextualFragment()`. When Gboard clipboard drawer temporarily steals focus and drops the DOM selection range (`rangeCount === 0`), it falls back to appending cleanly at the editor end rather than failing silently with `document.execCommand("insertHTML")`.
-  5. **Direct Commit Base64 Listener**: Implemented `window.__cathet_insert_committed_base64` in `setupKeyboardCommitListener` in `src-ui/src/utils/editorPasteHandler.ts` to convert incoming Base64 directly to a `File` and pass it through the existing WebP compression and collapsible pill badge pipeline.
+  1. **Dual-Platform Architecture Showcase**: Overhauled `README.md` from a Windows-only document to a comprehensive cross-platform guide detailing both Windows (x64 and ARM64 `.exe` under 4 MB) and Android (Universal APK API 24–36) support.
+  2. **Android Subsystem Feature Deep-Dive**: Documented the Android Notes Dashboard (folders, search, multi-select pin/hide/move/delete), 120Hz/144Hz/165Hz hardware display refresh rate unlock, Xiaomi HyperOS container transform motion (zero opacity fade), Gboard Commit Content API integration, and vertical stacked dual-pane layout.
+  3. **Desktop & Content Engine**: Highlighted genuine DWM Acrylic/Mica system backdrops, in-memory WebP image optimization, interactive collapsible Base64 badges, lossless markdown toggling (`Ctrl + M`), and portable execution.
+  4. **Touch Gestures & Automation Workflow**: Added a dedicated mobile touch navigation table alongside desktop keyboard shortcuts, and detailed complete developer automation workflows in `build.ps1` (`-Live`, `-AndroidDev`, `-BuildX64`, `-BuildArm64`, `-All`, `-AndroidBuild`, `-Check`).
 - **Files Modified**:
-  - `src-tauri/gen/android/app/build.gradle.kts`: Added `applyRustWebViewPatch()` hooked to `rustBuild*.doLast` and `compile*Kotlin.doFirst` (191 lines).
-  - `src-tauri/gen/android/app/proguard-rules.pro`: Added `-keep class com.cathet.app.RustWebView { public *; }` (20 lines).
-  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/generated/RustWebView.kt`: Patched with `onCreateInputConnection` override (153 lines).
-  - `src-ui/src/utils/editorPasteHandler.ts`: Implemented `insertHtmlAtCaretOrEnd` and `window.__cathet_insert_committed_base64` direct receiver (244 lines).
-  - `history.md`: Appended mistake guardrail and changelog entry per Rule 13.
+  - `README.md`: Completely updated for Cathet v5.1.0 cross-platform release.
+  - `history.md`: Appended changelog entry per Rule 13.
+
 
 
 
