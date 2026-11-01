@@ -8,8 +8,8 @@ use commands::association::{
 #[cfg(target_os = "windows")]
 use commands::association::self_heal_if_moved;
 use commands::file::{
-    get_initial_file, init_cli_file, is_file_readonly, read_text_file, show_open_dialog,
-    show_save_dialog, write_text_file,
+    get_initial_file, init_cli_file, is_file_readonly, read_clipboard_image, read_text_file,
+    show_open_dialog, show_save_dialog, write_text_file,
 };
 use commands::notes::{
     create_folder, delete_notes, import_external_file, list_notes, move_notes, read_note,
@@ -84,6 +84,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             read_text_file,
+            read_clipboard_image,
             write_text_file,
             is_file_readonly,
             show_open_dialog,

@@ -16,6 +16,13 @@ pub struct FilePayload {
     pub display_name: Option<String>,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClipboardImagePayload {
+    pub mime_type: String,
+    pub bytes: Vec<u8>,
+}
+
 const FILTER_ALL_SUPPORTED: &[&str] = &[
     "txt", "md", "markdown", "log", "rtf", "html", "htm", "json", "yaml", "yml", "toml",
     "xml", "ini", "env", "cfg", "csv", "tsv", "js", "ts", "rs", "py", "css", "sql",
@@ -204,4 +211,15 @@ pub fn init_cli_file(app: &App) {
             }
         }
     }
+}
+
+#[tauri::command]
+pub async fn read_clipboard_image() -> Result<Option<ClipboardImagePayload>, String> {
+    #[cfg(target_os = "android")]
+    {
+        if let Some((mime_type, bytes)) = crate::commands::android_fs::read_android_clipboard_image()? {
+            return Ok(Some(ClipboardImagePayload { mime_type, bytes }));
+        }
+    }
+    Ok(None)
 }
