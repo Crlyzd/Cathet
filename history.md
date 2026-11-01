@@ -103,6 +103,27 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-01: Android Settings 120fps Optimization & Native Clipboard / Gboard Image Pasting
+- **Summary**: Implemented Android-wide 120fps fluid Settings opening and full clipboard/Gboard image pasting support with 1:1 desktop parity:
+  1. **Android Settings 120fps Transition Polish**: Pre-mounted `MobileSettingsView` during idle time (`requestIdleCallback` / 120ms timeout) so opening the sheet incurs zero DOM parsing or image decoding hitch on Frame 1. Added `decoding="async"` to the app icon image. Removed momentum scroll and text-selection invalidation rules (`-webkit-overflow-scrolling: auto` & `user-select: none`) from `body.is-modal-open`, keeping only `pointer-events: none` on `#workspace-shell`. Converted the backdrop scrim to GPU-composited `opacity` transitions (`will-change: opacity`). Added `hideInstant()` to `MobileMenuDrawerComponent` so opening Settings from the 3-dot drawer snaps the drawer shut instantly with zero delay, dedicating 100% of GPU compositing to the Settings slide-up animation.
+  2. **Android Clipboard & JNI Image Bridge**: Added `getClipboardImageMime` and `getClipboardImageBytes` to `FileHelper.kt`, inspecting `ClipboardManager.primaryClip` for `content://` image URIs and streaming image bytes over `ContentResolver`. Added JNI wrapper `read_android_clipboard_image` in `android_fs.rs` and exposed `read_clipboard_image` Tauri command in `file.rs` and `lib.rs`.
+  3. **Shared In-Memory Image Insertion & Gboard Interception**: Extracted `processAndInsertImageFile()` in `editorPasteHandler.ts` to validate, downscale (max 1920px), compress to WebP (0.82 quality), and wrap into collapsible frosted glass pills (`[ 📷 WEBP ~... KB ▾ ]`). In `handleEditorPaste`, added Gboard `content://` image interception. In `editorClipboard.ts`, updated `editorPaste()` to query native clipboard image data before falling back to text. Updated `Editor.ts` to sync `rawContent` and note auto-save upon image and cut operations.
+  Maintained strict anti-monolith line counts (< 250 lines/file: `Editor.ts` = 204 lines, `editorPasteHandler.ts` = 146 lines, `editorClipboard.ts` = 72 lines, `SettingsModal.ts` = 144 lines, `MobileMenuDrawer.ts` = 151 lines, `mobileCoordinator.ts` = 93 lines, `MobileSettingsView.ts` = 201 lines, `file.rs` = 197 lines, `android_fs.rs` = 164 lines, `lib.rs` = 118 lines). 100% clean check across `npx tsc --noEmit` and `cargo check`.
+- **Files Modified**:
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/FileHelper.kt`: Added `getClipboardImageMime` and `getClipboardImageBytes` (118 lines).
+  - `src-tauri/src/commands/android_fs.rs`: Added `read_android_clipboard_image` JNI bridge (164 lines).
+  - `src-tauri/src/commands/file.rs`: Added `ClipboardImagePayload` and `read_clipboard_image` command (197 lines).
+  - `src-tauri/src/lib.rs`: Registered `read_clipboard_image` handler (118 lines).
+  - `src-ui/styles/mobile.css`: Converted modal scrim to GPU opacity and eliminated momentum scroll invalidation.
+  - `src-ui/src/components/SettingsModal.ts`: Added idle pre-mounting and removed forced layout reflow (144 lines).
+  - `src-ui/src/components/MobileSettingsView.ts`: Added `decoding="async"` to icon image (201 lines).
+  - `src-ui/src/components/MobileMenuDrawer.ts`: Added `hideInstant()` method (151 lines).
+  - `src-ui/src/services/mobileCoordinator.ts`: Snapped drawer closed instantly on Settings open (93 lines).
+  - `src-ui/src/utils/editorPasteHandler.ts`: Extracted `processAndInsertImageFile()` and added Gboard content URI interception (146 lines).
+  - `src-ui/src/utils/editorClipboard.ts`: Connected `read_clipboard_image` and `processAndInsertImageFile` (72 lines).
+  - `src-ui/src/components/Editor.ts`: Synced `rawContent` on `cut()` and `paste()` (204 lines).
+  - `history.md`: Logged changes and architecture updates.
+
 ### 2026-11-01: Android Dual-Pane Open File Integration, SAF Filter Fix & True `#workspace-shell` Container Morph
 - **Summary**: Implemented end-to-end Dual Pane file opening on Android and replaced synthetic overlay expansion with true `#workspace-shell` scaling:
   1. **True Workspace Container Morph (`#workspace-shell`)**: Wrapped `#topbar-container` and `#editor-container` in `#workspace-shell`. When opening a tile, the tapped card immediately adopts the actual editor/preview background color (`#0f1117` dark / `#f8fafc` light), and `#workspace-shell` (with the live `TopBar` and `Editor` in Edit or Markdown Preview mode already loaded in its final flex layout) is scaled down (`translate3d(dx, dy, 0) scale(s)`) and clipped (`inset(...)`) to the tile's exact bounding rect at $t=0\text{ms}$, animating smoothly to `scale(1)` over 380ms. Eliminated the end-of-animation 24px–36px header drop, color snap, and unwanted `editor.focus()` jump on existing notes.
