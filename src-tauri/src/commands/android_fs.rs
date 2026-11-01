@@ -165,6 +165,40 @@ pub fn read_android_clipboard_image() -> Result<Option<(String, Vec<u8>)>, Strin
     })
 }
 
+#[cfg(target_os = "android")]
+pub fn read_android_pending_commit_image() -> Result<Option<(String, Vec<u8>)>, String> {
+    with_jni_context(|env, _context, helper_cls| {
+        let mime_res = env.call_static_method(
+            helper_cls,
+            "getPendingCommitMime",
+            "()Ljava/lang/String;",
+            &[],
+        ).map_err(|e| e.to_string())?;
+
+        let mime_obj = mime_res.l().map_err(|e| e.to_string())?;
+        if mime_obj.is_null() {
+            return Ok(None);
+        }
+        let mime_jstr: JString = mime_obj.into();
+        let mime: String = env.get_string(&mime_jstr).map_err(|e| e.to_string())?.into();
+
+        let bytes_res = env.call_static_method(
+            helper_cls,
+            "getPendingCommitBytes",
+            "()[B",
+            &[],
+        ).map_err(|e| e.to_string())?;
+
+        let bytes_obj = bytes_res.l().map_err(|e| e.to_string())?;
+        if bytes_obj.is_null() {
+            return Ok(None);
+        }
+        let byte_array: JByteArray = bytes_obj.into();
+        let bytes: Vec<u8> = env.convert_byte_array(&byte_array).map_err(|e| e.to_string())?;
+        Ok(Some((mime, bytes)))
+    })
+}
+
 #[cfg(not(target_os = "android"))]
 pub fn read_content_uri(_uri: &str) -> Result<(String, Vec<u8>), String> {
     Err("Content URIs are only supported on Android".to_string())
@@ -182,5 +216,10 @@ pub fn get_android_initial_uri() -> Option<String> {
 
 #[cfg(not(target_os = "android"))]
 pub fn read_android_clipboard_image() -> Result<Option<(String, Vec<u8>)>, String> {
+    Ok(None)
+}
+
+#[cfg(not(target_os = "android"))]
+pub fn read_android_pending_commit_image() -> Result<Option<(String, Vec<u8>)>, String> {
     Ok(None)
 }

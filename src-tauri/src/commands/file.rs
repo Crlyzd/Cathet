@@ -223,3 +223,14 @@ pub async fn read_clipboard_image() -> Result<Option<ClipboardImagePayload>, Str
     }
     Ok(None)
 }
+
+#[tauri::command]
+pub async fn get_pending_commit_image() -> Result<Option<ClipboardImagePayload>, String> {
+    #[cfg(target_os = "android")]
+    {
+        if let Some((mime_type, bytes)) = crate::commands::android_fs::read_android_pending_commit_image()? {
+            return Ok(Some(ClipboardImagePayload { mime_type, bytes }));
+        }
+    }
+    Ok(None)
+}
