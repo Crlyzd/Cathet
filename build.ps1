@@ -4,7 +4,7 @@
 #>
 param(
     [switch]$Dev, [switch]$Live, [switch]$Check, [switch]$Build, [switch]$BuildX64, [switch]$BuildArm64,
-    [switch]$All, [switch]$Run, [switch]$AndroidDev, [switch]$AndroidBuild, [switch]$Patch, [switch]$Minor,
+    [switch]$All, [switch]$Run, [switch]$AndroidDev, [switch]$AndroidBuild, [switch]$AndroidPerf, [switch]$Patch, [switch]$Minor,
     [switch]$Major, [string]$TargetVersion, [string]$OutputDir = "release", [int]$Port = 0, [switch]$NoPause, [switch]$Help
 )
 
@@ -19,7 +19,7 @@ function Get-AppVersion { (Get-Content -Raw (Join-Path $ProjectRoot "package.jso
 function Get-NativeArch { if ($env:PROCESSOR_ARCHITECTURE -match "ARM64" -or $env:PROCESSOR_ARCHITEW6432 -match "ARM64") { "arm64" } else { "x64" } }
 
 function Show-HelpGuide {
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Menu | -Dev / -Live -> Hot reload | -Check -> Tests | -Build [-Run] -> Fast EXE`n  -BuildX64 / -BuildArm64 -> Release EXE | -All -> Both | -AndroidDev / -AndroidBuild -> Android`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Menu | -Dev / -Live -> Hot reload | -Check -> Tests | -Build [-Run] -> Fast EXE`n  -BuildX64 / -BuildArm64 -> Release EXE | -All -> Both | -AndroidDev / -AndroidBuild -> Android`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -74,7 +74,7 @@ function Invoke-CheckMode {
 }
 
 function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$isMinor = $false, [bool]$isMajor = $false) {
-    $pkgPath = Join-Path $ProjectRoot "package.json"; $tauriPath = Join-Path $ProjectRoot "src-tauri\tauri.conf.json"
+    $tauriPath = Join-Path $ProjectRoot "src-tauri\tauri.conf.json"
     $cargoPath = Join-Path $ProjectRoot "src-tauri\Cargo.toml"; $currentVer = Get-AppVersion
     Write-Host "Current Cathet version: $currentVer" -ForegroundColor Cyan
 
@@ -354,16 +354,157 @@ function Invoke-AndroidBuild {
     }
 }
 
+function Invoke-AndroidPerf {
+    Initialize-AndroidEnvironment
+    $targetDevId = $null
+    $prevEAP = $ErrorActionPreference; $ErrorActionPreference = 'SilentlyContinue'
+    try {
+        $raw = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\t(device|emulator)' })
+        if ($raw.Count -gt 1) {
+            Write-Host "`nMultiple active Android targets found:" -ForegroundColor Cyan
+            for ($i = 0; $i -lt $raw.Count; $i++) {
+                $did = $raw[$i].Split("`t")[0]
+                $m = ("" + (cmd.exe /c "adb -s $did shell getprop ro.product.model 2>nul")).Trim()
+                Write-Host "  [$($i+1)] $did ($m)"
+            }
+            $sel = (Read-Host "Select target [1-$($raw.Count)] (Default: 1)").Trim()
+            $idx = if ($sel -match '^\d+$' -and [int]$sel -ge 1 -and [int]$sel -le $raw.Count) { [int]$sel - 1 } else { 0 }
+            $targetDevId = $raw[$idx].Split("`t")[0]
+        } elseif ($raw.Count -eq 1) {
+            $targetDevId = $raw[0].Split("`t")[0]
+        }
+    } finally {
+        $ErrorActionPreference = $prevEAP
+    }
+    if (-not $targetDevId) { throw "No active Android device or emulator available. Please connect your phone via USB or start an emulator." }
+    $m = ("" + (cmd.exe /c "adb -s $targetDevId shell getprop ro.product.model 2>nul")).Trim()
+    $devName = if ($m) { "$m ($targetDevId)" } else { $targetDevId }
+
+    Write-Host "`nConnecting to Cathet on $devName..." -ForegroundColor Cyan
+
+    # Ensure app is running or prompt to start
+    $pidRaw = ("" + (cmd.exe /c "adb -s $targetDevId shell pidof com.cathet.app 2>nul")).Trim()
+    if (-not $pidRaw) {
+        Write-Host "Cathet is not running on device. Launching com.cathet.app..." -ForegroundColor Yellow
+        cmd.exe /c "adb -s $targetDevId shell am start -n com.cathet.app/com.cathet.app.MainActivity 2>nul" | Out-Null
+        Start-Sleep -Seconds 2
+        $pidRaw = ("" + (cmd.exe /c "adb -s $targetDevId shell pidof com.cathet.app 2>nul")).Trim()
+    }
+
+    Write-Host "Monitoring Cathet PID: $pidRaw (Press [Q] to quit, [R] to reset frame stats, [C] to clear)...`n" -ForegroundColor Green
+    Start-Sleep -Seconds 1
+
+    try {
+        while ($true) {
+            if ([Console]::KeyAvailable) {
+                $key = [Console]::ReadKey($true).Key
+                if ($key -eq [ConsoleKey]::Q) { break }
+                elseif ($key -eq [ConsoleKey]::R) {
+                    cmd.exe /c "adb -s $targetDevId shell dumpsys gfxinfo com.cathet.app reset 2>nul" | Out-Null
+                    Write-Host "`n>>> [Frame Jank Stats Reset] <<<" -ForegroundColor Yellow
+                    Start-Sleep -Milliseconds 600
+                } elseif ($key -eq [ConsoleKey]::C) {
+                    Clear-Host
+                }
+            }
+
+            $currentPid = ("" + (cmd.exe /c "adb -s $targetDevId shell pidof com.cathet.app 2>nul")).Trim()
+            if (-not $currentPid) {
+                Write-Host "`r[WAITING] App is closed/backgrounded. Waiting for Cathet... (Press Q to quit)   " -NoNewline -ForegroundColor Gray
+                Start-Sleep -Milliseconds 1200
+                continue
+            }
+
+            # 1. Memory breakdown via dumpsys meminfo
+            $memDump = ("" + (cmd.exe /c "adb -s $targetDevId shell dumpsys meminfo com.cathet.app 2>nul"))
+            $totalPssMb = 0.0; $nativeHeapMb = 0.0; $graphicsMb = 0.0; $webviewMb = 0.0
+
+            if ($memDump -match 'TOTAL PSS:\s*(\d+)') {
+                $totalPssMb = [math]::Round(([double]$matches[1]) / 1024.0, 1)
+            }
+            if ($memDump -match 'Native Heap\s*(\d+)') {
+                $nativeHeapMb = [math]::Round(([double]$matches[1]) / 1024.0, 1)
+            }
+            if ($memDump -match 'GfxDev\s*(\d+)' -or $memDump -match 'EGL mtrack\s*(\d+)' -or $memDump -match 'GL mtrack\s*(\d+)') {
+                $graphicsMb = [math]::Round(([double]$matches[1]) / 1024.0, 1)
+            }
+            if ($memDump -match 'Webview\s*(\d+)' -or $memDump -match 'Code\s*(\d+)') {
+                $webviewMb = [math]::Round(([double]$matches[1]) / 1024.0, 1)
+            }
+
+            # 2. CPU % via top
+            $topDump = ("" + (cmd.exe /c "adb -s $targetDevId shell top -b -n 1 -p $currentPid 2>nul"))
+            $cpuPct = "0.0"
+            if ($topDump -match "(?m)^\s*$currentPid\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+([\d\.]+)") {
+                $cpuPct = $matches[1]
+            } elseif ($topDump -match '\b(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+com\.cathet\.app') {
+                $cpuPct = $matches[2]
+            }
+
+            # 3. 120Hz frame timing and jank via dumpsys gfxinfo
+            $gfxDump = ("" + (cmd.exe /c "adb -s $targetDevId shell dumpsys gfxinfo com.cathet.app 2>nul"))
+            $totalFrames = "0"; $jankyFrames = "0"; $jankyPct = "0.00"
+            $p50 = "--"; $p90 = "--"; $p95 = "--"; $p99 = "--"
+
+            if ($gfxDump -match 'Total frames rendered:\s*(\d+)') { $totalFrames = $matches[1] }
+            if ($gfxDump -match 'Janky frames:\s*(\d+)\s*\(([\d\.]+)\%\)') {
+                $jankyFrames = $matches[1]; $jankyPct = $matches[2]
+            }
+            if ($gfxDump -match '50th percentile:\s*(\d+)ms') { $p50 = "$($matches[1]) ms" }
+            if ($gfxDump -match '90th percentile:\s*(\d+)ms') { $p90 = "$($matches[1]) ms" }
+            if ($gfxDump -match '95th percentile:\s*(\d+)ms') { $p95 = "$($matches[1]) ms" }
+            if ($gfxDump -match '99th percentile:\s*(\d+)ms') { $p99 = "$($matches[1]) ms" }
+
+            # Render fixed-position dashboard
+            Clear-Host
+            Write-Host "================ Cathet Android Task Manager ================" -ForegroundColor Cyan
+            Write-Host " Device : $devName" -ForegroundColor Gray
+            Write-Host " App PID: $currentPid    Time: $(Get-Date -Format 'HH:mm:ss')" -ForegroundColor Gray
+            Write-Host "-------------------------------------------------------------" -ForegroundColor DarkGray
+
+            Write-Host " [RAM Breakdown / Proportional Working Set]" -ForegroundColor Yellow
+            $ramColor = if ($totalPssMb -lt 180) { "Green" } elseif ($totalPssMb -lt 280) { "Yellow" } else { "Red" }
+            Write-Host "   Total PSS (RAM) : $totalPssMb MB" -ForegroundColor $ramColor
+            Write-Host "   Native Heap     : $nativeHeapMb MB  (Rust Tokio & JNI Engine)" -ForegroundColor Gray
+            if ($graphicsMb -gt 0) {
+                Write-Host "   Graphics / EGL  : $graphicsMb MB  (GPU Surfaces & Buffers)" -ForegroundColor Gray
+            }
+            if ($webviewMb -gt 0) {
+                Write-Host "   WebView / Code  : $webviewMb MB  (Chromium UI & Assets)" -ForegroundColor Gray
+            }
+
+            Write-Host "`n [CPU Utilization]" -ForegroundColor Yellow
+            Write-Host "   App CPU Usage   : $cpuPct %" -ForegroundColor Cyan
+
+            Write-Host "`n [120Hz Display & Frame Jank Timing (Budget: <= 8.33 ms)]" -ForegroundColor Yellow
+            $jankColor = if ([double]$jankyPct -lt 2.0) { "Green" } elseif ([double]$jankyPct -lt 5.0) { "Yellow" } else { "Red" }
+            Write-Host "   Total Frames    : $totalFrames" -ForegroundColor Gray
+            Write-Host "   Janky Frames    : $jankyFrames ($jankyPct %)" -ForegroundColor $jankColor
+            Write-Host "   50th Percentile : $p50" -ForegroundColor Gray
+            Write-Host "   90th Percentile : $p90" -ForegroundColor Gray
+            Write-Host "   95th Percentile : $p95" -ForegroundColor Gray
+            Write-Host "   99th Percentile : $p99" -ForegroundColor Gray
+            Write-Host "-------------------------------------------------------------" -ForegroundColor DarkGray
+            Write-Host " Controls: [R] Reset Jank Stats | [C] Clear | [Q] Quit" -ForegroundColor DarkCyan
+
+            Start-Sleep -Milliseconds 1200
+        }
+    } finally {
+        Write-Host "`nClosed Android Performance Monitor." -ForegroundColor Gray
+    }
+}
+
 function Show-InteractiveMenu {
     $ver = Get-AppVersion; $arch = Get-NativeArch
-    Write-Host "`nSelect an action:`n  [1] Live Development (Desktop Hot Reload) [Default]`n  [2] Run Verification Checks (Vite + Cargo)`n  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe`n  [4] Build & Launch Native ($arch) Fast Executable Immediately`n  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe`n  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe`n  [7] Build All Windows Targets Release -> x64 and ARM64`n  [8] Android Live Dev (Hot Reload - USB Device / Emulator)`n  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk`n  [10] Bump Project Version (Current: v$ver)`n  [Q] Exit" -ForegroundColor Yellow
-    $c = (Read-Host "Enter option [1-10, Q] (Default: 1)").Trim(); return $(if ($c) { $c } else { "1" })
+    Write-Host "`nSelect an action:`n  [1] Live Development (Desktop Hot Reload) [Default]`n  [2] Run Verification Checks (Vite + Cargo)`n  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe`n  [4] Build & Launch Native ($arch) Fast Executable Immediately`n  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe`n  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe`n  [7] Build All Windows Targets Release -> x64 and ARM64`n  [8] Android Live Dev (Hot Reload - USB Device / Emulator)`n  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk`n  [10] Android Performance Monitor (Live RAM / CPU / 120Hz Jank)`n  [11] Bump Project Version (Current: v$ver)`n  [Q] Exit" -ForegroundColor Yellow
+    $c = (Read-Host "Enter option [1-11, Q] (Default: 1)").Trim(); return $(if ($c) { $c } else { "1" })
 }
 
 function Invoke-Pipeline([hashtable]$opts) {
     if ($opts.Check) { Invoke-CheckMode; return }
     if ($opts.AndroidDev) { Invoke-AndroidDev; return }
     if ($opts.AndroidBuild) { Invoke-AndroidBuild; return }
+    if ($opts.AndroidPerf) { Invoke-AndroidPerf; return }
     if ($opts.TargetVersion -or $opts.Patch -or $opts.Minor -or $opts.Major) {
         Invoke-VersionBump $opts.TargetVersion ([bool]$opts.Patch) ([bool]$opts.Minor) ([bool]$opts.Major); return
     }
@@ -406,8 +547,8 @@ try {
                 "1" { $runOpts.Dev = $true }; "2" { $runOpts.Check = $true }; "3" { $runOpts.Build = $true }
                 "4" { $runOpts.Build = $true; $runOpts.Run = $true }; "5" { $runOpts.BuildX64 = $true }
                 "6" { $runOpts.BuildArm64 = $true }; "7" { $runOpts.All = $true }; "8" { $runOpts.AndroidDev = $true }
-                "9" { $runOpts.AndroidBuild = $true }
-                "10" {
+                "9" { $runOpts.AndroidBuild = $true }; "10" { $runOpts.AndroidPerf = $true }
+                "11" {
                     $bChoice = (Read-Host "`nBump type: [1] Patch [2] Minor [3] Major [4] Custom (Default: 1)").Trim()
                     if ($bChoice -eq "2") { $runOpts.Minor = $true } elseif ($bChoice -eq "3") { $runOpts.Major = $true }
                     elseif ($bChoice -eq "4") {
@@ -416,13 +557,13 @@ try {
                     } else { $runOpts.Patch = $true }
                 }
                 { $_ -in "q","Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
-                default { Write-Host "Invalid option '$_'. Choose 1-10 or Q." -ForegroundColor Red; continue }
+                default { Write-Host "Invalid option '$_'. Choose 1-11 or Q." -ForegroundColor Red; continue }
             }
             Invoke-Pipeline $runOpts
             $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim(); if ($ans -in "q", "Q") { Invoke-Exit 0 }
         }
     } else {
-        Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port }
+        Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; AndroidPerf = $AndroidPerf; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port }
         Invoke-Exit 0
     }
 } catch {
