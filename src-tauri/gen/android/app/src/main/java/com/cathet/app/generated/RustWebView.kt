@@ -103,6 +103,8 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
 
     
 
+
+
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
         val ic = super.onCreateInputConnection(outAttrs) ?: return null
         val mimeTypes = arrayOf(
@@ -110,19 +112,17 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
             "image/jpeg",
             "image/jpg",
             "image/webp",
-            "image/gif"
+            "image/gif",
+            "image/*"
         )
         EditorInfoCompat.setContentMimeTypes(outAttrs, mimeTypes)
 
         val callback = InputConnectionCompat.OnCommitContentListener { inputContentInfo, flags, _ ->
-            val hasPermission = (flags and InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0
-            if (hasPermission) {
-                try {
-                    inputContentInfo.requestPermission()
-                } catch (e: Exception) {
-                    return@OnCommitContentListener false
-                }
-            }
+            var permissionRequested = false
+            try {
+                inputContentInfo.requestPermission()
+                permissionRequested = true
+            } catch (_: Exception) {}
 
             try {
                 val uri = inputContentInfo.contentUri
@@ -132,9 +132,10 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
                         ?: context.contentResolver.getType(uri)
                         ?: "image/png"
                     FileHelper.setPendingCommitImage(mime, bytes)
+                    val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
                     post {
                         evaluateJavascript(
-                            "window.__cathet_on_commit_image_ready && window.__cathet_on_commit_image_ready();",
+                            "if (window.__cathet_insert_committed_base64) { window.__cathet_insert_committed_base64('$mime', '$b64'); } else if (window.__cathet_on_commit_image_ready) { window.__cathet_on_commit_image_ready(); }",
                             null
                         )
                     }
@@ -146,7 +147,7 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
                 e.printStackTrace()
                 false
             } finally {
-                if (hasPermission) {
+                if (permissionRequested) {
                     try {
                         inputContentInfo.releasePermission()
                     } catch (_: Exception) {}

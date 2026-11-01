@@ -93,6 +93,10 @@ val patchRustWebView = tasks.register("patchRustWebView") {
         val file = file("src/main/java/com/cathet/app/generated/RustWebView.kt")
         if (file.exists()) {
             var text = file.readText()
+            if (text.contains("override fun onCreateInputConnection")) {
+                val idx = text.indexOf("    override fun onCreateInputConnection")
+                text = text.substring(0, idx) + "}\n"
+            }
             if (!text.contains("onCreateInputConnection")) {
                 val imports = """
 import android.view.inputmethod.EditorInfo
@@ -101,7 +105,9 @@ import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
 import androidx.core.view.inputmethod.InputContentInfoCompat
 """
-                text = text.replace("package com.cathet.app\n", "package com.cathet.app\n$imports\n")
+                if (!text.contains("EditorInfoCompat")) {
+                    text = text.replace("package com.cathet.app\n", "package com.cathet.app\n$imports\n")
+                }
 
                 val overrideMethod = """
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
@@ -111,19 +117,17 @@ import androidx.core.view.inputmethod.InputContentInfoCompat
             "image/jpeg",
             "image/jpg",
             "image/webp",
-            "image/gif"
+            "image/gif",
+            "image/*"
         )
         EditorInfoCompat.setContentMimeTypes(outAttrs, mimeTypes)
 
         val callback = InputConnectionCompat.OnCommitContentListener { inputContentInfo, flags, _ ->
-            val hasPermission = (flags and InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0
-            if (hasPermission) {
-                try {
-                    inputContentInfo.requestPermission()
-                } catch (e: Exception) {
-                    return@OnCommitContentListener false
-                }
-            }
+            var permissionRequested = false
+            try {
+                inputContentInfo.requestPermission()
+                permissionRequested = true
+            } catch (_: Exception) {}
 
             try {
                 val uri = inputContentInfo.contentUri
@@ -133,9 +137,10 @@ import androidx.core.view.inputmethod.InputContentInfoCompat
                         ?: context.contentResolver.getType(uri)
                         ?: "image/png"
                     FileHelper.setPendingCommitImage(mime, bytes)
+                    val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
                     post {
                         evaluateJavascript(
-                            "window.__cathet_on_commit_image_ready && window.__cathet_on_commit_image_ready();",
+                            "if (window.__cathet_insert_committed_base64) { window.__cathet_insert_committed_base64('${'$'}mime', '${'$'}b64'); } else if (window.__cathet_on_commit_image_ready) { window.__cathet_on_commit_image_ready(); }",
                             null
                         )
                     }
@@ -147,7 +152,7 @@ import androidx.core.view.inputmethod.InputContentInfoCompat
                 e.printStackTrace()
                 false
             } finally {
-                if (hasPermission) {
+                if (permissionRequested) {
                     try {
                         inputContentInfo.releasePermission()
                     } catch (_: Exception) {}
@@ -159,7 +164,10 @@ import androidx.core.view.inputmethod.InputContentInfoCompat
     }
 }
 """
-                text = text.replace(Regex("\\}\\s*$"), "$overrideMethod")
+                val lastBrace = text.lastIndexOf('}')
+                if (lastBrace != -1) {
+                    text = text.substring(0, lastBrace) + overrideMethod
+                }
                 file.writeText(text)
                 println("[Cathet] Successfully patched RustWebView.kt with Commit Content API override.")
             }
