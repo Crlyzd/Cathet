@@ -11,6 +11,14 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-01: Manual Edits to Tauri Generated Kotlin Files Overwritten by Tauri Build CLI
+- **Context**: When attempting to implement the Commit Content API, edits to `onCreateInputConnection` were added directly to `RustWebView.kt` in `src-tauri/gen/android/app/src/main/java/com/cathet/app/generated/`. Running `tauri android build` automatically regenerated the `generated/` package from Tauri CLI templates, wiping out manual edits to `onCreateInputConnection` right before Gradle compilation.
+- **User Correction**: User re-tested after build and reported *"bruh what?"* with screenshot showing Gboard still displaying *"Cathet does not support image pasting here"*.
+- **Root Cause**: The Tauri Android build CLI automatically regenerates `src-tauri/gen/android/app/src/main/java/com/cathet/app/generated/` from internal templates during `tauri android build`/`dev`, wiping out manual edits in the `generated/` package before Gradle compilation.
+- **Corrective Guardrail**:
+  1. NEVER rely solely on static edits inside `generated/` packages for Tauri mobile.
+  2. Implement an automated Gradle build hook (`patchRustWebView` in `app/build.gradle.kts` wired into `preBuild` and Kotlin compile tasks) that dynamically injects necessary overrides into generated files during the Gradle execution phase, AFTER Tauri CLI template generation and BEFORE bytecode compilation.
+
 ### [Mistake] 2026-11-01: Premature Home View Unmounting, Static Top Bar Mutation & Overlay Fading in Tile Expansion
 - **Context**: Attempting to implement tile expansion, the agent added opacity fades (`overlay.animate([{ opacity: 1 }, { opacity: 0 }])`) at the end of the animation and prematurely revealed the underlying editor or popped the top bar. This destroyed the physical illusion that the expanding tile IS the actual interactive workspace.
 - **User Correction**: *"no, the problem is, you add fade at the end of animation. while xiaomi, treat the expaning tile as the actyuall space that user interractiong. it is the final window that user use when it appear at a few fraction of a screen when its still ropughly 20%-40% of the screen"*
