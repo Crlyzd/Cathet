@@ -88,28 +88,27 @@ dependencies {
 
 apply(from = "tauri.build.gradle.kts")
 
-val patchRustWebView = tasks.register("patchRustWebView") {
-    doLast {
-        val file = file("src/main/java/com/cathet/app/generated/RustWebView.kt")
-        if (file.exists()) {
-            var text = file.readText()
-            if (text.contains("override fun onCreateInputConnection")) {
-                val idx = text.indexOf("    override fun onCreateInputConnection")
-                text = text.substring(0, idx) + "}\n"
-            }
-            if (!text.contains("onCreateInputConnection")) {
-                val imports = """
+fun applyRustWebViewPatch() {
+    val file = file("src/main/java/com/cathet/app/generated/RustWebView.kt")
+    if (!file.exists()) return
+    var text = file.readText()
+    if (text.contains("override fun onCreateInputConnection")) {
+        val idx = text.indexOf("    override fun onCreateInputConnection")
+        text = text.substring(0, idx) + "}\n"
+    }
+    if (!text.contains("onCreateInputConnection")) {
+        val imports = """
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
 import androidx.core.view.inputmethod.InputContentInfoCompat
 """
-                if (!text.contains("EditorInfoCompat")) {
-                    text = text.replace("package com.cathet.app\n", "package com.cathet.app\n$imports\n")
-                }
+        if (!text.contains("EditorInfoCompat")) {
+            text = text.replace("package com.cathet.app", "package com.cathet.app\n$imports")
+        }
 
-                val overrideMethod = """
+        val overrideMethod = """
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
         val ic = super.onCreateInputConnection(outAttrs) ?: return null
         val mimeTypes = arrayOf(
@@ -122,18 +121,21 @@ import androidx.core.view.inputmethod.InputContentInfoCompat
         )
         EditorInfoCompat.setContentMimeTypes(outAttrs, mimeTypes)
 
-        val callback = InputConnectionCompat.OnCommitContentListener { inputContentInfo, flags, _ ->
-            var permissionRequested = false
+        val callback = InputConnectionCompat.OnCommitContentListener { inputContentInfo, _, _ ->
             try {
                 inputContentInfo.requestPermission()
-                permissionRequested = true
             } catch (_: Exception) {}
 
             try {
                 val uri = inputContentInfo.contentUri
-                val bytes = FileHelper.readUri(context, uri.toString())
+                val bytes = try {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } catch (_: Exception) {
+                    null
+                } ?: FileHelper.readUri(context, uri.toString())
+
                 if (bytes != null && bytes.isNotEmpty()) {
-                    val mime = inputContentInfo.description?.getMimeType(0)
+                    val mime = inputContentInfo.description.getMimeType(0)
                         ?: context.contentResolver.getType(uri)
                         ?: "image/png"
                     FileHelper.setPendingCommitImage(mime, bytes)
@@ -151,12 +153,6 @@ import androidx.core.view.inputmethod.InputContentInfoCompat
             } catch (e: Exception) {
                 e.printStackTrace()
                 false
-            } finally {
-                if (permissionRequested) {
-                    try {
-                        inputContentInfo.releasePermission()
-                    } catch (_: Exception) {}
-                }
             }
         }
 
@@ -164,21 +160,32 @@ import androidx.core.view.inputmethod.InputContentInfoCompat
     }
 }
 """
-                val lastBrace = text.lastIndexOf('}')
-                if (lastBrace != -1) {
-                    text = text.substring(0, lastBrace) + overrideMethod
-                }
-                file.writeText(text)
-                println("[Cathet] Successfully patched RustWebView.kt with Commit Content API override.")
-            }
+        val lastBrace = text.lastIndexOf('}')
+        if (lastBrace != -1) {
+            text = text.substring(0, lastBrace) + overrideMethod
         }
+        file.writeText(text)
+        println("[Cathet] Patched RustWebView.kt with Commit Content API override.")
     }
 }
 
-tasks.named("preBuild") {
-    dependsOn(patchRustWebView)
+val patchRustWebView = tasks.register("patchRustWebView") {
+    doLast {
+        applyRustWebViewPatch()
+    }
 }
 
-tasks.matching { it.name.startsWith("compile") && it.name.contains("Kotlin") }.configureEach {
-    dependsOn(patchRustWebView)
+afterEvaluate {
+    val rustTasks = tasks.matching { it.name.startsWith("rustBuild") }
+    rustTasks.configureEach {
+        doLast {
+            applyRustWebViewPatch()
+        }
+    }
+    tasks.matching { it.name.startsWith("compile") && it.name.contains("Kotlin") }.configureEach {
+        mustRunAfter(rustTasks)
+        doFirst {
+            applyRustWebViewPatch()
+        }
+    }
 }

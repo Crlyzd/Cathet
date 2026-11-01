@@ -104,7 +104,6 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
     
 
 
-
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
         val ic = super.onCreateInputConnection(outAttrs) ?: return null
         val mimeTypes = arrayOf(
@@ -117,18 +116,21 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
         )
         EditorInfoCompat.setContentMimeTypes(outAttrs, mimeTypes)
 
-        val callback = InputConnectionCompat.OnCommitContentListener { inputContentInfo, flags, _ ->
-            var permissionRequested = false
+        val callback = InputConnectionCompat.OnCommitContentListener { inputContentInfo, _, _ ->
             try {
                 inputContentInfo.requestPermission()
-                permissionRequested = true
             } catch (_: Exception) {}
 
             try {
                 val uri = inputContentInfo.contentUri
-                val bytes = FileHelper.readUri(context, uri.toString())
+                val bytes = try {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } catch (_: Exception) {
+                    null
+                } ?: FileHelper.readUri(context, uri.toString())
+
                 if (bytes != null && bytes.isNotEmpty()) {
-                    val mime = inputContentInfo.description?.getMimeType(0)
+                    val mime = inputContentInfo.description.getMimeType(0)
                         ?: context.contentResolver.getType(uri)
                         ?: "image/png"
                     FileHelper.setPendingCommitImage(mime, bytes)
@@ -146,12 +148,6 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
             } catch (e: Exception) {
                 e.printStackTrace()
                 false
-            } finally {
-                if (permissionRequested) {
-                    try {
-                        inputContentInfo.releasePermission()
-                    } catch (_: Exception) {}
-                }
             }
         }
 
