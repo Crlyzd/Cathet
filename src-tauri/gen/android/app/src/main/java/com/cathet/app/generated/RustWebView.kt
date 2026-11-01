@@ -8,17 +8,19 @@
 
 package com.cathet.app
 
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
+import androidx.core.view.inputmethod.EditorInfoCompat
+import androidx.core.view.inputmethod.InputConnectionCompat
+import androidx.core.view.inputmethod.InputContentInfoCompat
+
+
 import android.annotation.SuppressLint
 import android.webkit.*
 import android.content.Context
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import kotlin.collections.Map
-import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputConnection
-import androidx.core.view.inputmethod.EditorInfoCompat
-import androidx.core.view.inputmethod.InputConnectionCompat
-import androidx.core.view.inputmethod.InputContentInfoCompat
 
 @SuppressLint("RestrictedApi")
 class RustWebView(context: Context, val initScripts: Array<String>, val id: String): WebView(context) {
@@ -98,6 +100,8 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
         val cookieManager = CookieManager.getInstance()
         return cookieManager.getCookie(url)
     }
+
+    
 
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
         val ic = super.onCreateInputConnection(outAttrs) ?: return null

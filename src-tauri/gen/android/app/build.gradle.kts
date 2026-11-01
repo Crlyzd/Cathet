@@ -87,3 +87,90 @@ dependencies {
 }
 
 apply(from = "tauri.build.gradle.kts")
+
+val patchRustWebView = tasks.register("patchRustWebView") {
+    doLast {
+        val file = file("src/main/java/com/cathet/app/generated/RustWebView.kt")
+        if (file.exists()) {
+            var text = file.readText()
+            if (!text.contains("onCreateInputConnection")) {
+                val imports = """
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
+import androidx.core.view.inputmethod.EditorInfoCompat
+import androidx.core.view.inputmethod.InputConnectionCompat
+import androidx.core.view.inputmethod.InputContentInfoCompat
+"""
+                text = text.replace("package com.cathet.app\n", "package com.cathet.app\n$imports\n")
+
+                val overrideMethod = """
+    override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
+        val ic = super.onCreateInputConnection(outAttrs) ?: return null
+        val mimeTypes = arrayOf(
+            "image/png",
+            "image/jpeg",
+            "image/jpg",
+            "image/webp",
+            "image/gif"
+        )
+        EditorInfoCompat.setContentMimeTypes(outAttrs, mimeTypes)
+
+        val callback = InputConnectionCompat.OnCommitContentListener { inputContentInfo, flags, _ ->
+            val hasPermission = (flags and InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0
+            if (hasPermission) {
+                try {
+                    inputContentInfo.requestPermission()
+                } catch (e: Exception) {
+                    return@OnCommitContentListener false
+                }
+            }
+
+            try {
+                val uri = inputContentInfo.contentUri
+                val bytes = FileHelper.readUri(context, uri.toString())
+                if (bytes != null && bytes.isNotEmpty()) {
+                    val mime = inputContentInfo.description?.getMimeType(0)
+                        ?: context.contentResolver.getType(uri)
+                        ?: "image/png"
+                    FileHelper.setPendingCommitImage(mime, bytes)
+                    post {
+                        evaluateJavascript(
+                            "window.__cathet_on_commit_image_ready && window.__cathet_on_commit_image_ready();",
+                            null
+                        )
+                    }
+                    true
+                } else {
+                    false
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            } finally {
+                if (hasPermission) {
+                    try {
+                        inputContentInfo.releasePermission()
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+
+        return InputConnectionCompat.createWrapper(ic, outAttrs, callback)
+    }
+}
+"""
+                text = text.replace(Regex("\\}\\s*$"), "$overrideMethod")
+                file.writeText(text)
+                println("[Cathet] Successfully patched RustWebView.kt with Commit Content API override.")
+            }
+        }
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn(patchRustWebView)
+}
+
+tasks.matching { it.name.startsWith("compile") && it.name.contains("Kotlin") }.configureEach {
+    dependsOn(patchRustWebView)
+}
