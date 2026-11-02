@@ -116,11 +116,13 @@ export class HomeViewComponent {
       if (PlatformService.getInstance().isAndroid()) {
         this.pullDownDetector = new OverscrollPullDownDetector({
           container: this.element,
+          scrollTarget: () => this.noteGrid.getScrollElement(),
+          contentTarget: () => this.noteGrid.getScrollElement(),
           thresholdPx: 135,
           onTrigger: async () => {
-            if (this.isPrivateMode || this.isSelectionMode) return;
-            const ok = await BiometricService.getInstance().authenticate("Unlock Private Notes", "Confirm fingerprint or device PIN");
-            if (ok) this.enterPrivateNotesMode();
+            if (!this.isPrivateMode && !this.isSelectionMode && await BiometricService.getInstance().authenticate("Unlock Private Notes", "Confirm fingerprint or device PIN")) {
+              this.enterPrivateNotesMode();
+            }
           },
         });
 
@@ -171,10 +173,7 @@ export class HomeViewComponent {
   }
 
   exitSelectionMode(syncHistory = true): void {
-    if (syncHistory && window.history.state?.screen === "selection") {
-      window.history.back();
-      return;
-    }
+    if (syncHistory && window.history.state?.screen === "selection") { window.history.back(); return; }
     this.isSelectionMode = false;
     this.selectedNoteIds.clear();
     if (this.fab) this.fab.setVisible(true);
@@ -194,10 +193,7 @@ export class HomeViewComponent {
 
   exitPrivateNotesMode(syncHistory = true): void {
     if (!this.isPrivateMode) return;
-    if (syncHistory && window.history.state?.screen === "private_notes") {
-      window.history.back();
-      return;
-    }
+    if (syncHistory && window.history.state?.screen === "private_notes") { window.history.back(); return; }
     this.isPrivateMode = false;
     this.exitSelectionMode(false);
     this.header.setPrivateNotesMode(false);

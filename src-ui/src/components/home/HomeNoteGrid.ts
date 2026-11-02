@@ -26,6 +26,10 @@ export class HomeNoteGridComponent {
     container.appendChild(this.element);
   }
 
+  getScrollElement(): HTMLElement {
+    return this.element;
+  }
+
   setNotes(notes: NoteItem[], isSelectionMode = false, selectedIds = new Set<string>()): void {
     this.notes = notes;
     this.isSelectionMode = isSelectionMode;

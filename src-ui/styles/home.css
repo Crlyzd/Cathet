@@ -486,8 +486,22 @@
   transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
+.home-lock-shackle {
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1);
+  will-change: transform;
+}
+
+.home-pulldown-label {
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+
 .home-pulldown-hud.threshold-reached .home-pulldown-icon {
   transform: scale(1.15);
+}
+
+.home-pulldown-hud.threshold-reached .home-lock-shackle {
+  transform: translateY(0) !important;
 }
 
 /* Exit Private Notes Button */

@@ -1,17 +1,24 @@
 /**
  * overscrollPullDown.ts — Secret pull-down gesture recognizer for Private Notes
  * Strictly active on Android when the note list is scrolled to the top.
+ * Features a silent dead-zone, progressive shackle descent, and elastic spring-back.
  */
 
 export interface OverscrollPullDownOptions {
   container: HTMLElement;
+  scrollTarget?: () => HTMLElement | null;
+  contentTarget?: () => HTMLElement | null;
   thresholdPx?: number;
+  deadZonePx?: number;
   onTrigger: () => void;
 }
 
 export class OverscrollPullDownDetector {
   private container: HTMLElement;
+  private scrollTarget?: () => HTMLElement | null;
+  private contentTarget?: () => HTMLElement | null;
   private thresholdPx: number;
+  private deadZonePx: number;
   private onTrigger: () => void;
 
   private startY = 0;
@@ -21,6 +28,7 @@ export class OverscrollPullDownDetector {
 
   private hudEl!: HTMLElement;
   private lockIconEl!: HTMLElement;
+  private shackleEl!: HTMLElement;
   private labelEl!: HTMLElement;
 
   private touchStartHandler!: (e: TouchEvent) => void;
@@ -29,7 +37,10 @@ export class OverscrollPullDownDetector {
 
   constructor(options: OverscrollPullDownOptions) {
     this.container = options.container;
+    this.scrollTarget = options.scrollTarget;
+    this.contentTarget = options.contentTarget;
     this.thresholdPx = options.thresholdPx || 135;
+    this.deadZonePx = options.deadZonePx || 65;
     this.onTrigger = options.onTrigger;
 
     this.createHud();
@@ -53,6 +64,7 @@ export class OverscrollPullDownDetector {
     `;
 
     this.lockIconEl = this.hudEl.querySelector(".home-pulldown-icon")!;
+    this.shackleEl = this.hudEl.querySelector(".home-lock-shackle")!;
     this.labelEl = this.hudEl.querySelector(".home-pulldown-label")!;
     this.container.prepend(this.hudEl);
   }
@@ -60,7 +72,9 @@ export class OverscrollPullDownDetector {
   private bindEvents(): void {
     this.touchStartHandler = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
-      if (this.container.scrollTop <= 0) {
+      const scrollEl = this.scrollTarget ? this.scrollTarget() : this.container;
+      const scrollTop = scrollEl ? scrollEl.scrollTop : this.container.scrollTop;
+      if (scrollTop <= 0) {
         this.startY = e.touches[0].clientY;
         this.isTracking = true;
         this.hasVibrated = false;
@@ -79,22 +93,47 @@ export class OverscrollPullDownDetector {
       const damped = Math.min(180, Math.pow(rawDelta, 0.82) * 2);
       this.currentY = damped;
 
-      if (damped > 25) {
-        this.hudEl.style.transform = `translateY(${damped - 45}px)`;
-        this.hudEl.style.opacity = `${Math.min(1, (damped - 25) / 50)}`;
+      // Displace content elastically
+      const contentEl = this.contentTarget?.();
+      if (contentEl) {
+        contentEl.style.transform = `translateY(${damped * 0.65}px)`;
+      }
 
-        if (damped >= this.thresholdPx) {
-          this.hudEl.classList.add("threshold-reached");
-          this.labelEl.textContent = "Release to view private notes";
-          if (!this.hasVibrated) {
-            this.hasVibrated = true;
-            try { navigator.vibrate?.(15); } catch (_) {}
-          }
-        } else {
-          this.hudEl.classList.remove("threshold-reached");
-          this.labelEl.textContent = "Pull down for private notes";
-          this.hasVibrated = false;
+      if (damped <= this.deadZonePx) {
+        // Silent dead-zone: lock HUD is completely invisible
+        this.hudEl.style.opacity = "0";
+        this.hudEl.style.visibility = "hidden";
+        this.hudEl.classList.remove("threshold-reached");
+        this.shackleEl.style.transform = "translateY(-5px)";
+        this.labelEl.style.opacity = "0";
+        this.hasVibrated = false;
+        return;
+      }
+
+      // Past dead-zone: progressive appearance
+      this.hudEl.style.visibility = "visible";
+      this.hudEl.style.transform = `translateY(${damped - 45}px)`;
+
+      const progress = Math.min(1, (damped - this.deadZonePx) / (this.thresholdPx - this.deadZonePx));
+      this.hudEl.style.opacity = `${progress}`;
+
+      // Shackle moves from detached translateY(-5px) to closed translateY(0px)
+      const shackleY = -5 * (1 - progress);
+      this.shackleEl.style.transform = `translateY(${shackleY}px)`;
+      this.labelEl.style.opacity = progress > 0.4 ? `${(progress - 0.4) / 0.6}` : "0";
+
+      if (damped >= this.thresholdPx) {
+        this.hudEl.classList.add("threshold-reached");
+        this.labelEl.textContent = "Release to view private notes";
+        this.shackleEl.style.transform = "translateY(0px)";
+        if (!this.hasVibrated) {
+          this.hasVibrated = true;
+          try { navigator.vibrate?.(15); } catch (_) {}
         }
+      } else {
+        this.hudEl.classList.remove("threshold-reached");
+        this.labelEl.textContent = "Pull down for private notes";
+        this.hasVibrated = false;
       }
     };
 
@@ -118,17 +157,30 @@ export class OverscrollPullDownDetector {
   private resetHud(): void {
     this.hudEl.style.transform = "translateY(-60px)";
     this.hudEl.style.opacity = "0";
+    this.hudEl.style.visibility = "hidden";
     this.hudEl.classList.remove("threshold-reached");
+    this.shackleEl.style.transform = "translateY(-5px)";
+    this.labelEl.style.opacity = "0";
     this.currentY = 0;
   }
 
   private animateReset(onDone?: () => void): void {
-    this.hudEl.style.transition = "transform 0.26s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease";
+    const contentEl = this.contentTarget?.();
+    const transition = "transform 0.28s cubic-bezier(0.2, 0, 0, 1)";
+    this.hudEl.style.transition = `${transition}, opacity 0.22s ease`;
+    if (contentEl) {
+      contentEl.style.transition = transition;
+      contentEl.style.transform = "translateY(0)";
+    }
     this.resetHud();
     setTimeout(() => {
       this.hudEl.style.transition = "";
+      if (contentEl) {
+        contentEl.style.transition = "";
+        contentEl.style.transform = "";
+      }
       onDone?.();
-    }, 270);
+    }, 290);
   }
 
   destroy(): void {
@@ -139,4 +191,3 @@ export class OverscrollPullDownDetector {
     this.hudEl.remove();
   }
 }
-
