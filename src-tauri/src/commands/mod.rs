@@ -1,5 +1,6 @@
 pub mod android_fs;
 pub mod association;
+pub mod biometric;
 pub mod file;
 pub mod memory;
 pub mod migration;

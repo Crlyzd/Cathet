@@ -15,6 +15,11 @@ object FileHelper {
     }
 
     @JvmStatic
+    fun authenticateBiometrics(title: String, subtitle: String) {
+        MainActivity.authenticateBiometrics(title, subtitle)
+    }
+
+    @JvmStatic
     fun setInitialUri(uri: String?) {
         initialUri = uri
     }

@@ -41,7 +41,7 @@ pub extern "C" fn Java_com_cathet_app_MainActivity_initNativeBridge(
 }
 
 #[cfg(target_os = "android")]
-fn with_jni_context<F, T>(f: F) -> Result<T, String>
+pub(crate) fn with_jni_context<F, T>(f: F) -> Result<T, String>
 where
     F: FnOnce(&mut jni::JNIEnv, &JObject, &JClass) -> Result<T, String>,
 {

@@ -5,6 +5,9 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
 
 class MainActivity : TauriActivity() {
   companion object {
@@ -20,9 +23,17 @@ class MainActivity : TauriActivity() {
         activeInstance?.applyRefreshRate(targetHz)
       }
     }
+
+    @JvmStatic
+    fun authenticateBiometrics(title: String, subtitle: String) {
+      activeInstance?.runOnUiThread {
+        activeInstance?.startBiometricAuth(title, subtitle)
+      }
+    }
   }
 
   private external fun initNativeBridge(context: Context)
+  private external fun onBiometricResult(success: Boolean, error: String?)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     activeInstance = this
@@ -38,6 +49,37 @@ class MainActivity : TauriActivity() {
       activeInstance = null
     }
     super.onDestroy()
+  }
+
+  private fun startBiometricAuth(title: String, subtitle: String) {
+    try {
+      val executor = ContextCompat.getMainExecutor(this)
+      val prompt = BiometricPrompt(this, executor, object : BiometricPrompt.AuthenticationCallback() {
+        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+          super.onAuthenticationSucceeded(result)
+          onBiometricResult(true, null)
+        }
+
+        override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+          super.onAuthenticationError(errorCode, errString)
+          onBiometricResult(false, errString.toString())
+        }
+
+        override fun onAuthenticationFailed() {
+          super.onAuthenticationFailed()
+        }
+      })
+
+      val promptInfo = BiometricPrompt.PromptInfo.Builder()
+        .setTitle(title)
+        .setSubtitle(subtitle)
+        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+        .build()
+
+      prompt.authenticate(promptInfo)
+    } catch (e: Exception) {
+      onBiometricResult(false, e.message ?: "Authentication failed")
+    }
   }
 
   private fun applyRefreshRate(targetHz: Int) {

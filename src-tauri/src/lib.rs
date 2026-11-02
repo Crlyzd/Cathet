@@ -5,6 +5,7 @@ pub mod state;
 use commands::association::{
     configure_default_app, get_association_status, unregister_default_app,
 };
+use commands::biometric::authenticate_biometric;
 #[cfg(target_os = "windows")]
 use commands::association::self_heal_if_moved;
 use commands::file::{
@@ -117,7 +118,8 @@ pub fn run() {
             set_note_pinned,
             set_note_hidden,
             create_folder,
-            import_external_file
+            import_external_file,
+            authenticate_biometric
         ])
         .run(tauri::generate_context!())
         .expect("error while running cathet application");
