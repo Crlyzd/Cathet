@@ -275,44 +275,42 @@ body.is-mobile .editor-content {
 }
 
 /* 4. Dual Pane Mobile Touch Overhaul */
-@media (max-width: 600px) {
-  .dualpane-container {
-    flex-direction: column !important;
-    height: 100% !important;
-    min-height: 0 !important;
-  }
-  .dualpane-pane {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-  }
-  .dualpane-pane-left {
-    flex: 0 0 43%;
-  }
-  .dualpane-pane-right {
-    flex: 1 1 0% !important;
-  }
-  .dualpane-splitter {
-    width: 100% !important;
-    height: 12px !important;
-    flex-direction: row !important;
-    cursor: row-resize !important;
-    background: var(--col-bg-main) !important;
-    touch-action: none !important;
-    position: relative !important;
-    flex-shrink: 0 !important;
-  }
-  .dualpane-splitter::after {
-    content: "";
-    position: absolute;
-    top: -10px;
-    bottom: -10px;
-    left: 0;
-    right: 0;
-    z-index: 10;
-  }
-  .dualpane-splitter-line { width: 100% !important; height: 1px !important; }
+body.is-mobile .dualpane-container {
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
 }
+body.is-mobile .dualpane-pane {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+body.is-mobile .dualpane-pane-left {
+  flex: 0 0 43%;
+}
+body.is-mobile .dualpane-pane-right {
+  flex: 1 1 0% !important;
+}
+body.is-mobile .dualpane-splitter {
+  width: 100% !important;
+  height: 12px !important;
+  flex-direction: row !important;
+  cursor: row-resize !important;
+  background: var(--col-bg-main) !important;
+  touch-action: none !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+}
+body.is-mobile .dualpane-splitter::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+body.is-mobile .dualpane-splitter-line { width: 100% !important; height: 1px !important; }
 
 /* Hide legacy desktop splitter badge on mobile (sync button lives in dock) */
 body.is-mobile .dualpane-sync-badge {

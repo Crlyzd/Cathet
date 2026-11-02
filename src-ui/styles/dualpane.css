@@ -730,11 +730,6 @@ body.is-dragging .dualpane-empty {
   will-change: opacity;
 }
 
-@media (max-width: 600px) {
-  .dualpane-pane-right.entering { animation-name: dualPaneEnterBottom; }
-  .dualpane-pane-right.exiting { animation-name: dualPaneExitBottom; }
-}
-
 body.is-mobile .dualpane-pane-right.entering { animation-name: dualPaneEnterBottom; }
 body.is-mobile .dualpane-pane-right.exiting { animation-name: dualPaneExitBottom; }
 

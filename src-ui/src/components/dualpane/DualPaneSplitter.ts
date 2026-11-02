@@ -1,3 +1,4 @@
+import { PlatformService } from "../../services/platformService";
 import { icons } from "../../utils/monochromeIcons";
 
 /**
@@ -87,7 +88,7 @@ export class DualPaneSplitter {
   private startDragging(): void {
     this.isDragging = true;
     this.element.classList.add("dragging");
-    const isVertical = window.innerWidth <= 600 || window.getComputedStyle(this.container).flexDirection === "column";
+    const isVertical = PlatformService.getInstance().isMobile() && window.getComputedStyle(this.container).flexDirection === "column";
     document.body.style.cursor = isVertical ? "row-resize" : "col-resize";
     document.body.style.userSelect = "none";
 
