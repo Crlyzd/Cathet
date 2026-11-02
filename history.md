@@ -112,6 +112,37 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-02: Android Text Selection Handles, Caret Handover & Secret Pull-Down Private Notes
+- **Summary**: Implemented Android-only fixes for text selection handle dragging, caret handover on back navigation, and secret pull-down biometric access to Private Notes:
+  - **Android Text Selection & Context Menu Fix**: Added `PlatformService.isAndroid()` guard to `main.ts`'s `contextmenu` listener so native Android cyan teardrop handles and floating ActionMode toolbar are not suppressed by `e.preventDefault()`, and the desktop context menu / fullscreen overlay is never mounted on mobile. Updated `body.is-mobile .editor-content` to `touch-action: manipulation !important` and `-webkit-touch-callout: default !important` for unimpeded multi-directional handle dragging. Cleaned up desktop `ContextMenu.ts`.
+  - **Editor Caret & Insertion Pin Handover Fix**: Added `Editor.blur()` and invoked `blur()` + `removeAllRanges()` at the start of `homeCoordinator.navigateHome()` before auto-saving and before starting `ContainerTransform.collapse`. This immediately dismisses the blinking cursor, teardrop handle pin, and soft keyboard so the collapse animation runs with clean static text.
+  - **Native Android Biometrics (`BiometricPrompt`)**: Integrated `androidx.biometric:biometric:1.2.0-alpha05` into `build.gradle.kts` and `MainActivity.kt`. Added JNI bridge in `FileHelper.kt` and dedicated modular command in `commands/biometric.rs` (registered in `lib.rs`), exposing `authenticate_biometric` to TypeScript via `BiometricService.ts`.
+  - **Xiaomi HyperOS Secret Pull-Down Gesture**: Created `overscrollPullDown.ts` to detect downward overscroll when `scrollTop <= 0`. Renders an animated frosted lock HUD with rubber-band damping; crossing 140px triggers haptic tick (`navigator.vibrate?.(15)`) and prompts fingerprint / lock screen PIN authentication upon release.
+  - **Private Notes View & Auto-Lock**: Authenticating transitions into a dedicated "Private notes" view with `<` back arrow showing hidden notes. In selection mode, `HomeSelectionBar` displays "Unhide" with an unlock icon to restore notes to public view. Automatically re-locks immediately on tapping back, switching apps, or backgrounding (`visibilitychange` / `blur`).
+  - **Strict Anti-Monolith Compliance**: Refactored `HomeView.ts` selection batch actions into `HomeBatchActions.ts` (89 lines), ensuring every modified file strictly adheres to the <250 lines ceiling (`HomeView.ts` = 248 lines, `homeCoordinator.ts` = 250 lines, `Editor.ts` = 248 lines, `overscrollPullDown.ts` = 142 lines, `MainActivity.kt` = 117 lines, `biometric.rs` = 90 lines).
+- **Files Modified/Created**:
+  - `src-ui/src/main.ts`: Gated desktop context menu behind `PlatformService.isAndroid()`.
+  - `src-ui/src/components/Editor.ts`: Added `blur()` helper (248 lines).
+  - `src-ui/src/components/ContextMenu.ts`: Cleaned up mobile width overrides (121 lines).
+  - `src-ui/styles/mobile.css`: Configured `.editor-content` touch-action and touch-callout.
+  - `src-ui/styles/home.css`: Styled pull-down lock HUD and private notes exit button.
+  - `src-ui/src/services/homeCoordinator.ts`: Added immediate editor blur before collapse (250 lines).
+  - `src-ui/src/services/biometricService.ts`: Created biometric authentication service (29 lines).
+  - `src-ui/src/utils/overscrollPullDown.ts`: Created overscroll pull-down gesture detector (142 lines).
+  - `src-ui/src/components/home/HomeHeader.ts`: Added private notes mode & exit button (148 lines).
+  - `src-ui/src/components/home/HomeCategoryTabs.ts`: Added `setVisible()` (84 lines).
+  - `src-ui/src/components/home/HomeSelectionBar.ts`: Added `setHiddenMode()` for Unhide action (101 lines).
+  - `src-ui/src/components/home/HomeBatchActions.ts`: Extracted selection batch actions (89 lines).
+  - `src-ui/src/components/home/HomeView.ts`: Integrated pull-down detector, private notes mode, and auto-lock (248 lines).
+  - `src-tauri/gen/android/app/build.gradle.kts`: Added `androidx.biometric` dependency.
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/MainActivity.kt`: Implemented `BiometricPrompt` bridge (117 lines).
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/FileHelper.kt`: Added `authenticateBiometrics` static helper (184 lines).
+  - `src-tauri/src/commands/android_fs.rs`: Exported `with_jni_context` to crate (245 lines).
+  - `src-tauri/src/commands/biometric.rs`: Created `authenticate_biometric` Tauri command (90 lines).
+  - `src-tauri/src/commands/mod.rs`: Registered `biometric` module.
+  - `src-tauri/src/lib.rs`: Registered `authenticate_biometric` in invoke handlers.
+  - `history.md`: Updated changelog.
+
 ### 2026-11-02: Dynamic Android Display Refresh Rate Control (120Hz vs. 60Hz)
 - **Summary**: Implemented dynamic user control over display refresh rates on Android:
   - **Native Android Display Switching**: Added `@JvmStatic fun setRefreshRateHz(targetHz: Int)` in `MainActivity.kt` and `FileHelper.kt`, allowing dynamic switching between maximum refresh rate (120Hz/144Hz) and solid 60Hz mode via `window.attributes.preferredDisplayModeId`.
