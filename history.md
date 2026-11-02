@@ -984,3 +984,16 @@ This document serves as the living project documentation and institutional memor
 
 
 
+
+### 2026-11-02: Isolated Mobile Dual-Pane Vertical Split to Mobile Platforms
+
+- **Summary**:
+  1. **Strict Mobile CSS Scoping in `mobile.css`**: Eliminated the unscoped `@media (max-width: 600px)` media query in Section 4 (*Dual Pane Mobile Touch Overhaul*), scoping all vertical stacking rules (`flex-direction: column !important;`, `.dualpane-pane { width: 100% !important; }`, and `.dualpane-splitter { flex-direction: row !important; cursor: row-resize !important; }`) strictly under `body.is-mobile`. This guarantees Windows desktop dual-pane mode remains side-by-side (`flex-direction: row`) regardless of how small the user shrinks the desktop window.
+  2. **Removed Duplicate Animation Leak in `dualpane.css`**: Removed the unscoped `@media (max-width: 600px)` keyframe rule block that forced `dualPaneEnterBottom` and `dualPaneExitBottom` on small desktop windows, preserving the dedicated `body.is-mobile` animation rules for mobile while ensuring desktop consistently animates with `dualPaneEnterRight` / `dualPaneExitRight`.
+  3. **Platform-Gated Drag Orientation in `DualPaneSplitter.ts`**: Updated `startDragging()` in `DualPaneSplitter.ts` to gate `isVertical` behind `PlatformService.getInstance().isMobile() && window.getComputedStyle(this.container).flexDirection === "column"`. This completely prevents narrow desktop windows ($\le 600\text{px}$) from triggering vertical mouse delta calculations (`clientY`), ensuring desktop mouse dragging consistently tracks horizontal deltas (`clientX`).
+  Maintained strict anti-monolith line counts (`DualPaneSplitter.ts` = 134 lines, well below the 250-line ceiling). Synchronously verified with `npm run build` (`tsc && vite build`) and `cargo check`.
+- **Files Modified**:
+  - `src-ui/styles/mobile.css`: Replaced unscoped `@media (max-width: 600px)` with `body.is-mobile` selectors.
+  - `src-ui/styles/dualpane.css`: Removed redundant unscoped `@media (max-width: 600px)` animation overrides.
+  - `src-ui/src/components/dualpane/DualPaneSplitter.ts`: Gated `isVertical` splitter dragging to mobile via `PlatformService.getInstance().isMobile()` (134 lines).
+  - `history.md`: Appended changelog entry per Rule 13.
