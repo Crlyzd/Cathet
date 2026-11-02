@@ -1,14 +1,16 @@
 import { NotesService, NoteItem } from "../../services/notesService";
 import { ThemeService } from "../../services/themeService";
+import { PlatformService } from "../../services/platformService";
+import { BiometricService } from "../../services/biometricService";
 import { executeCircularThemeTransition } from "../../utils/themeTransition";
+import { OverscrollPullDownDetector } from "../../utils/overscrollPullDown";
 import { invoke } from "@tauri-apps/api/core";
 import { HomeHeaderComponent } from "./HomeHeader";
 import { HomeCategoryTabsComponent } from "./HomeCategoryTabs";
 import { HomeNoteGridComponent } from "./HomeNoteGrid";
 import { HomeSelectionBarComponent } from "./HomeSelectionBar";
 import { HomeFabComponent } from "./HomeFab";
-import { FolderModalComponent } from "./FolderModal";
-import { RenameModalComponent } from "./RenameModal";
+import { HomeBatchActions } from "./HomeBatchActions";
 
 export interface HomeViewOptions {
   containerId?: string;
@@ -31,11 +33,14 @@ export class HomeViewComponent {
   private noteGrid!: HomeNoteGridComponent;
   private selectionBar?: HomeSelectionBarComponent;
   private fab?: HomeFabComponent;
+  private pullDownDetector?: OverscrollPullDownDetector;
+  private batchActions: HomeBatchActions;
 
   private activeFolder = "All";
   private searchQuery = "";
   private selectedNoteIds = new Set<string>();
   private isSelectionMode = false;
+  private isPrivateMode = false;
 
   constructor(options: HomeViewOptions) {
     this.options = options;
@@ -47,6 +52,15 @@ export class HomeViewComponent {
     this.element.className = `home-view-container${this.isEmbedded ? " home-view-embedded" : ""}`;
     this.element.addEventListener("contextmenu", (e) => e.preventDefault());
     parent.appendChild(this.element);
+
+    this.batchActions = new HomeBatchActions({
+      notesService: this.notesService,
+      getSelectedIds: () => Array.from(this.selectedNoteIds),
+      isPrivateMode: () => this.isPrivateMode,
+      onRefresh: () => this.renderGrid(),
+      onExitSelection: () => this.exitSelectionMode(),
+      onFolderCreated: (name) => { this.activeFolder = name; this.refresh(); },
+    });
 
     this.initSubcomponents();
     this.refresh();
@@ -60,27 +74,26 @@ export class HomeViewComponent {
         onSearch: (q) => { this.searchQuery = q; this.renderGrid(); },
         onCancelSelection: () => this.exitSelectionMode(),
         onToggleSelectAll: () => this.toggleSelectAll(),
-        onToggleTheme: (origin) => {
-          executeCircularThemeTransition(origin, () => {
-            const newTheme = themeService.toggleTheme();
-            this.header.setTheme(newTheme);
-            invoke("sync_window_theme", { theme: newTheme }).catch(console.error);
-          });
-        },
+        onExitPrivateNotes: () => this.exitPrivateNotesMode(),
+        onToggleTheme: (origin) => executeCircularThemeTransition(origin, () => {
+          const newTheme = themeService.toggleTheme();
+          this.header.setTheme(newTheme);
+          invoke("sync_window_theme", { theme: newTheme }).catch(console.error);
+        }),
       },
       themeService.getTheme()
     );
 
     this.categoryTabs = new HomeCategoryTabsComponent(this.element, {
       onSelectFolder: (f) => { this.activeFolder = f; this.renderGrid(); },
-      onRequestNewFolder: () => this.promptNewFolder(),
+      onRequestNewFolder: () => this.batchActions.promptNewFolder(),
     });
 
     this.noteGrid = new HomeNoteGridComponent(
       this.element,
       {
         onOpenNote: (n, rect) => this.options.onOpenNote(n, rect),
-        onSelectNote: (id, sel) => this.handleSelectNote(id, sel),
+        onSelectNote: (id, sel) => { if (sel) this.selectedNoteIds.add(id); else this.selectedNoteIds.delete(id); this.syncSelectionUI(); },
         onEnterSelectionMode: (id) => this.enterSelectionMode(id),
       },
       this.isEmbedded
@@ -88,17 +101,32 @@ export class HomeViewComponent {
 
     if (!this.isEmbedded) {
       this.selectionBar = new HomeSelectionBarComponent(this.element, {
-        onRename: () => this.handleRenameSelected(),
-        onHide: () => this.handleHideSelected(),
-        onPin: () => this.handlePinSelected(),
-        onMove: () => this.handleMoveSelected(),
-        onDelete: () => this.handleDeleteSelected(),
+        onRename: () => this.batchActions.handleRename(),
+        onHide: () => this.batchActions.handleHide(),
+        onPin: () => this.batchActions.handlePin(),
+        onMove: () => this.batchActions.handleMove(),
+        onDelete: () => this.batchActions.handleDelete(),
       });
 
       this.fab = new HomeFabComponent(this.element, {
-        onNewNote: (rect) => this.options.onNewNote(this.activeFolder, rect),
-        onOpenFile: (rect) => this.options.onOpenFile(this.activeFolder, rect),
+        onNewNote: (rect) => this.options.onNewNote(this.isPrivateMode ? "Hidden" : this.activeFolder, rect),
+        onOpenFile: (rect) => this.options.onOpenFile(this.isPrivateMode ? "Hidden" : this.activeFolder, rect),
       });
+
+      if (PlatformService.getInstance().isAndroid()) {
+        this.pullDownDetector = new OverscrollPullDownDetector({
+          container: this.element,
+          thresholdPx: 135,
+          onTrigger: async () => {
+            if (this.isPrivateMode || this.isSelectionMode) return;
+            const ok = await BiometricService.getInstance().authenticate("Unlock Private Notes", "Confirm fingerprint or device PIN");
+            if (ok) this.enterPrivateNotesMode();
+          },
+        });
+
+        document.addEventListener("visibilitychange", () => { if (document.hidden && this.isPrivateMode) this.exitPrivateNotesMode(false); });
+        window.addEventListener("blur", () => { if (this.isPrivateMode) this.exitPrivateNotesMode(false); });
+      }
     }
   }
 
@@ -109,13 +137,17 @@ export class HomeViewComponent {
   }
 
   private renderGrid(): void {
-    const filtered = this.notesService.filterNotes(this.searchQuery, this.activeFolder);
+    const filtered = this.isPrivateMode
+      ? this.notesService.filterNotes(this.searchQuery, "", true)
+      : this.notesService.filterNotes(this.searchQuery, this.activeFolder, false);
     this.noteGrid.setNotes(filtered, this.isSelectionMode, this.selectedNoteIds);
     this.syncSelectionBars(filtered.length);
   }
 
   private syncSelectionUI(): void {
-    const filtered = this.notesService.filterNotes(this.searchQuery, this.activeFolder);
+    const filtered = this.isPrivateMode
+      ? this.notesService.filterNotes(this.searchQuery, "", true)
+      : this.notesService.filterNotes(this.searchQuery, this.activeFolder, false);
     this.noteGrid.updateSelectionState(this.isSelectionMode, this.selectedNoteIds);
     this.syncSelectionBars(filtered.length);
   }
@@ -149,82 +181,38 @@ export class HomeViewComponent {
     this.syncSelectionUI();
   }
 
-  private handleSelectNote(id: string, selected: boolean): void {
-    if (selected) this.selectedNoteIds.add(id); else this.selectedNoteIds.delete(id);
-    this.syncSelectionUI();
+  enterPrivateNotesMode(): void {
+    if (this.isPrivateMode) return;
+    this.isPrivateMode = true;
+    this.exitSelectionMode(false);
+    this.categoryTabs.setVisible(false);
+    this.header.setPrivateNotesMode(true);
+    this.selectionBar?.setHiddenMode(true);
+    this.renderGrid();
+    window.history.pushState({ screen: "private_notes" }, "");
+  }
+
+  exitPrivateNotesMode(syncHistory = true): void {
+    if (!this.isPrivateMode) return;
+    if (syncHistory && window.history.state?.screen === "private_notes") {
+      window.history.back();
+      return;
+    }
+    this.isPrivateMode = false;
+    this.exitSelectionMode(false);
+    this.header.setPrivateNotesMode(false);
+    this.categoryTabs.setVisible(true);
+    this.selectionBar?.setHiddenMode(false);
+    this.renderGrid();
   }
 
   private toggleSelectAll(): void {
-    const currentNotes = this.notesService.filterNotes(this.searchQuery, this.activeFolder);
+    const currentNotes = this.isPrivateMode
+      ? this.notesService.filterNotes(this.searchQuery, "", true)
+      : this.notesService.filterNotes(this.searchQuery, this.activeFolder, false);
     if (this.selectedNoteIds.size === currentNotes.length) this.selectedNoteIds.clear();
     else currentNotes.forEach((n) => this.selectedNoteIds.add(n.id));
     this.syncSelectionUI();
-  }
-
-  private promptNewFolder(): void {
-    new FolderModalComponent({
-      mode: "create",
-      onConfirm: async (name) => {
-        if (await this.notesService.createFolder(name)) {
-          this.activeFolder = name;
-          await this.refresh();
-        }
-      },
-    });
-  }
-
-  private handleRenameSelected(): void {
-    if (this.selectedNoteIds.size !== 1) return;
-    const noteId = Array.from(this.selectedNoteIds)[0];
-    const currentNote = this.notesService.getRegistry().notes[noteId];
-    if (!currentNote) return;
-    new RenameModalComponent({
-      currentTitle: currentNote.title,
-      onConfirm: async (newTitle) => {
-        const updated = await this.notesService.renameNote(noteId, newTitle);
-        if (updated) {
-          this.exitSelectionMode();
-          await this.refresh();
-        }
-      },
-    });
-  }
-
-  private async handleHideSelected(): Promise<void> {
-    await this.notesService.setHidden(Array.from(this.selectedNoteIds), true);
-    this.exitSelectionMode();
-    this.renderGrid();
-  }
-
-  private async handlePinSelected(): Promise<void> {
-    const ids = Array.from(this.selectedNoteIds);
-    const reg = this.notesService.getRegistry();
-    const allPinned = ids.every((id) => reg.notes[id]?.isPinned);
-    await this.notesService.setPinned(ids, !allPinned);
-    this.exitSelectionMode();
-    this.renderGrid();
-  }
-
-  private handleMoveSelected(): void {
-    const ids = Array.from(this.selectedNoteIds);
-    new FolderModalComponent({
-      mode: "move",
-      existingFolders: this.notesService.getRegistry().folders,
-      onConfirm: async (dest) => {
-        await this.notesService.moveNotes(ids, dest);
-        this.exitSelectionMode();
-        this.renderGrid();
-      },
-    });
-  }
-
-  private async handleDeleteSelected(): Promise<void> {
-    const ids = Array.from(this.selectedNoteIds);
-    if (confirm(`Delete ${ids.length} selected note(s)?`)) {
-      await this.notesService.deleteNotes(ids);
-      this.exitSelectionMode();
-      this.renderGrid();
-    }
   }
 
   setVisible(visible: boolean, shouldRefresh = true): void {
@@ -248,6 +236,7 @@ export class HomeViewComponent {
   }
 
   destroy(): void {
+    this.pullDownDetector?.destroy();
     this.header.destroy();
     this.categoryTabs.destroy();
     this.noteGrid.destroy();

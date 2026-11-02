@@ -5,6 +5,7 @@ export interface HomeHeaderCallbacks {
   onCancelSelection: () => void;
   onToggleSelectAll: () => void;
   onToggleTheme: (origin: { x: number; y: number }) => void;
+  onExitPrivateNotes?: () => void;
 }
 
 export class HomeHeaderComponent {
@@ -21,6 +22,7 @@ export class HomeHeaderComponent {
   private countLabelEl!: HTMLElement;
   private btnSelectAll!: HTMLButtonElement;
   private btnThemeToggle!: HTMLButtonElement;
+  private btnExitPrivate?: HTMLButtonElement;
 
   constructor(container: HTMLElement, callbacks: HomeHeaderCallbacks, initialTheme: "dark" | "light" = "dark") {
     this.callbacks = callbacks;
@@ -35,6 +37,11 @@ export class HomeHeaderComponent {
   private render(): void {
     this.element.innerHTML = `
       <div class="home-header-top-row">
+        <button class="home-header-btn btn-exit-private" id="home-private-back" title="Exit Private notes" style="display: none; margin-right: 8px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
         <h1 class="home-header-title">Cathet</h1>
         <button class="home-header-btn btn-theme-toggle" id="home-theme-toggle" title="Toggle Theme">
           ${this.currentTheme === "dark" ? icons.sun : icons.moon}
@@ -70,6 +77,7 @@ export class HomeHeaderComponent {
     this.selectionHeaderEl = this.element.querySelector(".home-header-selection")!;
     this.countLabelEl = this.element.querySelector(".home-selection-count")!;
     this.btnSelectAll = this.element.querySelector(".btn-select-all")!;
+    this.btnExitPrivate = this.element.querySelector("#home-private-back") || undefined;
   }
 
   private bindEvents(): void {
@@ -90,6 +98,10 @@ export class HomeHeaderComponent {
 
     this.btnSelectAll.addEventListener("click", () => {
       this.callbacks.onToggleSelectAll();
+    });
+
+    this.btnExitPrivate?.addEventListener("click", () => {
+      this.callbacks.onExitPrivateNotes?.();
     });
   }
 
@@ -116,6 +128,13 @@ export class HomeHeaderComponent {
       this.searchInput.readOnly = false;
       this.searchBarEl.classList.remove("is-selection-mode");
     }
+  }
+
+  setPrivateNotesMode(active: boolean): void {
+    const titleEl = this.element.querySelector<HTMLElement>(".home-header-title");
+    if (this.btnExitPrivate) this.btnExitPrivate.style.display = active ? "flex" : "none";
+    if (titleEl) titleEl.textContent = active ? "Private notes" : "Cathet";
+    this.searchBarEl.style.display = active ? "none" : "flex";
   }
 
   clearSearch(): void {

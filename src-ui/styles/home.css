@@ -442,3 +442,70 @@
   }
 }
 
+/* Secret Overscroll Pull-Down Lock HUD (Android Home) */
+.home-pulldown-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  z-index: 100;
+  transform: translateY(-60px);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.home-pulldown-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: var(--col-menu-bg, rgba(24, 26, 33, 0.82));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--col-border, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  color: var(--col-text-muted, #94a3b8);
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.home-pulldown-hud.threshold-reached .home-pulldown-pill {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(14, 165, 233, 0.18);
+}
+
+.home-pulldown-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.home-pulldown-hud.threshold-reached .home-pulldown-icon {
+  transform: scale(1.15);
+}
+
+/* Exit Private Notes Button */
+.btn-exit-private {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--col-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-exit-private:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+

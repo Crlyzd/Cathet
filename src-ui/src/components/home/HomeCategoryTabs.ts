@@ -72,6 +72,10 @@ export class HomeCategoryTabsComponent {
     return chip;
   }
 
+  setVisible(visible: boolean): void {
+    this.element.style.display = visible ? "block" : "none";
+  }
+
   destroy(): void {
     this.element.remove();
   }

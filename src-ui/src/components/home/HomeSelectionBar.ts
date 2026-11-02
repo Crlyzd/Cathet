@@ -46,11 +46,11 @@ export class HomeSelectionBarComponent {
           <span class="home-sel-label">Move to</span>
         </button>
         <button class="home-sel-btn" id="home-sel-hide" title="Hide/Archive">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="home-sel-hide-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            <path class="home-sel-shackle" d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
-          <span class="home-sel-label">Hide</span>
+          <span class="home-sel-label home-sel-hide-label">Hide</span>
         </button>
         <button class="home-sel-btn" id="home-sel-delete" title="Delete note">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -69,6 +69,15 @@ export class HomeSelectionBarComponent {
     this.element.querySelector("#home-sel-pin")?.addEventListener("click", () => this.callbacks.onPin());
     this.element.querySelector("#home-sel-move")?.addEventListener("click", () => this.callbacks.onMove());
     this.element.querySelector("#home-sel-delete")?.addEventListener("click", () => this.callbacks.onDelete());
+  }
+
+  setHiddenMode(isPrivate: boolean): void {
+    const btn = this.element.querySelector<HTMLElement>("#home-sel-hide");
+    const shackle = this.element.querySelector<SVGPathElement>(".home-sel-shackle");
+    const label = this.element.querySelector<HTMLElement>(".home-sel-hide-label");
+    if (btn) btn.title = isPrivate ? "Unhide note" : "Hide/Archive";
+    if (label) label.textContent = isPrivate ? "Unhide" : "Hide";
+    if (shackle) shackle.setAttribute("d", isPrivate ? "M7 11V7a5 5 0 0 1 10 0" : "M7 11V7a5 5 0 0 1 10 0v4");
   }
 
   setEnabled(enabled: boolean): void {
