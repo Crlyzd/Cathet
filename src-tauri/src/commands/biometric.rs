@@ -87,3 +87,4 @@ pub async fn authenticate_biometric(
     // Non-Android fallback (e.g. desktop dev simulation)
     Ok(true)
 }
+

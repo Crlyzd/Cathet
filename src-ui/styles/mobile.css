@@ -164,11 +164,11 @@ body.is-mobile .mobile-action-bar {
   border-radius: 36px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 0, 0, 0.45);
   transition: max-width 340ms cubic-bezier(0.2, 0, 0, 1),
-              width 340ms cubic-bezier(0.2, 0, 0, 1),
-              height 340ms cubic-bezier(0.2, 0, 0, 1),
-              padding 340ms cubic-bezier(0.2, 0, 0, 1),
-              border-radius 340ms cubic-bezier(0.2, 0, 0, 1),
-              box-shadow 340ms ease;
+    width 340ms cubic-bezier(0.2, 0, 0, 1),
+    height 340ms cubic-bezier(0.2, 0, 0, 1),
+    padding 340ms cubic-bezier(0.2, 0, 0, 1),
+    border-radius 340ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 340ms ease;
   overflow: hidden;
   max-width: 360px;
 }
@@ -241,11 +241,11 @@ body.is-mobile[data-theme="light"] .mobile-action-bar.is-small .mobile-action-pi
   cursor: pointer;
   touch-action: manipulation;
   transition: opacity 180ms ease,
-              transform 260ms cubic-bezier(0.2, 0, 0, 1),
-              width 340ms cubic-bezier(0.2, 0, 0, 1),
-              margin 340ms cubic-bezier(0.2, 0, 0, 1),
-              background-color 0.15s ease,
-              color 0.15s ease;
+    transform 260ms cubic-bezier(0.2, 0, 0, 1),
+    width 340ms cubic-bezier(0.2, 0, 0, 1),
+    margin 340ms cubic-bezier(0.2, 0, 0, 1),
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .mobile-action-btn:active {
@@ -283,17 +283,21 @@ body.is-mobile .dualpane-container {
   height: 100% !important;
   min-height: 0 !important;
 }
+
 body.is-mobile .dualpane-pane {
   width: 100% !important;
   height: auto !important;
   min-height: 0 !important;
 }
+
 body.is-mobile .dualpane-pane-left {
   flex: 0 0 43%;
 }
+
 body.is-mobile .dualpane-pane-right {
   flex: 1 1 0% !important;
 }
+
 body.is-mobile .dualpane-splitter {
   width: 100% !important;
   height: 12px !important;
@@ -304,6 +308,7 @@ body.is-mobile .dualpane-splitter {
   position: relative !important;
   flex-shrink: 0 !important;
 }
+
 body.is-mobile .dualpane-splitter::after {
   content: "";
   position: absolute;
@@ -313,7 +318,11 @@ body.is-mobile .dualpane-splitter::after {
   right: 0;
   z-index: 10;
 }
-body.is-mobile .dualpane-splitter-line { width: 100% !important; height: 1px !important; }
+
+body.is-mobile .dualpane-splitter-line {
+  width: 100% !important;
+  height: 1px !important;
+}
 
 /* Hide legacy desktop splitter badge on mobile (sync button lives in dock) */
 body.is-mobile .dualpane-sync-badge {
@@ -351,7 +360,11 @@ body.is-mobile .dualpane-header {
   border-bottom: 1px solid var(--col-border) !important;
 }
 
-body.is-mobile .dualpane-title { font-size: 13px !important; font-weight: 600 !important; }
+body.is-mobile .dualpane-title {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
 body.is-mobile .dualpane-btn {
   height: 32px !important;
   padding: 0 10px !important;
@@ -817,4 +830,3 @@ body.is-animating-transform *::-webkit-scrollbar {
   height: 0 !important;
   background: transparent !important;
 }
-
