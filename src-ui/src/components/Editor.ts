@@ -242,5 +242,6 @@ export class EditorComponent {
   }
 
   focus(): void { this.editorEl.focus(); }
+  blur(): void { this.editorEl.blur(); try { window.getSelection()?.removeAllRanges(); } catch (_) {} }
   setRawContent(content: string): void { this.rawContent = content; }
 }

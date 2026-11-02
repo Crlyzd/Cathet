@@ -214,6 +214,10 @@ class CathetApp {
         e.preventDefault();
         return;
       }
+      if (PlatformService.getInstance().isAndroid()) {
+        // On Android, allow native text selection handles and system floating ActionMode toolbar
+        return;
+      }
       if (!import.meta.env.DEV || e.altKey) {
         e.preventDefault();
         const ed = this.getActiveEditor();

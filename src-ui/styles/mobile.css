@@ -102,7 +102,10 @@ body.is-mobile .editor-wrapper {
 }
 
 body.is-mobile .editor-content {
-  touch-action: pan-y !important;
+  touch-action: manipulation !important;
+  -webkit-touch-callout: default !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 /* 2. Touch-Friendly Top Bar */

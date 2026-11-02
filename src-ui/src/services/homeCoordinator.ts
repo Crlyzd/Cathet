@@ -78,6 +78,8 @@ export class HomeCoordinator {
     }
 
     try {
+      (document.activeElement as HTMLElement)?.blur();
+      this.editor.blur();
       await this.autoSaveCurrentNote();
       await this.options.onBeforeNavigateHome?.();
     } catch (err) { console.warn("Auto-save skipped:", err); }
