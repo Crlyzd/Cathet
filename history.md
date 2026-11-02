@@ -112,6 +112,20 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-02: Progressive Hidden Folder Pull-Down, Silent Dead-Zone & Lock Shackle Mechanics
+- **Summary**: Resolved immediate lock key exposure when pulling down to reveal the hidden/private notes folder on Android:
+  - **True Scroll Target Validation**: Added `getScrollElement(): HTMLElement` in `HomeNoteGrid.ts` and wired `scrollTarget: () => this.noteGrid.getScrollElement()` in `HomeView.ts`. Touch gestures are now only armed when `noteGrid.scrollTop <= 0`; swiping down while scrolled into the note list now scrolls up naturally without prematurely triggering or displaying the private notes HUD.
+  - **Silent Dead-Zone ($0\text{px} - 65\text{px}$)**: Small, casual, or accidental downward pulls elastically bounce the note grid slightly with rubber-band damping, while the lock HUD remains 100% invisible (`opacity: 0`, `visibility: hidden`).
+  - **Progressive Shackle Descent ($65\text{px} - 135\text{px}$)**: Past 65px (confirming deliberate intent), the lock HUD fades in smoothly. The lock shackle starts in an unlatched/detached position (`translateY(-5px)`) and progressively descends into the lock body as the user pulls down deeper. The label appears only as the gesture nears the trigger threshold.
+  - **Threshold Snap & Spring-Back ($\ge 135\text{px}$)**: Crossing 135px snaps the shackle into the lock body (`translateY(0)`), triggers a crisp haptic tick (`navigator.vibrate?.(15)`), highlights the lock indicator with accent color, and confirms "Release to view private notes". Releasing smoothly springs the note grid back to `translateY(0)` via `cubic-bezier(0.2, 0, 0, 1)` and prompts biometric authentication. Releasing before threshold springs back silently.
+  - **Strict Anti-Monolith Compliance**: All affected files remain well within the <250 line limit (`overscrollPullDown.ts` = 194 lines, `HomeNoteGrid.ts` = 162 lines, `HomeView.ts` = 244 lines). Verified cleanly with `npx tsc --noEmit`.
+- **Files Modified**:
+  - `src-ui/src/utils/overscrollPullDown.ts`: Multi-stage dead-zone, scroll validation, progressive shackle descent, and elastic spring-back (194 lines).
+  - `src-ui/src/components/home/HomeNoteGrid.ts`: Added `getScrollElement()` getter (162 lines).
+  - `src-ui/src/components/home/HomeView.ts`: Wired `scrollTarget` and `contentTarget` to note grid; condensed back checks (244 lines).
+  - `src-ui/styles/home.css`: Added lock shackle transform and label opacity transitions.
+  - `history.md`: Updated project changelog.
+
 ### 2026-11-02: Android Text Selection Handles, Caret Handover & Secret Pull-Down Private Notes
 - **Summary**: Implemented Android-only fixes for text selection handle dragging, caret handover on back navigation, and secret pull-down biometric access to Private Notes:
   - **Android Text Selection & Context Menu Fix**: Added `PlatformService.isAndroid()` guard to `main.ts`'s `contextmenu` listener so native Android cyan teardrop handles and floating ActionMode toolbar are not suppressed by `e.preventDefault()`, and the desktop context menu / fullscreen overlay is never mounted on mobile. Updated `body.is-mobile .editor-content` to `touch-action: manipulation !important` and `-webkit-touch-callout: default !important` for unimpeded multi-directional handle dragging. Cleaned up desktop `ContextMenu.ts`.
