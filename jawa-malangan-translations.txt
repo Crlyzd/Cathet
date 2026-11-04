@@ -1,0 +1,484 @@
+# ==============================================================================
+# CATHET — JAWA MALANGAN TRANSLATION REVIEW
+# ==============================================================================
+# Petunjuk:
+# 1. Edit teks di sebelah kanan tanda sama dengan '=' sesuai dialek Malangan / Boso Walikan yang paling pas.
+# 2. Tanda dalam kurung kurawal seperti {count} atau {query} jangan dihapus karena itu variabel dinamis (misal: "{count} kepilih").
+# 3. Baris yang diawali tanda '#' adalah referensi bahasa Inggris & Indonesia.
+# 4. Setelah selesai diedit, simpan file ini dan beritahu saya, nanti akan langsung saya update ke aplikasi!
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. COMMON (TOMBOL & KATA UMUM)
+# ------------------------------------------------------------------------------
+
+# English: OK
+# Indonesia: Oke
+common.ok = Iyo Genah
+
+# English: Cancel
+# Indonesia: Batal
+common.cancel = Ora Sido
+
+# English: Save
+# Indonesia: Simpan
+common.save = Simpen
+
+# English: Delete
+# Indonesia: Hapus
+common.delete = Busek
+
+# English: Done
+# Indonesia: Selesai
+common.done = Wes
+
+# English: All
+# Indonesia: Semua
+common.all = Kabeh
+
+# English: Back
+# Indonesia: Kembali
+common.back = Mbalik
+
+# English: Close
+# Indonesia: Tutup
+common.close = Tutup
+
+# English: Search
+# Indonesia: Cari
+common.search = Nggoleki
+
+# English: Rename
+# Indonesia: Ganti Nama
+common.rename = Ganti Jeneng
+
+# English: Pin
+# Indonesia: Sematkan
+common.pin = Templekno
+
+# English: Unpin
+# Indonesia: Lepas Sematan
+common.unpin = Coplok
+
+# English: Move to
+# Indonesia: Pindahkan ke
+common.move = Pindah-en
+
+# English: Hide
+# Indonesia: Sembunyikan
+common.hide = Singitno
+
+# English: Unhide
+# Indonesia: Tampilkan
+common.unhide = Ketokno
+
+
+# ------------------------------------------------------------------------------
+# 2. MENU (MENU TITIK 3 / MENU UTAMA)
+# ------------------------------------------------------------------------------
+
+# English: New Window
+# Indonesia: Jendela Baru
+menu.newWindow = Cendhela Anyar
+
+# English: Open...
+# Indonesia: Buka...
+menu.open = Bukak...
+
+# English: Save
+# Indonesia: Simpan
+menu.save = Simpen
+
+# English: Save As...
+# Indonesia: Simpan Sebagai...
+menu.saveAs = Simpen Dadi...
+
+# English: Dual Pane
+# Indonesia: Panel Ganda
+menu.dualPane = Papan Loro
+
+# English: Exit Dual Pane
+# Indonesia: Keluar Panel Ganda
+menu.exitDualPane = Metu Papan Loro
+
+# English: Markdown: Preview
+# Indonesia: Markdown: Pratinjau
+menu.markdownPreview = Markdown: Delok
+
+# English: Markdown: Edit
+# Indonesia: Markdown: Sunting
+menu.markdownEdit = Markdown: Nulis
+
+# English: Settings
+# Indonesia: Pengaturan
+menu.settings = Setelan
+
+# English: Quit
+# Indonesia: Keluar
+menu.quit = Metu / Ladub
+
+
+# ------------------------------------------------------------------------------
+# 3. CONTEXT (KLIK KANAN / FORMATTING TEXT)
+# ------------------------------------------------------------------------------
+
+# English: Cut
+# Indonesia: Potong
+context.cut = Gunting
+
+# English: Copy
+# Indonesia: Salin
+context.copy = Tiru
+
+# English: Paste
+# Indonesia: Tempel
+context.paste = Templekno
+
+# English: Undo
+# Indonesia: Urungkan
+context.undo = Balekno
+
+# English: Redo
+# Indonesia: Ulangi
+context.redo = Baleni Maneh
+
+# English: Select All
+# Indonesia: Pilih Semua
+context.selectAll = Pilih Kabeh
+
+# English: Format
+# Indonesia: Format
+context.format = Format
+
+# English: Style
+# Indonesia: Gaya
+context.style = Gaya
+
+# English: Bold
+# Indonesia: Tebal
+context.bold = Kandel
+
+# English: Italic
+# Indonesia: Miring
+context.italic = Miring
+
+# English: Strikethrough
+# Indonesia: Coret
+context.strike = Coret
+
+# English: Inline Code
+# Indonesia: Kode Sebaris
+context.code = Kode Sak Larik
+
+# English: Highlight
+# Indonesia: Sorotan
+context.highlight = Sorot
+
+# English: Inline Math
+# Indonesia: Rumus Matematika
+context.math = Rumus Itungan
+
+# English: Headings
+# Indonesia: Judul
+context.headings = Irah-irahan
+
+# English: Heading 1
+# Indonesia: Judul 1
+context.h1 = Irah-irahan 1
+
+# English: Heading 2
+# Indonesia: Judul 2
+context.h2 = Irah-irahan 2
+
+# English: Heading 3
+# Indonesia: Judul 3
+context.h3 = Irah-irahan 3
+
+# English: Lists
+# Indonesia: Daftar
+context.lists = Tenger
+
+# English: Bullet List
+# Indonesia: Daftar Butir
+context.bulletList = Tengeran Bunder
+
+# English: Numbered List
+# Indonesia: Daftar Nomor
+context.numberedList = Tengeran Nomer
+
+# English: Task List
+# Indonesia: Daftar Tugas
+context.taskList = Tengeran Penggawean
+
+# English: Insert
+# Indonesia: Sisipkan
+context.insert = Lebokno
+
+# English: Blockquote
+# Indonesia: Kutipan Blok
+context.blockquote = Kutipan Kothak
+
+# English: Code Block
+# Indonesia: Blok Kode
+context.codeBlock = Kothak Kode
+
+# English: Hyperlink
+# Indonesia: Tautan
+context.link = Pranala
+
+# English: Image...
+# Indonesia: Gambar...
+context.image = Gambar...
+
+# English: Table
+# Indonesia: Tabel
+context.table = Tabel
+
+# English: Horizontal Rule
+# Indonesia: Garis Horisontal
+context.rule = Garis Lurus
+
+# English: Clear Formatting
+# Indonesia: Hapus Format
+context.clearFormatting = Ilangno Format
+
+# English: Search Web for "{query}"
+# Indonesia: Cari di Web untuk "{query}"
+context.searchWeb = Goleki ndek Web "{query}"
+
+
+# ------------------------------------------------------------------------------
+# 4. TOPBAR (HEADER DOKUMEN)
+# ------------------------------------------------------------------------------
+
+# English: Untitled
+# Indonesia: Tanpa Judul
+topbar.untitled = Durung Ono Jenenge
+
+# English: Saved
+# Indonesia: Tersimpan
+topbar.saved = Wes Disimpen
+
+# English: Saving...
+# Indonesia: Menyimpan...
+topbar.saving = Jek Nyimpen...
+
+# English: Offline Guide
+# Indonesia: Panduan Offline
+topbar.guide = Kerpekan
+
+
+# ------------------------------------------------------------------------------
+# 5. HOME (DASHBOARD CATATAN ANDROID)
+# ------------------------------------------------------------------------------
+
+# English: Search notes...
+# Indonesia: Cari catatan...
+home.searchPlaceholder = Nggolek cathetan...
+
+# English: Select items
+# Indonesia: Pilih item
+home.selectItems = Pilih cathetan
+
+# English: {count} selected
+# Indonesia: {count} dipilih
+home.itemsSelected = {count} kepilih
+
+# English: All
+# Indonesia: Semua
+home.allNotes = Kabeh
+
+# English: New Folder
+# Indonesia: Folder Baru
+home.newFolder = Folder Anyar
+
+# English: Create Folder
+# Indonesia: Buat Folder
+home.createFolder = Gae Folder
+
+# English: Folder Name
+# Indonesia: Nama Folder
+home.folderNamePrompt = Jenenge Folder
+
+# English: Rename Title
+# Indonesia: Ganti Nama
+home.renameTitle = Ganti Jeneng
+
+# English: Delete note?
+# Indonesia: Hapus catatan?
+home.deleteConfirmTitle = Busek cathetan?
+
+# English: Are you sure you want to delete this note?
+# Indonesia: Apakah Anda yakin ingin menghapus catatan ini?
+home.deleteConfirmMsg = Umak yakin temenan a ate mbusek cathetan iki?
+
+# English: Private notes
+# Indonesia: Catatan Pribadi
+home.privateNotes = Cathetan Nyingit
+
+# English: Exit Private notes
+# Indonesia: Keluar Catatan Pribadi
+home.exitPrivateNotes = Metu teko Cathetan Nyingit
+
+# English: Pull down to reveal private notes
+# Indonesia: Tarik ke bawah untuk catatan pribadi
+home.pullDownHint = Tarik ngisor gae mbukak Cathetan Nyingit
+
+# English: Release to view private notes
+# Indonesia: Lepaskan untuk melihat catatan pribadi
+home.releaseHint = Uculno gae ndelok cathetan nyingit
+
+
+# ------------------------------------------------------------------------------
+# 6. DUAL PANE (SPLIT DOKUMEN)
+# ------------------------------------------------------------------------------
+
+# English: Open File
+# Indonesia: Buka Berkas
+dualpane.openFile = Bukak Berkas
+
+# English: New Document
+# Indonesia: Dokumen Baru
+dualpane.newDocument = Dokumen Anyar
+
+# English: Browse or drop a file here
+# Indonesia: Jelajahi atau jatuhkan berkas di sini
+dualpane.dropHint = Nggoleki opo cemplungno berkas nang kene
+
+# English: Locked Standard
+# Indonesia: Terkunci Standar
+dualpane.lockStandard = Kunci Standar
+
+# English: Snap Scroll Locked
+# Indonesia: Kunci Gulir Rapat
+dualpane.snapLocked = Kunci Gulung Rapet
+
+# English: Scroll Paused
+# Indonesia: Gulir Dijeda
+dualpane.scrollPaused = Lerem Gulung
+
+
+# ------------------------------------------------------------------------------
+# 7. SETTINGS (PENGATURAN)
+# ------------------------------------------------------------------------------
+
+# English: Settings
+# Indonesia: Pengaturan
+settings.title = Setelan
+
+# English: Appearance
+# Indonesia: Tampilan
+settings.appearance = Tampilan
+
+# English: Interface Theme
+# Indonesia: Tema Antarmuka
+settings.theme = Werno Tampilan
+
+# English: Dark or light appearance
+# Indonesia: Tampilan gelap atau terang
+settings.themeSub = Tampilan peteng opo padhang
+
+# English: Dark
+# Indonesia: Gelap
+settings.themeDark = Peteng
+
+# English: Light
+# Indonesia: Terang
+settings.themeLight = Padhang
+
+# English: Editor Font
+# Indonesia: Font Editor
+settings.editorFont = Font Nulis
+
+# English: Writing & reading typography
+# Indonesia: Tipografi membaca & menulis
+settings.fontSub = Gaya aksara moco karo nulis
+
+# English: Interface Language
+# Indonesia: Bahasa Antarmuka
+settings.language = Boso Tampilan
+
+# English: Choose display language & dialect
+# Indonesia: Pilih bahasa & dialek tampilan
+settings.languageSub = Pilih boso karo dhialek tampilan
+
+# English: Editor Preferences
+# Indonesia: Preferensi Editor
+settings.preferences = Pilihan Nulis
+
+# English: Stay on Top
+# Indonesia: Tetap di Atas
+settings.stayOnTop = Pancet Ndek Duwur
+
+# English: Pin window (Ctrl+T)
+# Indonesia: Sematkan jendela (Ctrl+T)
+settings.stayOnTopSub = Templekno cendhela neng duwur (Ctrl+T)
+
+# English: Markdown Preview
+# Indonesia: Pratinjau Markdown
+settings.alwaysPreview = Delokan Markdown
+
+# English: Always open in preview mode
+# Indonesia: Selalu buka dalam mode pratinjau
+settings.alwaysPreviewSub = Bukak langsung nang mode delokan
+
+# English: Dual Pane Snap Scroll
+# Indonesia: Gulir Rapat Panel Ganda
+settings.snapScroll = Gulung Rapet Panel Loro
+
+# English: Snap follower pane on re-lock
+# Indonesia: Rapatkan panel saat dikunci kembali
+settings.snapScrollSub = Rapekno papan pas dikunci maneh
+
+# English: High Refresh Rate (120Hz)
+# Indonesia: Kecepatan Segar Tinggi (120Hz)
+settings.highRefresh = Gebyaran Duwur (120Hz)
+
+# English: Smooth animations vs 60Hz battery saver
+# Indonesia: Animasi mulus vs hemat baterai 60Hz
+settings.highRefreshSub = Gerakan luwes vs ngirit batré 60Hz
+
+# English: Offline Interactive Guide
+# Indonesia: Panduan Interaktif Offline
+settings.interactiveGuide = Kerpekan Gae Umak
+
+# English: Markdown tips & shortcut reference
+# Indonesia: Tips markdown & pintasan keyboard
+settings.interactiveGuideSub = Tips markdown karo tombol cepet
+
+# English: Default Application
+# Indonesia: Aplikasi Standar
+settings.defaultApp = Aplikasi Standar
+
+# English: Set as Default
+# Indonesia: Jadikan Standar
+settings.setAsDefault = Dadekno Standar
+
+# English: Unregister
+# Indonesia: Hapus Asosiasi
+settings.unregister = Coplok Asosiasi-ne
+
+# English: Application Updates
+# Indonesia: Pembaruan Aplikasi
+settings.appUpdates = Anyari Aplikasi-ne
+
+# English: Check Updates
+# Indonesia: Periksa Pembaruan
+settings.checkUpdates = Cek-sek Anyaran
+
+# English: Download Update
+# Indonesia: Unduh Pembaruan
+settings.downloadUpdate = Undhuh Anyaran-e
+
+# English: Restart & Install
+# Indonesia: Mulai Ulang & Pasang
+settings.restartInstall = Baleni terus Pasang
+
+# English: About & Support
+# Indonesia: Tentang & Dukungan
+settings.about = Babagan & Dhukungan
+
+# English: Lightweight, distraction-free text & markdown editor crafted for speed and elegance.
+# Indonesia: Editor teks & markdown ringan bebas distraksi dirancang untuk kecepatan dan keindahan.
+settings.aboutDesc = Editor teks & markdown paling entheng apik sak ndunyo, dirancang cek kipa karo cepet.
+
