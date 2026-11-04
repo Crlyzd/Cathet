@@ -4,6 +4,7 @@ import { serializeEditorContent, renderEditorTextWithPills, attachPillClickHandl
 import { replaceBrokenImageWithFallback } from "../utils/brokenImageFallback";
 import { handleEditorPaste } from "../utils/editorPasteHandler";
 import { captureScrollRatio, restoreScrollRatio } from "../utils/scrollSync";
+import { attachTaskCheckboxListener } from "../utils/taskListHandler";
 
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { attachTouchZoom, TouchZoomOptions } from "../utils/touchZoomHandler";
@@ -48,6 +49,7 @@ export class EditorComponent {
 
   private bindEvents(): void {
     attachPillClickHandler(this.editorEl);
+    attachTaskCheckboxListener(this.editorEl, () => this.rawContent, (c) => { this.rawContent = c; });
 
     // Handle paste: images, rich HTML (tables/code), TSV, and quoted paths
     this.editorEl.addEventListener("paste", (e: ClipboardEvent) => {
