@@ -1094,3 +1094,33 @@ px tsc --noEmit and cargo check.
   - `src-tauri/gen/android/app/src/main/java/com/cathet/app/MainActivity.kt`: Forwarded `WindowInsetsCompat.Type.ime()` to WebView (132 lines).
   - `src-tauri/gen/android/app/src/main/AndroidManifest.xml`: Added `android:windowSoftInputMode="adjustResize"`.
   - `history.md`: Appended changelog entry per Rule 13.
+
+
+### 2026-11-04: Native SVG Text Rendering & Frosted Glass Image Address Insertion Modal
+
+- **Summary**:
+  1. **Native SVG Vector Graphics Rendering in Markdown Preview (`markdownSanitizer.ts`, `markdown.ts`, `editor.css`)**:
+     - Extended zero-dependency `DOMParser` HTML sanitizer with safe SVG vector elements (`svg`, `g`, `path`, `circle`, `rect`, `line`, `polyline`, `polygon`, `ellipse`, `text`, `tspan`, `defs`, `clippath`, `mask`, `pattern`, `use`, `title`, `desc`) and geometry/presentation attributes (`viewbox`, `xmlns`, `fill`, `fill-rule`, `stroke`, `stroke-width`, `d`, `cx`, `cy`, `r`, `points`, `transform`, `opacity`, etc.) while strictly prohibiting `<script>` and `<foreignObject>` for zero XSS risk.
+     - Added `<svg\b` block buffering in `markdown.ts` to preserve single-line and multi-line raw SVG text intact without splitting child nodes into paragraph `<p>` tags.
+     - Added `.editor-content svg` responsive CSS styling (`max-width: 100%; height: auto; vertical-align: middle;`) supporting `fill="currentColor"` and `stroke="currentColor"` which automatically adapt to Dark and Light modes.
+  2. **Anti-Monolith Markdown Parser Decomposition (`markdownTable.ts`, `markdown.ts`)**:
+     - Extracted GFM pipe and TSV table parsing (~80 lines) into `src-ui/src/utils/markdownTable.ts` (96 lines), reducing `markdown.ts` from 246 lines down to 185 lines and preserving the project's strict <250 lines Anti-Monolith threshold.
+  3. **Frosted Glass Image Address Insertion Modal (`ImageInsertModal.ts`, `popup.css`, `formatUtils.ts`)**:
+     - Created `ImageInsertModalComponent` (161 lines) offering a streamlined 2-field dialog for Image Address and optional Alt Text with caret position preservation.
+     - Platform-tailored ergonomics: Manual paste/type input on Desktop; integrated system photo picker button on Android that optimizes the chosen image to WebP and embeds it as a collapsible Base64 pill badge (`data:image/webp;base64,...`).
+     - Added Desktop shortcut `Ctrl+Shift+I` in `shortcuts.ts`, context menu entry `Format ▸ Insert ▸ Image...` in `contextMenuItems.ts`, and dedicated mobile ribbon button in `MobileFormatBar.ts`.
+  4. **Backend File Dialog Filters (`file.rs`)**:
+     - Added `"svg"` to `FILTER_ALL_SUPPORTED` and registered Scalable Vector Graphics (`*.svg`) in open and save dialogs.
+- **Files Modified**:
+  - `src-ui/src/utils/markdownSanitizer.ts`: Added SVG elements and attributes whitelist (89 lines).
+  - `src-ui/src/utils/markdownTable.ts`: Extracted modular table parser (96 lines).
+  - `src-ui/src/utils/markdown.ts`: Added SVG block buffering and delegated table parsing (185 lines).
+  - `src-ui/src/components/ImageInsertModal.ts`: Created frosted glass image address modal (161 lines).
+  - `src-ui/src/utils/formatUtils.ts`: Added `"image"` format action with caret preservation (217 lines).
+  - `src-ui/src/utils/contextMenuItems.ts`: Added `image` format icon and `fmt_image` submenu item (138 lines).
+  - `src-ui/src/components/MobileFormatBar.ts`: Added image insert button to format ribbon (100 lines).
+  - `src-ui/src/utils/shortcuts.ts`: Mapped `Ctrl+Shift+I` to image insert modal (103 lines).
+  - `src-ui/styles/editor.css`: Added responsive SVG preview styles.
+  - `src-ui/styles/popup.css`: Added frosted glass styling for image insert modal.
+  - `src-tauri/src/commands/file.rs`: Added SVG file filter support (239 lines).
+  - `history.md`: Appended changelog entry per Rule 13.
