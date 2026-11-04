@@ -1,11 +1,16 @@
 import { icons } from "../../utils/monochromeIcons";
 import { APP_VERSION } from "../../version";
 import { FontSelectComponent, FontOption } from "./FontSelect";
+import { LanguageSelectComponent } from "./LanguageSelect";
 import { PlatformService } from "../../services/platformService";
+import { SUPPORTED_LOCALES } from "../../locales";
+import { t } from "../../services/i18nService";
+import { initAutoScroll } from "../../utils/autoScroll";
 
 export interface SettingsPaneCallbacks {
   onThemeChange: (theme: "dark" | "light") => void;
   onFontChange: (fontId: string) => void;
+  onLanguageChange: (locale: string) => void;
   onAlwaysOnTopChange: (enabled: boolean) => void;
   onAlwaysPreviewChange: (enabled: boolean) => void;
   onSnapScrollChange: (enabled: boolean) => void;
@@ -19,6 +24,7 @@ export interface SettingsPaneCallbacks {
 export interface SettingsPaneState {
   theme: "dark" | "light";
   fontId: string;
+  locale: string;
   isAlwaysOnTop: boolean;
   alwaysPreview: boolean;
   snapScroll: boolean;
@@ -37,6 +43,8 @@ export class SettingsPaneComponent {
   private state: SettingsPaneState;
   private callbacks: SettingsPaneCallbacks;
   private fontSelect: FontSelectComponent | null = null;
+  private languageSelect: LanguageSelectComponent | null = null;
+  private autoScrollCleanup: (() => void) | null = null;
 
   constructor(container: HTMLElement, state: SettingsPaneState, callbacks: SettingsPaneCallbacks) {
     this.container = container;
@@ -45,91 +53,82 @@ export class SettingsPaneComponent {
     this.render();
   }
 
-  public updateFontUI(fontId: string): void {
-    this.fontSelect?.updateUI(fontId);
-  }
+  public updateFontUI(fontId: string): void { this.fontSelect?.updateUI(fontId); }
+  public updateLanguageUI(locale: string): void { this.languageSelect?.updateUI(locale); }
 
   public updateState(partial: Partial<SettingsPaneState>): void {
     this.state = { ...this.state, ...partial };
-    if (Object.keys(partial).length === 1 && partial.fontId !== undefined) {
-      this.updateFontUI(partial.fontId);
-      return;
+    if (Object.keys(partial).length === 1) {
+      if (partial.fontId !== undefined) return this.updateFontUI(partial.fontId);
+      if (partial.locale !== undefined) return this.updateLanguageUI(partial.locale);
     }
     this.render();
   }
 
   private getUpdateHtml(): string {
-    if (this.state.downloadState === "downloading") {
-      return `<div class="update-progress-wrap"><div class="update-progress-track"><div class="update-progress-fill" style="width: ${this.state.downloadPercent}%"></div></div><span class="update-progress-info">${this.state.downloadPercent.toFixed(0)}%</span></div>`;
+    const { downloadState, downloadPercent, updateAvailable } = this.state;
+    if (downloadState === "downloading") {
+      return `<div class="update-progress-wrap"><div class="update-progress-track"><div class="update-progress-fill" style="width: ${downloadPercent}%"></div></div><span class="update-progress-info">${downloadPercent.toFixed(0)}%</span></div>`;
     }
-    if (this.state.downloadState === "ready") return `<button class="glass-btn update-ready" id="btn-restart-install">Restart & Install</button>`;
-    if (this.state.updateAvailable) return `<button class="glass-btn update-ready" id="btn-start-download">Download Update</button>`;
-    return `<button class="glass-btn" id="btn-check-updates">Check Updates</button>`;
+    if (downloadState === "ready") return `<button class="glass-btn update-ready" id="btn-restart-install">${t("settings.restartInstall")}</button>`;
+    if (updateAvailable) return `<button class="glass-btn update-ready" id="btn-start-download">${t("settings.downloadUpdate")}</button>`;
+    return `<button class="glass-btn" id="btn-check-updates">${t("settings.checkUpdates")}</button>`;
   }
 
   private render(): void {
-    if (this.fontSelect) {
-      this.fontSelect.destroy();
-      this.fontSelect = null;
-    }
-
+    this.destroySelects();
+    this.autoScrollCleanup?.();
     const isMobile = PlatformService.getInstance().isMobile();
-
     const activePath = this.state.registeredExePath || this.state.currentExePath || "";
     const prefix = this.state.isRegistered ? "Registered: " : "Path: ";
-    const truncated = activePath.length > 28 ? "..." + activePath.slice(-25) : activePath;
-    const defaultAppSubtext = activePath ? `${prefix}${truncated}` : "Set as default for .txt & .md";
+    const defaultAppSubtext = activePath ? `${prefix}${activePath}` : t("settings.defaultApp");
+    const updateText = this.state.downloadState === "downloading" ? "Downloading..." : this.state.downloadState === "ready" ? "Ready!" : this.state.updateAvailable ? `v${this.state.latestVersion || "3.0"} ready` : `Up to date (v${APP_VERSION})`;
 
     this.container.innerHTML = `
       <div class="settings-card">
-        <!-- Theme Row -->
         <div class="setting-item">
           <div class="setting-meta">
-            <span class="setting-title">Interface Theme</span>
-            <span class="setting-subtext">Dark or light appearance</span>
+            <span class="setting-title">${t("settings.theme")}</span>
+            <span class="setting-subtext"><span class="subtext-content">${t("settings.themeSub")}</span></span>
           </div>
           <div class="pill-toggle-group">
-            <button class="pill-toggle-btn ${this.state.theme === "dark" ? "active" : ""}" id="btn-theme-dark">
-              ${icons.moon}<span>Dark</span>
-            </button>
-            <button class="pill-toggle-btn ${this.state.theme === "light" ? "active" : ""}" id="btn-theme-light">
-              ${icons.sun}<span>Light</span>
-            </button>
+            <button class="pill-toggle-btn ${this.state.theme === "dark" ? "active" : ""}" id="btn-theme-dark">${icons.moon}<span>${t("settings.themeDark")}</span></button>
+            <button class="pill-toggle-btn ${this.state.theme === "light" ? "active" : ""}" id="btn-theme-light">${icons.sun}<span>${t("settings.themeLight")}</span></button>
           </div>
         </div>
 
-        <!-- Font Row -->
         <div class="setting-item">
           <div class="setting-meta">
-            <span class="setting-title">Editor Font</span>
-            <span class="setting-subtext">Writing & reading typography</span>
+            <span class="setting-title">${t("settings.language")}</span>
+            <span class="setting-subtext"><span class="subtext-content">${t("settings.languageSub")}</span></span>
+          </div>
+          <div id="language-select-mount"></div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-meta">
+            <span class="setting-title">${t("settings.editorFont")}</span>
+            <span class="setting-subtext"><span class="subtext-content">${t("settings.fontSub")}</span></span>
           </div>
           <div id="font-select-mount"></div>
         </div>
 
-        <!-- Stay on Top Row (Desktop only) -->
-        ${
-          !isMobile
-            ? `
+        ${!isMobile ? `
         <div class="setting-item">
           <div class="setting-meta">
-            <span class="setting-title">Stay on Top</span>
-            <span class="setting-subtext">Pin window (Ctrl+T)</span>
+            <span class="setting-title">${t("settings.stayOnTop")}</span>
+            <span class="setting-subtext"><span class="subtext-content">${t("settings.stayOnTopSub")}</span></span>
           </div>
           <label class="switch-control">
             <input type="checkbox" id="ontop-checkbox" ${this.state.isAlwaysOnTop ? "checked" : ""} />
             <span class="switch-track"></span>
           </label>
-        </div>
-        `
-            : ""
-        }
+        </div>` : ""}
 
-        <!-- Markdown Preview Row -->
         <div class="setting-item">
           <div class="setting-meta">
-            <span class="setting-title">Markdown Preview</span>
-            <span class="setting-subtext">Always open in preview mode</span>
+            <span class="setting-title">${t("settings.alwaysPreview")}</span>
+            <span class="setting-subtext"><span class="subtext-content">${t("settings.alwaysPreviewSub")}</span></span>
           </div>
           <label class="switch-control">
             <input type="checkbox" id="always-preview-checkbox" ${this.state.alwaysPreview ? "checked" : ""} />
@@ -137,11 +136,10 @@ export class SettingsPaneComponent {
           </label>
         </div>
 
-        <!-- Dual Pane Snap Scroll Row -->
         <div class="setting-item">
           <div class="setting-meta">
-            <span class="setting-title">Dual Pane Snap Scroll</span>
-            <span class="setting-subtext">Snap follower pane on re-lock</span>
+            <span class="setting-title">${t("settings.snapScroll")}</span>
+            <span class="setting-subtext"><span class="subtext-content">${t("settings.snapScrollSub")}</span></span>
           </div>
           <label class="switch-control">
             <input type="checkbox" id="snap-scroll-checkbox" ${this.state.snapScroll ? "checked" : ""} />
@@ -149,114 +147,94 @@ export class SettingsPaneComponent {
           </label>
         </div>
 
-        <!-- Default Application Row (Desktop only) -->
-        ${
-          !isMobile
-            ? `
+        ${!isMobile ? `
         <div class="setting-item">
           <div class="setting-meta">
-            <span class="setting-title">Default Application</span>
+            <span class="setting-title">${t("settings.defaultApp")}</span>
             <span class="setting-subtext" id="default-app-subtext" title="${prefix}${activePath}">
-              ${defaultAppSubtext}
+              <span class="subtext-content">${defaultAppSubtext}</span>
             </span>
           </div>
           <div class="default-app-actions">
-            ${
-              this.state.isRegistered
-                ? `<button class="glass-btn" id="btn-unregister-default-app" title="Remove Cathet file associations">Unregister</button>`
-                : `<button class="glass-btn" id="btn-set-default-app">Set as Default</button>`
-            }
+            ${this.state.isRegistered
+              ? `<button class="glass-btn" id="btn-unregister-default-app">${t("settings.unregister")}</button>`
+              : `<button class="glass-btn" id="btn-set-default-app">${t("settings.setAsDefault")}</button>`}
           </div>
         </div>
-        `
-            : ""
-        }
 
-        <!-- Updates Row (Desktop only) -->
-        ${
-          !isMobile
-            ? `
         <div class="setting-item">
           <div class="setting-meta">
-            <span class="setting-title">Application Updates</span>
+            <span class="setting-title">${t("settings.appUpdates")}</span>
             <span class="setting-subtext" id="update-status-text">
-              ${
-                this.state.downloadState === "downloading"
-                  ? "Downloading update payload..."
-                  : this.state.downloadState === "ready"
-                  ? "Download complete!"
-                  : this.state.updateAvailable
-                  ? `v${this.state.latestVersion || "3.0"} ready`
-                  : `Up to date (v${APP_VERSION})`
-              }
+              <span class="subtext-content">${updateText}</span>
             </span>
           </div>
           ${this.getUpdateHtml()}
-        </div>
-        `
-            : ""
-        }
+        </div>` : ""}
       </div>
     `;
+
+    const langMount = this.container.querySelector("#language-select-mount") as HTMLElement | null;
+    if (langMount) {
+      this.languageSelect = new LanguageSelectComponent(
+        langMount, SUPPORTED_LOCALES, this.state.locale,
+        (locale) => this.callbacks.onLanguageChange(locale)
+      );
+    }
 
     const fontMount = this.container.querySelector("#font-select-mount") as HTMLElement | null;
     if (fontMount) {
       this.fontSelect = new FontSelectComponent(
-        fontMount,
-        this.state.fonts,
-        this.state.fontId,
+        fontMount, this.state.fonts, this.state.fontId,
         (fontId) => this.callbacks.onFontChange(fontId)
       );
     }
 
     this.bindEvents();
-    if (this.state.updateAvailable || this.state.downloadState === "ready") {
-      requestAnimationFrame(() => {
-        this.container.scrollTo({ top: this.container.scrollHeight, behavior: "smooth" });
-      });
-    }
+    this.autoScrollCleanup = initAutoScroll(this.container);
   }
 
   private bindEvents(): void {
     this.container.querySelector("#btn-theme-dark")?.addEventListener("click", () => {
       if (this.state.theme !== "dark") this.callbacks.onThemeChange("dark");
     });
-
     this.container.querySelector("#btn-theme-light")?.addEventListener("click", () => {
       if (this.state.theme !== "light") this.callbacks.onThemeChange("light");
     });
 
-    const bindCheck = (id: string, cb: (v: boolean) => void) => {
+    const bind = (id: string, cb: (v: boolean) => void) => {
       (this.container.querySelector(id) as HTMLInputElement | null)?.addEventListener("change", (e) => {
         cb((e.target as HTMLInputElement).checked);
       });
     };
-    bindCheck("#ontop-checkbox", this.callbacks.onAlwaysOnTopChange);
-    bindCheck("#always-preview-checkbox", this.callbacks.onAlwaysPreviewChange);
-    bindCheck("#snap-scroll-checkbox", this.callbacks.onSnapScrollChange);
+    bind("#ontop-checkbox", this.callbacks.onAlwaysOnTopChange);
+    bind("#always-preview-checkbox", this.callbacks.onAlwaysPreviewChange);
+    bind("#snap-scroll-checkbox", this.callbacks.onSnapScrollChange);
 
-    const bindAsyncBtn = (id: string, action: () => Promise<void>) => {
+    const bindBtn = (id: string, action: () => Promise<void>) => {
       this.container.querySelector(id)?.addEventListener("click", async (e) => {
         const btn = e.currentTarget as HTMLButtonElement | null;
         if (btn) btn.disabled = true;
-        try {
-          await action();
-        } finally {
-          if (btn) btn.disabled = false;
-        }
+        try { await action(); } finally { if (btn) btn.disabled = false; }
       });
     };
-
-    bindAsyncBtn("#btn-set-default-app", () => this.callbacks.onConfigureDefaultApp());
-    bindAsyncBtn("#btn-unregister-default-app", () => this.callbacks.onUnregisterDefaultApp());
-    bindAsyncBtn("#btn-check-updates", () => this.callbacks.onCheckUpdates());
-
+    bindBtn("#btn-set-default-app", () => this.callbacks.onConfigureDefaultApp());
+    bindBtn("#btn-unregister-default-app", () => this.callbacks.onUnregisterDefaultApp());
+    bindBtn("#btn-check-updates", () => this.callbacks.onCheckUpdates());
     this.container.querySelector("#btn-start-download")?.addEventListener("click", () => this.callbacks.onStartDownload());
     this.container.querySelector("#btn-restart-install")?.addEventListener("click", () => this.callbacks.onInstallAndRestart());
   }
 
-  public destroy(): void {
+  private destroySelects(): void {
     this.fontSelect?.destroy();
     this.fontSelect = null;
+    this.languageSelect?.destroy();
+    this.languageSelect = null;
+  }
+
+  public destroy(): void {
+    this.autoScrollCleanup?.();
+    this.autoScrollCleanup = null;
+    this.destroySelects();
   }
 }

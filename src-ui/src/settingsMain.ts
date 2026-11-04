@@ -9,6 +9,7 @@ import { UpdateService } from "./services/updateService";
 import { AssociationService, AssociationStatus } from "./services/associationService";
 import { PreviewService } from "./services/previewService";
 import { DualPaneService } from "./services/dualPaneService";
+import { I18nService } from "./services/i18nService";
 import { APP_VERSION } from "./version";
 
 class SettingsApp {
@@ -18,9 +19,10 @@ class SettingsApp {
   private associationService = new AssociationService();
   private previewService = new PreviewService();
   private dualPaneService = new DualPaneService();
+  private i18n = I18nService.getInstance();
   private tabsComponent: SettingsTabsComponent;
   private currentWindow = getCurrentWindow();
-  private isAlwaysOnTop: boolean = false;
+  private isAlwaysOnTop = false;
 
   constructor() {
     const root = document.getElementById("settings-root");
@@ -38,6 +40,7 @@ class SettingsApp {
       {
         theme: currentTheme,
         fontId: currentFont.id,
+        locale: this.i18n.getLocale(),
         isAlwaysOnTop: this.isAlwaysOnTop,
         alwaysPreview: this.previewService.getAlwaysPreview(),
         snapScroll: this.dualPaneService.getSnapScroll(),
@@ -48,6 +51,7 @@ class SettingsApp {
       {
         onThemeChange: (theme) => this.handleThemeChange(theme),
         onFontChange: (fontId) => this.handleFontChange(fontId),
+        onLanguageChange: (locale) => this.handleLanguageChange(locale),
         onAlwaysOnTopChange: (enabled) => this.handleAlwaysOnTopChange(enabled),
         onAlwaysPreviewChange: (enabled) => this.handleAlwaysPreviewChange(enabled),
         onSnapScrollChange: (enabled) => this.handleSnapScrollChange(enabled),
@@ -77,9 +81,7 @@ class SettingsApp {
   }
 
   private async handleThemeChange(theme: "dark" | "light"): Promise<void> {
-    if (this.themeService.getTheme() !== theme) {
-      this.themeService.toggleTheme();
-    }
+    if (this.themeService.getTheme() !== theme) this.themeService.toggleTheme();
     this.applyTheme(theme);
     this.tabsComponent.updateState({ theme });
     await invoke("sync_window_theme", { theme }).catch(console.error);
@@ -90,6 +92,11 @@ class SettingsApp {
     this.fontService.setFont(fontId);
     this.tabsComponent.updateState({ fontId });
     await emit("cathet:font-change", fontId);
+  }
+
+  private async handleLanguageChange(locale: string): Promise<void> {
+    this.i18n.setLocale(locale);
+    this.tabsComponent.updateState({ locale });
   }
 
   private async handleAlwaysOnTopChange(enabled: boolean): Promise<void> {
@@ -123,36 +130,23 @@ class SettingsApp {
     }
   }
 
-  private async handleCheckUpdates(isManual: boolean = false): Promise<void> {
+  private async handleCheckUpdates(isManual = false): Promise<void> {
     const info = await this.updateService.checkForUpdates();
     if (info?.update_available) {
-      this.tabsComponent.updateState({
-        updateAvailable: true,
-        latestVersion: info.latest_version,
-      });
+      this.tabsComponent.updateState({ updateAvailable: true, latestVersion: info.latest_version });
     } else if (isManual) {
       const ver = info?.current_version || APP_VERSION;
-      await showGlassDialog({
-        title: "Cathet",
-        message: `Cathet is up to date (v${ver})`,
-        type: "success",
-      });
+      await showGlassDialog({ title: "Cathet", message: `Cathet is up to date (v${ver})`, type: "success" });
     }
   }
 
   private async handleStartDownload(): Promise<void> {
     try {
       this.tabsComponent.setDownloadProgress(0);
-      await this.updateService.startDownload((progress) => {
-        this.tabsComponent.setDownloadProgress(progress.percent);
-      });
+      await this.updateService.startDownload((progress) => this.tabsComponent.setDownloadProgress(progress.percent));
       this.tabsComponent.setDownloadProgress(100);
     } catch (err) {
-      await showGlassDialog({
-        title: "Update Error",
-        message: `Download failed: ${err}`,
-        type: "error",
-      });
+      await showGlassDialog({ title: "Update Error", message: `Download failed: ${err}`, type: "error" });
       this.tabsComponent.updateState({ updateAvailable: true });
     }
   }
@@ -161,20 +155,12 @@ class SettingsApp {
     try {
       await this.updateService.installAndRestart();
     } catch (err) {
-      await showGlassDialog({
-        title: "Update Error",
-        message: `Install failed: ${err}`,
-        type: "error",
-      });
+      await showGlassDialog({ title: "Update Error", message: `Install failed: ${err}`, type: "error" });
     }
   }
 
   private async handleClose(): Promise<void> {
-    try {
-      await this.currentWindow.close();
-    } catch (e) {
-      console.error("Failed to close settings window:", e);
-    }
+    try { await this.currentWindow.close(); } catch (e) { console.error("Failed to close settings:", e); }
   }
 
   private async handleOpenTutorial(): Promise<void> {
@@ -190,23 +176,18 @@ class SettingsApp {
   private async initListeners(): Promise<void> {
     await listen<"dark" | "light">("cathet:theme-change", (e) => { this.applyTheme(e.payload); this.tabsComponent.updateState({ theme: e.payload }); });
     await listen<string>("cathet:font-change", (e) => { this.fontService.setFont(e.payload); this.tabsComponent.updateState({ fontId: e.payload }); });
+    await listen<string>("cathet:language-change", (e) => { this.i18n.setLocale(e.payload, false); this.tabsComponent.updateState({ locale: e.payload }); });
     await listen<boolean>("cathet:ontop-change", (e) => { this.tabsComponent.updateState({ isAlwaysOnTop: (this.isAlwaysOnTop = e.payload) }); });
     await listen<boolean>("cathet:always-preview-change", (e) => { this.previewService.setAlwaysPreview(e.payload); this.tabsComponent.updateState({ alwaysPreview: e.payload }); });
     await listen<boolean>("cathet:snap-scroll-change", (e) => { this.dualPaneService.setSnapScroll(e.payload); this.tabsComponent.updateState({ snapScroll: e.payload }); });
 
-    const resync = () => {
-      this.syncAlwaysOnTop();
-      this.syncAssociationStatus();
-    };
+    const resync = () => { this.syncAlwaysOnTop(); this.syncAssociationStatus(); };
     window.addEventListener("focus", resync);
     await listen("cathet:settings-focused", resync);
 
     await listen<any>("cathet:update-status", (event) => {
       const info = event.payload;
-      this.tabsComponent.updateState({
-        updateAvailable: !!info?.update_available,
-        latestVersion: info?.latest_version,
-      });
+      this.tabsComponent.updateState({ updateAvailable: !!info?.update_available, latestVersion: info?.latest_version });
     });
   }
 
@@ -236,11 +217,7 @@ class SettingsApp {
         });
       }
     } catch (err: any) {
-      await showGlassDialog({
-        type: "error",
-        title: "Registration Failed",
-        message: typeof err === "string" ? err : err?.message || String(err),
-      });
+      await showGlassDialog({ type: "error", title: "Registration Failed", message: typeof err === "string" ? err : err?.message || String(err) });
     }
   }
 
@@ -249,18 +226,10 @@ class SettingsApp {
       const status = await this.associationService.unregisterDefaultApp();
       if (status) {
         this.applyAssociationStatus(status);
-        await showGlassDialog({
-          type: "info",
-          title: "Associations Removed",
-          message: "Cathet file associations have been cleanly removed from the Windows Registry.",
-        });
+        await showGlassDialog({ type: "info", title: "Associations Removed", message: "Cathet file associations have been cleanly removed from the Windows Registry." });
       }
     } catch (err: any) {
-      await showGlassDialog({
-        type: "error",
-        title: "Unregister Failed",
-        message: typeof err === "string" ? err : err?.message || String(err),
-      });
+      await showGlassDialog({ type: "error", title: "Unregister Failed", message: typeof err === "string" ? err : err?.message || String(err) });
     }
   }
 }

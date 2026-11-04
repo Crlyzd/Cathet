@@ -3,6 +3,7 @@ import { FontService } from "../services/fontService";
 import { ThemeService } from "../services/themeService";
 import { PreviewService } from "../services/previewService";
 import { DualPaneService } from "../services/dualPaneService";
+import { I18nService } from "../services/i18nService";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -16,13 +17,14 @@ export class SettingsModalComponent {
   private overlay: HTMLElement;
   private contentContainer: HTMLElement;
   private settingsView: MobileSettingsView | null = null;
-  private isVisible: boolean = false;
+  private isVisible = false;
   private callbacks: SettingsModalCallbacks;
 
   private fontService = new FontService();
   private themeService = new ThemeService();
   private previewService = new PreviewService();
   private dualPaneService = new DualPaneService();
+  private i18n = I18nService.getInstance();
 
   constructor(callbacks: SettingsModalCallbacks) {
     this.callbacks = callbacks;
@@ -43,9 +45,7 @@ export class SettingsModalComponent {
   }
 
   private schedulePreMount(): void {
-    const preMount = () => {
-      if (!this.settingsView) this.ensureSettingsView();
-    };
+    const preMount = () => { if (!this.settingsView) this.ensureSettingsView(); };
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
       (window as any).requestIdleCallback(preMount);
     } else {
@@ -57,7 +57,6 @@ export class SettingsModalComponent {
     if (this.settingsView) return;
     const currentTheme = this.themeService.getTheme();
     const currentFont = this.fontService.getCurrentFont();
-
     const isHighRefresh = localStorage.getItem("cathet:high-refresh") !== "false";
 
     this.settingsView = new MobileSettingsView(
@@ -65,6 +64,7 @@ export class SettingsModalComponent {
       {
         theme: currentTheme,
         fontId: currentFont.id,
+        locale: this.i18n.getLocale(),
         alwaysPreview: this.previewService.getAlwaysPreview(),
         snapScroll: this.dualPaneService.getSnapScroll(),
         highRefreshRate: isHighRefresh,
@@ -82,6 +82,10 @@ export class SettingsModalComponent {
           this.settingsView?.updateState({ fontId });
           this.callbacks.onFontChanged?.(this.fontService.getCurrentFont().family);
           await emit("cathet:font-change", fontId);
+        },
+        onLanguageChange: async (locale) => {
+          this.i18n.setLocale(locale);
+          this.settingsView?.updateState({ locale });
         },
         onAlwaysPreviewChange: async (enabled) => {
           this.previewService.setAlwaysPreview(enabled);
@@ -110,15 +114,10 @@ export class SettingsModalComponent {
 
   private bindEvents(): void {
     this.overlay.addEventListener("click", (e) => {
-      if (e.target === this.overlay) {
-        this.hide();
-      }
+      if (e.target === this.overlay) this.hide();
     });
-
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && this.isVisible) {
-        this.hide();
-      }
+      if (e.key === "Escape" && this.isVisible) this.hide();
     });
   }
 
@@ -136,6 +135,7 @@ export class SettingsModalComponent {
     this.settingsView?.updateState({
       theme: this.themeService.getTheme(),
       fontId: this.fontService.getCurrentFont().id,
+      locale: this.i18n.getLocale(),
       alwaysPreview: this.previewService.getAlwaysPreview(),
       snapScroll: this.dualPaneService.getSnapScroll(),
       highRefreshRate: localStorage.getItem("cathet:high-refresh") !== "false",
@@ -152,11 +152,8 @@ export class SettingsModalComponent {
   }
 
   toggle(): void {
-    if (this.isVisible) {
-      this.hide();
-    } else {
-      this.show();
-    }
+    if (this.isVisible) this.hide();
+    else this.show();
   }
 
   updateSnapScroll(enabled: boolean): void {

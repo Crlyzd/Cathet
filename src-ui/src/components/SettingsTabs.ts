@@ -9,6 +9,7 @@ import {
 import { AboutPaneComponent } from "./settings/AboutPane";
 import { FontOption } from "./settings/FontSelect";
 import { PlatformService } from "../services/platformService";
+import { t } from "../services/i18nService";
 
 export interface SettingsTabCallbacks extends SettingsPaneCallbacks {
   onOpenTutorial: () => void;
@@ -18,6 +19,7 @@ export interface SettingsTabCallbacks extends SettingsPaneCallbacks {
 export interface SettingsInitialState {
   theme: "dark" | "light";
   fontId: string;
+  locale: string;
   isAlwaysOnTop: boolean;
   alwaysPreview: boolean;
   snapScroll: boolean;
@@ -36,7 +38,7 @@ export class SettingsTabsComponent {
   private activeTab: "settings" | "about" = "settings";
 
   private downloadState: "idle" | "downloading" | "ready" = "idle";
-  private downloadPercent: number = 0;
+  private downloadPercent = 0;
 
   private settingsPane: SettingsPaneComponent | null = null;
   private aboutPane: AboutPaneComponent | null = null;
@@ -70,6 +72,22 @@ export class SettingsTabsComponent {
     });
   }
 
+  public setUpdateReady(): void {
+    this.downloadState = "ready";
+    this.settingsPane?.updateState({
+      downloadState: this.downloadState,
+      downloadPercent: 100,
+    });
+  }
+
+  public updateFontUI(fontId: string): void {
+    this.settingsPane?.updateFontUI(fontId);
+  }
+
+  public updateLanguageUI(locale: string): void {
+    this.settingsPane?.updateLanguageUI(locale);
+  }
+
   private render(): void {
     const archLabel = PlatformService.getInstance().isMobile() ? "Android" : "x64";
     this.container.innerHTML = `
@@ -90,7 +108,7 @@ export class SettingsTabsComponent {
               ${icons.book}
               <span>Tutorial</span>
             </button>
-            <button class="settings-close-btn" id="settings-close-btn" title="Close">
+            <button class="settings-close-btn" id="settings-close-btn" title="${t("common.close")}">
               ${icons.close}
             </button>
           </div>
@@ -101,11 +119,11 @@ export class SettingsTabsComponent {
           <div class="segmented-nav">
             <button class="segmented-tab ${this.activeTab === "settings" ? "active" : ""}" id="tab-btn-settings">
               ${icons.settings}
-              <span>Settings</span>
+              <span>${t("settings.title")}</span>
             </button>
             <button class="segmented-tab ${this.activeTab === "about" ? "active" : ""}" id="tab-btn-about">
               ${icons.about}
-              <span>About</span>
+              <span>${t("settings.about")}</span>
             </button>
           </div>
         </div>
@@ -169,21 +187,10 @@ export class SettingsTabsComponent {
       }
     });
 
-    this.container.querySelector("#tab-btn-settings")?.addEventListener("click", () => {
-      this.switchTab("settings");
-    });
-
-    this.container.querySelector("#tab-btn-about")?.addEventListener("click", () => {
-      this.switchTab("about");
-    });
-
-    this.container.querySelector("#settings-close-btn")?.addEventListener("click", () => {
-      this.callbacks.onClose();
-    });
-
-    this.container.querySelector("#btn-header-tutorial")?.addEventListener("click", () => {
-      this.callbacks.onOpenTutorial();
-    });
+    this.container.querySelector("#tab-btn-settings")?.addEventListener("click", () => this.switchTab("settings"));
+    this.container.querySelector("#tab-btn-about")?.addEventListener("click", () => this.switchTab("about"));
+    this.container.querySelector("#settings-close-btn")?.addEventListener("click", () => this.callbacks.onClose());
+    this.container.querySelector("#btn-header-tutorial")?.addEventListener("click", () => this.callbacks.onOpenTutorial());
   }
 
   public destroy(): void {

@@ -242,8 +242,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 7px 11px;
   border-bottom: 1px solid var(--col-divider-subtle);
+  min-width: 0;
 }
 
 .setting-item:last-child {
@@ -254,6 +256,9 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .setting-title {
@@ -267,8 +272,43 @@
   color: var(--col-text-muted);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 175px;
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.subtext-content {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.setting-subtext.is-overflowing {
+  mask-image: linear-gradient(to right, black calc(100% - 14px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 14px), transparent 100%);
+}
+
+.setting-subtext.is-overflowing .subtext-content {
+  animation: autoScrollText var(--scroll-dur, 6s) ease-in-out infinite;
+  animation-delay: 1.2s;
+}
+
+.setting-item:hover .setting-subtext.is-overflowing .subtext-content,
+.setting-subtext.is-overflowing:hover .subtext-content {
+  animation-play-state: paused;
+}
+
+@keyframes autoScrollText {
+  0%, 20% {
+    transform: translateX(0);
+  }
+  65%, 85% {
+    transform: translateX(var(--scroll-dist, 0px));
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 /* Pill Toggle (Dark / Light) */
@@ -510,6 +550,7 @@ input:checked + .switch-track:before {
 .glass-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   padding: 3px 9px;
   border-radius: 5px;
@@ -520,6 +561,8 @@ input:checked + .switch-track:before {
   color: var(--col-text);
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .glass-btn:hover {
@@ -532,6 +575,8 @@ input:checked + .switch-track:before {
   display: flex;
   align-items: center;
   gap: 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .glass-btn.update-ready {

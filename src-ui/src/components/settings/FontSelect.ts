@@ -73,6 +73,10 @@ export class FontSelectComponent {
       }
     });
 
+    menu?.addEventListener("wheel", (e) => {
+      e.stopPropagation();
+    });
+
     if (this.outsideClickHandler) {
       document.removeEventListener("click", this.outsideClickHandler);
     }
