@@ -1071,3 +1071,26 @@ px tsc --noEmit and cargo check.
   - src-ui/src/utils/htmlToMarkdown.ts: Suppressed <style>/<script>/metadata tags and added colspan padding (213 lines).
   - src-ui/src/utils/markdown.ts: Stripped HTML comments in preview inline formatting (245 lines).
   - history.md: Appended changelog entry per Rule 13.
+
+
+### 2026-11-04: Universal Markdown Formatting Submenus & Android Keyboard-Elevated Dock
+
+- **Summary**:
+  1. **Lossless Markdown Formatting Engine (`formatUtils.ts`)**: Implemented 18 Markdown formatting operations (`bold`, `italic`, `strike`, `code`, `highlight`, `math`, `h1`, `h2`, `h3`, `bullet`, `number`, `task`, `quote`, `codeblock`, `link`, `table`, `rule`, `clear`) using `document.execCommand("insertText")` to preserve native browser Undo/Redo history. Supports toggling/unwrapping existing tokens on selected text, inserting empty token pairs with a centered caret (`**|**`) when no text is selected, and prefixing current lines.
+  2. **Nested Desktop Context Menu Flyouts (`ContextMenu.ts`, `contextMenuItems.ts`, `contextmenu.css`)**: Added multi-level flyout submenu rendering (`Format ▸` $\rightarrow$ `Style ▸`, `Headings ▸`, `Lists ▸`, `Insert ▸`, and `Clear Formatting`) mounted as sibling frosted glass panels inside `.context-menu-overlay` with automatic viewport edge flipping and keyboard shortcut bindings (`shortcuts.ts`).
+  3. **Android Keyboard-Elevated Dock & Format Ribbon (`keyboardTracker.ts`, `MobileFormatBar.ts`, `MobileActionBar.ts`, `mobileCoordinator.ts`, `MainActivity.kt`, `AndroidManifest.xml`, `mobile.css`)**: Combined native Android `WindowInsetsCompat.Type.ime()` (`onWebViewCreate` in `MainActivity.kt` + `windowSoftInputMode="adjustResize"`) with WebView `VisualViewport` tracking (`keyboardTracker.ts`) to dynamically set `--keyboard-inset` and smoothly elevate the mobile dock above Gboard. Added an `Aa` format button on the mobile dock that transitions into a horizontal scrollable formatting ribbon (`MobileFormatBar.ts`), pauses the 3.5s auto-collapse while typing, and automatically reverts to the standard dock when the keyboard is dismissed.
+- **Files Modified**:
+  - `src-ui/src/utils/formatUtils.ts`: Created lossless Markdown formatting engine (193 lines).
+  - `src-ui/src/utils/keyboardTracker.ts`: Created IME + VisualViewport keyboard height tracker (86 lines).
+  - `src-ui/src/components/MobileFormatBar.ts`: Created horizontal scrollable mobile formatting ribbon (99 lines).
+  - `src-ui/src/components/ContextMenu.ts`: Added multi-level nested submenu flyout support with edge clamping (177 lines).
+  - `src-ui/src/utils/contextMenuItems.ts`: Added `formatIcons` and nested `Format ▸` submenus (136 lines).
+  - `src-ui/src/components/MobileActionBar.ts`: Added `Aa` format toggle and keyboard open/close state handling (239 lines).
+  - `src-ui/src/services/mobileCoordinator.ts`: Wired `KeyboardTracker` and `onFormat` callback (149 lines).
+  - `src-ui/src/utils/shortcuts.ts`: Added keyboard shortcuts for all Markdown formatting actions (102 lines).
+  - `src-ui/src/main.ts`: Connected `applyMarkdownFormat` to `MobileCoordinator` and `registerShortcuts`.
+  - `src-ui/styles/contextmenu.css`: Added submenu and active-submenu styling.
+  - `src-ui/styles/mobile.css`: Added `--keyboard-inset` elevation transform and `.mobile-format-pill` styles.
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/MainActivity.kt`: Forwarded `WindowInsetsCompat.Type.ime()` to WebView (132 lines).
+  - `src-tauri/gen/android/app/src/main/AndroidManifest.xml`: Added `android:windowSoftInputMode="adjustResize"`.
+  - `history.md`: Appended changelog entry per Rule 13.
