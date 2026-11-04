@@ -112,6 +112,83 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-04: Fixed Default App Collision & Implemented Marquee Auto-Scroll for Overflowing Text
+- **Summary**: Resolved button text wrapping/collision in Desktop Settings and implemented horizontal auto-scroll marquee for incomplete or truncated text:
+  - **Button Collision Resolution**: In `src-ui/styles/settings.css`, added `gap: 12px; min-width: 0;` to `.setting-item`, set `flex: 1; min-width: 0; overflow: hidden;` on `.setting-meta`, and enforced `white-space: nowrap; flex-shrink: 0;` on `.glass-btn` and `.default-app-actions`. Updated Javanese Krama translation in `jv-krama.json` from `"Ilangaken Sesambungan"` to `"Ilangaken Sambungan"`. The button now remains a compact, single-line pill with guaranteed 12px separation from the text.
+  - **Dynamic Horizontal Auto-Scroll (Marquee)**: Created `src-ui/src/utils/autoScroll.ts` (44 lines) and updated `SettingsPane.ts` (240 lines). Text exceeding its container width is automatically detected via `content.scrollWidth > el.clientWidth` and given the `.is-overflowing` class. An infinite smooth keyframe animation (`autoScrollText`) pauses at the start (0-20%), glides horizontally to reveal the full content (20-65%), pauses at the end (65-85%), and returns smoothly to origin. Hovering pauses the animation (`animation-play-state: paused`) for comfortable reading. Applied a subtle gradient fade mask (`mask-image: linear-gradient(...)`) at the right edge.
+  - **Full Path Disclosure**: Replaced the arbitrary 28-character ellipsis cutoff on `defaultAppSubtext` with the complete executable path, allowing the auto-scroll marquee to display long directory paths in full.
+  - **Strict Anti-Monolith Compliance**: `SettingsPane.ts` (240 lines) and `autoScroll.ts` (44 lines) remain strictly under the 250-line ceiling. Verified cleanly with `npx tsc --noEmit` (0 errors), `npx vite build` (450ms), and `cargo check` (0 errors in 1.38s).
+- **Files Created/Modified**:
+  - `src-ui/src/utils/autoScroll.ts`: Dynamic overflow measurement & marquee scroll observer (44 lines).
+  - `src-ui/src/components/settings/SettingsPane.ts`: Auto-scroll marquee integration and full path handling (240 lines).
+  - `src-ui/src/locales/jv-krama.json`: Updated unregister action text to `"Ilangaken Sambungan"`.
+  - `src-ui/styles/settings.css`: Flexbox anti-collision layout, nowrap buttons, and marquee keyframe animation.
+  - `history.md`: Appended changelog entry per Rule 13.
+
+### 2026-11-04: Streamlined Dialect Label to "Basa Jawa (Malangan)"
+- **Summary**: Simplified the Malangan dialect display name from `Basa Jawa (Malangan / Walikan)` to clean `Basa Jawa (Malangan)` in `src-ui/src/locales/index.ts`. Enforced `white-space: nowrap` and clean single-line option rendering in `LanguageSelect.ts` so the trigger button and menu items never wrap awkwardly across multiple lines. Verified cleanly with `npx tsc --noEmit` and `npx vite build`.
+- **Files Modified**:
+  - `src-ui/src/locales/index.ts`: Updated `nativeName` to `"Basa Jawa (Malangan)"`.
+  - `src-ui/src/components/settings/LanguageSelect.ts`: Added single-line nowrap layout and clean option labels (167 lines).
+  - `history.md`: Appended changelog entry per Rule 13.
+
+### 2026-11-04: Fixed Dropdown Scroll Interception & Preserved Editable Malangan File
+- **Summary**: Resolved issue where scrolling the frosted glass language dropdown failed or prematurely dismissed the menu:
+  - **Scroll Origin Exemption**: In `LanguageSelect.ts` and `FontSelect.ts`, updated `scrollCloseHandler` on `window` to ignore scroll events originating from inside `.glass-select-menu` (`e.target === menu || menu.contains(e.target)`). Previously, capture-phase window scroll listeners caught the menu's own scroll event and immediately dismissed it.
+  - **Wheel Event Isolation**: Added `menu.addEventListener("wheel", (e) => e.stopPropagation())` to prevent wheel events from bubbling into parent window scroll handlers.
+  - **Selection Auto-Scroll**: Added `selected?.scrollIntoView({ block: "nearest" })` upon opening so the currently active language is instantly visible.
+  - **Retained Translation Reference**: Kept `jawa-malangan-translations.txt` in the project root for future edits.
+  - **Strict Anti-Monolith Compliance**: Both `LanguageSelect.ts` (167 lines) and `FontSelect.ts` (150 lines) remain well within the 250-line limit. Verified cleanly with `npx tsc --noEmit` and `npx vite build`.
+- **Files Modified**:
+  - `src-ui/src/components/settings/LanguageSelect.ts`: Scroll origin exemption, wheel isolation, and selection auto-scroll (167 lines).
+  - `src-ui/src/components/settings/FontSelect.ts`: Wheel event isolation and scroll safety (150 lines).
+  - `history.md`: Appended changelog entry per Rule 13.
+
+### 2026-11-04: Refined Jawa Malangan Colloquial Phrasing
+- **Summary**: Synchronized user-reviewed native East Javanese / Malang colloquial translations into `jv-malang.json` (including authentic terms like *Ora Sido*, *Templekno*, *Singitno*, *Papan Loro*, *Tenger*, *Kerpekan*, *Cathetan Nyingit*, *Delokan Markdown*, *Pancet Ndek Duwur*, and *Anyari Aplikasi-ne*). Verified cleanly with `npx tsc --noEmit` and `npx vite build`.
+- **Files Modified**:
+  - `src-ui/src/locales/jv-malang.json`: Synchronized updated dialect translations.
+  - `history.md`: Appended changelog entry per Rule 13.
+
+### 2026-11-04: Multi-Language Subsystem & Regional Javanese Dialects (Krama, Ngoko, Malangan)
+- **Summary**: Implemented an open-source contributor-friendly internationalization (i18n) subsystem with seamless support for English, Indonesian, and three distinct Javanese registers/dialects:
+  - **Contributor-Friendly Architecture**: Standalone JSON translation dictionaries in `src-ui/src/locales/` (`en.json`, `id.json`, `jv-krama.json`, `jv-ngoko.json`, `jv-malang.json`). Contributors can add or enhance languages with zero coding knowledge following `src-ui/src/locales/README.md`.
+  - **Transparent Fallback Engine**: `i18nService.ts` provides instant fallback to English for any missing keys, preventing blank strings or crashes. Supports dynamic token interpolation (`{count}`, `{query}`).
+  - **Desktop Frosted Glass Language Dropdown**: Built `LanguageSelect.ts` (156 lines) adhering to the Frosted Glass dropdown standard (AGENTS.md Rule 8). Refactored `SettingsPane.ts` (245 lines) and `settingsMain.ts` (239 lines) to stay safely under the 250-line ceiling.
+  - **Android Mobile Settings Sheet**: Added native language selector to `MobileSettingsView.ts` (220 lines) and wired IPC in `SettingsModal.ts` (168 lines).
+  - **Multi-Window Sync**: Emits `cathet:language-change` across Tauri IPC to synchronize language changes live between the Main and Settings windows without reloading.
+  - **Comprehensive UI Localization**: Wired translation lookups to `TopBar.ts`, `mainMenuItems.ts`, `contextMenuItems.ts`, `MobileActionBar.ts`, `MobileMenuDrawer.ts`, `DualPaneEmptyDropzone.ts`, `GlassDialog.ts`, `HomeHeader.ts`, `HomeCategoryTabs.ts`, `HomeSelectionBar.ts`, `FolderModal.ts`, and `RenameModal.ts`.
+  - **Strict Anti-Monolith Compliance**: All 21 modified/created source files remain strictly under 250 lines. Verified cleanly with `npx tsc --noEmit` (0 errors), `cargo check` (0 errors in 1.17s), and `npx vite build` (built in 421ms).
+- **Files Created/Modified**:
+  - `src-ui/src/locales/en.json`: Canonical English translation dictionary.
+  - `src-ui/src/locales/id.json`: Bahasa Indonesia translation dictionary.
+  - `src-ui/src/locales/jv-krama.json`: Basa Jawa Krama translation dictionary.
+  - `src-ui/src/locales/jv-ngoko.json`: Basa Jawa Ngoko translation dictionary.
+  - `src-ui/src/locales/jv-malang.json`: Basa Jawa Malangan / Boso Walikan translation dictionary.
+  - `src-ui/src/locales/index.ts`: Locale metadata registry and exports.
+  - `src-ui/src/locales/README.md`: 3-step Contributor translation guide.
+  - `src-ui/src/services/i18nService.ts`: Singleton translation and fallback engine (104 lines).
+  - `src-ui/src/components/settings/LanguageSelect.ts`: Frosted glass language dropdown (156 lines).
+  - `src-ui/src/components/settings/SettingsPane.ts`: Settings pane integration & refactor (245 lines).
+  - `src-ui/src/components/SettingsTabs.ts`: Tab container language state & callbacks (202 lines).
+  - `src-ui/src/components/MobileSettingsView.ts`: Mobile settings sheet language row (220 lines).
+  - `src-ui/src/components/SettingsModal.ts`: Mobile settings modal IPC wiring (168 lines).
+  - `src-ui/src/settingsMain.ts`: Desktop settings window i18n & window sync (239 lines).
+  - `src-ui/src/utils/windowSync.ts`: Cross-window language sync listener (61 lines).
+  - `src-ui/src/utils/mainMenuItems.ts`: Top bar main menu localization (49 lines).
+  - `src-ui/src/utils/contextMenuItems.ts`: Context menu & markdown formatting localization (139 lines).
+  - `src-ui/src/components/TopBar.ts`: Desktop header title & tooltips localization (119 lines).
+  - `src-ui/src/components/home/HomeHeader.ts`: Search & selection header localization (148 lines).
+  - `src-ui/src/components/home/HomeCategoryTabs.ts`: All folder tab localization (83 lines).
+  - `src-ui/src/components/home/HomeSelectionBar.ts`: Note batch actions localization (107 lines).
+  - `src-ui/src/components/home/FolderModal.ts`: Folder create & move dialog localization (106 lines).
+  - `src-ui/src/components/home/RenameModal.ts`: Note rename dialog localization (71 lines).
+  - `src-ui/src/components/dualpane/DualPaneEmptyDropzone.ts`: Dual pane dropzone localization (81 lines).
+  - `src-ui/src/components/MobileActionBar.ts`: Mobile dock button tooltips localization (224 lines).
+  - `src-ui/src/components/MobileMenuDrawer.ts`: Mobile drawer menu localization (171 lines).
+  - `src-ui/src/components/GlassDialog.ts`: Frosted glass dialog button localization (79 lines).
+  - `history.md`: Appended changelog entry per Rule 13.
+
 ### 2026-11-04: Functional `<details>` & `<summary>` Markdown Preview & Deferred HTML Sanitization
 - **Summary**: Resolved non-functional disclosure toggle in Markdown Preview where clicking the triangle (`>`) toggled between `▶ Details` and `▼ Details` without collapsing or revealing the underlying question and answer paragraphs:
   - **Deferred Single-Pass Sanitization**: In `markdown.ts`, removed per-line `sanitizeHtml()` calls from `formatInline()`. Accumulates the full HTML tag hierarchy (`<details>`, `<summary>`, `<p>`, `</details>`) and calls `sanitizeHtml(out.join("\n"))` once on the final document string. This prevents `DOMParser` from prematurely auto-closing `<details>` on its opening line and preserves the intact container hierarchy.
