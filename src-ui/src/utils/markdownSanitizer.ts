@@ -12,8 +12,8 @@ const ALLOWED_TAGS = new Set([
 ]);
 
 const ALLOWED_ATTRS = new Set([
-  "align", "alt", "class", "dir", "height", "href", "id", "loading",
-  "name", "rel", "src", "style", "target", "title", "width"
+  "align", "alt", "checked", "class", "dir", "disabled", "height", "href", "id", "loading",
+  "name", "open", "rel", "src", "style", "target", "title", "type", "width"
 ]);
 
 export function sanitizeHtml(html: string): string {

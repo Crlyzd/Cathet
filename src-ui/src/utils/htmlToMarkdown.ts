@@ -5,7 +5,7 @@
 
 export function isHtmlFormatted(html: string): boolean {
   if (!html) return false;
-  return /<(table|tr|td|th|pre|code|h[1-6]|ul|ol|li|blockquote|strong|b|em|i|a|img|div)\b/i.test(html);
+  return /<(table|tr|td|th|pre|code|h[1-6]|ul|ol|li|blockquote|strong|b|em|i|a|img|div|details|summary)\b/i.test(html);
 }
 
 export function tsvToMarkdownTable(text: string): string | null {
@@ -160,6 +160,14 @@ function nodeToMarkdown(node: Node): string {
 
     case "div":
       return `\n${childrenMd().trim()}\n\n`;
+
+    case "details": {
+      const openAttr = el.hasAttribute("open") ? " open" : "";
+      return `\n<details${openAttr}>\n${childrenMd().trim()}\n</details>\n\n`;
+    }
+
+    case "summary":
+      return `<summary>${childrenMd().trim()}</summary>\n`;
 
     default:
       return childrenMd();

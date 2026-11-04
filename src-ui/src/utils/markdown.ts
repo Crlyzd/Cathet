@@ -170,7 +170,7 @@ export function parseMarkdown(md: string, documentPath?: string | null): string 
   }
   closeLists();
 
-  return out.join("\n");
+  return sanitizeHtml(out.join("\n"));
 }
 
 function parseTableCells(rowStr: string): string[] {
@@ -240,7 +240,7 @@ function formatInline(text: string, documentPath?: string | null): string {
   // 7. Restore inline code
   s = s.replace(/___CODE_SLOT_(\d+)___/g, (_, idx) => `<code>${codeSnippets[Number(idx)]}</code>`);
 
-  // 8. Sanitize HTML for safety
-  return sanitizeHtml(s);
+
+  return s;
 }
 
