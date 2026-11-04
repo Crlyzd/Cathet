@@ -75,7 +75,8 @@ Cathet supports diverse inline typographic expressions:
 - <u>Underline formatting</u> with `<u>underline</u>`
 - ~~Strikethrough text~~ with `~~strike~~`
 - ==Highlighted key phrases== with `==highlight==`
-- Inline technical variables like `document.title` and math formulas like `$f(x) = \sigma(W \cdot x + b)$`
+- `Inline code` tokens with backticks (`code`)
+- Math formulas like $E = mc^2$ with `$E = mc^2$`
 
 > *"Simplicity is prerequisite for reliability."*
 > — Edsger W. Dijkstra

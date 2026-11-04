@@ -1297,3 +1297,15 @@ px tsc --noEmit and cargo check.
   - `src-ui/styles/popup.css`: Added frosted glass styling for image insert modal.
   - `src-tauri/src/commands/file.rs`: Added SVG file filter support (239 lines).
   - `history.md`: Appended changelog entry per Rule 13.
+
+### 2026-11-04: Tutorial Formatting Syntax Alignment for Inline Code & Math Formulas
+
+- **Summary**:
+  - Fixed a syntax error and formatting inconsistency in Section 3 of `src-ui/src/assets/tutorial.md`.
+  - Previously, line 78 combined technical variables and LaTeX math into a single bullet point enclosed in backticks (`- Inline technical variables like \`document.title\` and math formulas like \`$f(x) = \sigma(W \cdot x + b)$\``), which caused the math expression to be parsed as raw monospace code with visible unrendered dollar signs and LaTeX backslash macros.
+  - Split line 78 into two discrete bullet items:
+    1. ``- `Inline code` tokens with backticks (`code`)`` demonstrating inline code tokens.
+    2. `- Math formulas like $E = mc^2$ with `$E = mc^2$`` demonstrating Cathet's native serif italic inline math rendering paired with its exact syntax.
+- **Files Modified**:
+  - `src-ui/src/assets/tutorial.md`: Aligned Section 3 inline code and math tutorial syntax.
+  - `history.md`: Appended changelog entry per Rule 13.
