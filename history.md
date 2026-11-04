@@ -1042,3 +1042,18 @@ This document serves as the living project documentation and institutional memor
   - `src-ui/styles/dualpane.css`: Removed redundant unscoped `@media (max-width: 600px)` animation overrides.
   - `src-ui/src/components/dualpane/DualPaneSplitter.ts`: Gated `isVertical` splitter dragging to mobile via `PlatformService.getInstance().isMobile()` (134 lines).
   - `history.md`: Appended changelog entry per Rule 13.
+
+### 2026-11-04: Google Sheets Clipboard CSS Comment Sanitization & Colspan Table Alignment
+
+- **Summary**:
+  1. **Non-Content Tag Suppression in htmlToMarkdown.ts**: Added explicit ignoring for non-content elements (style, script, 
+oscript, head, meta, link, 	itle) in 
+odeToMarkdown(). This prevents Google Sheets clipboard metadata comments (<!--td {border: 1px solid #cccccc;...}br {mso-data-placement:same-cell;}-->) inside <style> blocks from leaking into Markdown tables upon paste.
+  2. **Colspan & Delimiter Escaping in Table Conversion**: Enhanced convertTable() in htmlToMarkdown.ts to inspect cell.getAttribute( colspan) and push colspan - 1 empty string cells, keeping merged header banners (such as Google Sheets title rows) properly column-aligned with data rows. Added pipe character escaping (\|) to prevent cell content from corrupting Markdown table column delimiters.
+  3. **Stray HTML Comment Stripping in markdown.ts**: Updated ormatInline() in markdown.ts to strip HTML comments (<!--[\s\S]*?-->) before escaping non-whitelisted < characters, guaranteeing that stray HTML comments never render as literal text in Markdown Preview.
+  4. **Modularity & Verification**: Verified that both files stay strictly within line count limits (htmlToMarkdown.ts = 213 lines, markdown.ts = 245 lines). Synchronously verified with 
+px tsc --noEmit and cargo check.
+- **Files Modified**:
+  - src-ui/src/utils/htmlToMarkdown.ts: Suppressed <style>/<script>/metadata tags and added colspan padding (213 lines).
+  - src-ui/src/utils/markdown.ts: Stripped HTML comments in preview inline formatting (245 lines).
+  - history.md: Appended changelog entry per Rule 13.
