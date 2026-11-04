@@ -11,6 +11,13 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-04: Over-Engineering Dynamic Context Menu Web Search Query String
+- **Context**: When the user requested "no need for quote in the search in web", the assistant assumed the user wanted the query interpolated without quotes (`Search Web for {query}` producing e.g. `Search Web for without`), maintaining dynamic text interpolation.
+- **User Correction**: *"when I said the seacrh for web is no need quote, thats mean I dont want it to be dynamic text, just make it search in web or whatever static text the industry usualyy uses"*
+- **Root Cause**: Over-interpreting the prompt and attempting dynamic query string formatting in the context menu rather than adhering to industry-standard static menu text ("Search in Web" / "Search with Google" / "Cari di Web").
+- **Corrective Guardrail**: Keep the web search context menu action strictly static localized text (`t("context.searchWeb")`) with zero query interpolation or dynamic suffix.
+
+
 ### [Mistake] 2026-11-01: Manual Edits & PreBuild Tasks Overwritten Mid-Build by `rustBuild*` (`tauri android android-studio-script`)
 - **Context**: First, manual edits to `RustWebView.kt` were wiped by `tauri android build`. Next, a standalone Gradle task `patchRustWebView` wired to `preBuild` and `compile*Kotlin` ran at the start of the Gradle build (before `preBuild`), and 1 second later `:app:rustBuildArm64Release` executed `npm run -- tauri android android-studio-script`, which invoked `wry`'s `build.rs` and overwrote `RustWebView.kt` mid-build. Because Gradle only executes a standalone task once per build graph, `patchRustWebView` did not re-run before `compileUniversalReleaseKotlin`, resulting in an unpatched `RustWebView.class` inside the release APK.
 - **User Correction**: User re-tested after build and reported *"bruh what?"* / *"it still doesnt work bro"* with screenshot showing Gboard still displaying *"Cathet does not support image pasting here"*.
@@ -111,6 +118,82 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-04: Converted Web Search to Static Industry-Standard Label ("Search in Web")
+- **Summary**: Removed dynamic query interpolation from the context menu web search item and converted it into a clean, 100% static label across all languages:
+  - In `contextMenuItems.ts`, simplified `searchWeb` label to static `t("context.searchWeb")`, removing dynamic parameter substitutions (`{query}`) and ternary checks.
+  - In all locale dictionaries (`en.json`, `id.json`, `jv-malang.json`, `jv-ngoko.json`, `jv-krama.json`), set `context.searchWeb` to "Search in Web" / "Cari di Web" / "Goleki ndek Web" and deleted unused `searchWebQuery`.
+  - Updated `jawa-malangan-translations.txt` accordingly.
+  - Verified cleanly with `npx tsc --noEmit` (0 errors) and `npx vite build` (422ms).
+- **Files Modified**:
+  - `src-ui/src/utils/contextMenuItems.ts`: Static label lookup (139 lines).
+  - `src-ui/src/locales/en.json`: "Search in Web".
+  - `src-ui/src/locales/id.json`: "Cari di Web".
+  - `src-ui/src/locales/jv-malang.json`: "Goleki ndek Web".
+  - `src-ui/src/locales/jv-ngoko.json`: "Goleki neng Web".
+  - `src-ui/src/locales/jv-krama.json`: "Padosi wonten Web".
+  - `jawa-malangan-translations.txt`: Reference translation update.
+  - `history.md`: Appended [Mistake] and changelog entry per Rule 13.
+
+
+### 2026-11-04: Restored Default Arrow Pointer Cursor in Markdown Preview
+- **Summary**: Replaced the global hand cursor (`cursor: pointer`) in Markdown Preview mode with the standard system arrow pointer (`cursor: default`):
+  - In `src-ui/styles/editor.css`, removed the overly broad rule `.editor-content.markdown-preview, .editor-content.markdown-preview * { cursor: pointer; }` that forced all text, headings, and background areas to display a pointing hand cursor.
+  - Set `cursor: default` on `.editor-content.markdown-preview` and checkboxes, while preserving `cursor: pointer` exclusively on genuine interactive targets (hyperlinks `<a>` and collapsible `<summary>` headers).
+  - Verified cleanly with `npx tsc --noEmit` (0 errors) and `npx vite build` (443ms).
+- **Files Modified**:
+  - `src-ui/styles/editor.css`: Set `cursor: default` on preview root and removed universal pointer.
+  - `history.md`: Appended changelog entry per Rule 13.
+
+
+### 2026-11-04: Interactive Task List Checkboxes & Real-Time Document Synchronization
+- **Summary**: Transformed Markdown task list checkboxes from read-only disabled inputs into fully interactive, fillable toggles with two-way document synchronization:
+  - **Two-Way Document Sync**: Created `taskListHandler.ts` (32 lines). Clicking a checkbox in Preview mode now reads its `data-line` index, toggles `- [ ]` <-> `- [x]` in `rawContent`, and preserves the modified state across `getText()`, document saves (`Ctrl + S`), Android auto-save, and Edit mode toggling (`Ctrl + M`).
+  - **Unblocked DOM Checkboxes**: Removed `disabled` attribute from task list inputs in `markdown.ts` and tagged with `class="task-checkbox" data-line="${i}"`. Whitelisted `"data-line"` in `markdownSanitizer.ts`.
+  - **Interactive Cursor Styling**: Updated `.editor-content li.task-list-item input[type="checkbox"]` to `cursor: pointer;` in `editor.css`.
+  - **Strict Anti-Monolith Compliance**: `Editor.ts` wired cleanly in 249 lines, `markdown.ts` in 202 lines, and `taskListHandler.ts` in 32 lines. Verified cleanly with `npx tsc --noEmit` (0 errors), `npx vite build` (468ms), and `cargo check` (1.41s).
+- **Files Modified/Created**:
+  - `src-ui/src/utils/taskListHandler.ts`: Created task list checkbox listener and sync utility (32 lines).
+  - `src-ui/src/components/Editor.ts`: Wired task checkbox listener into editor lifecycle (249 lines).
+  - `src-ui/src/utils/markdown.ts`: Emitted fillable checkbox with `data-line` index (202 lines).
+  - `src-ui/src/utils/markdownSanitizer.ts`: Whitelisted `"data-line"` in `ALLOWED_ATTRS` (89 lines).
+  - `src-ui/styles/editor.css`: Set `cursor: pointer` on task checkboxes.
+  - `history.md`: Appended changelog entry per Rule 13.
+
+
+### 2026-11-04: Fixed Markdown Highlight, Task List Checkboxes, Inline Math & Underscore Formatting
+- **Summary**: Comprehensive audit and resolution of all unrendered Markdown formatting commands across preview, sanitization, styling, and clipboard conversion:
+  - **Highlight Support (`==text==`)**: Added `==([^=]+)==` to `markdown.ts` converting to `<mark>$1</mark>`, whitelisted `"mark"` in `markdownSanitizer.ts`, added theme-aware contrast tokens in `main.css` (`--col-mark-bg` / `--col-mark-text`), styled `.editor-content mark` in `editor.css`, and mapped `case "mark":` in `htmlToMarkdown.ts`.
+  - **Interactive Task List Checkboxes (`- [ ]` / `- [x]`)**: Added checkbox detection for `^[-*+]\s+\[([ xX])\]\s+` in `markdown.ts`, emitting `<li class="task-list-item"><input type="checkbox"${checked} disabled /> ...</li>`. Styled `.task-list-item` in `editor.css` to hide bullet markers and align checkboxes cleanly with `var(--col-accent)`. Added checkbox detection to `htmlToMarkdown.ts` to preserve task states on copy/paste.
+  - **Inline Math Formulas (`$formula$`)**: Protected and rendered `$formula$` expressions in `markdown.ts` using boundary-aware regex to prevent false matches on dollar currency. Rendered as `<code class="md-math">...</code>` styled with mathematical serif typography (`Cambria Math`, `KaTeX_Math`, `Times New Roman`) without external binary-bloating KaTeX bundles.
+  - **Underscore Emphasis (`__bold__` & `_italic_`)**: Added standard CommonMark underscore formatting support alongside asterisks in `markdown.ts`.
+  - **Strict Anti-Monolith Compliance**: All modified files remain strictly under 250 lines (`markdown.ts` = 202 lines, `markdownSanitizer.ts` = 89 lines, `htmlToMarkdown.ts` = 240 lines). Verified cleanly with `npx tsc --noEmit` (0 errors), `npx vite build` (built in 432ms), and `cargo check` (0 errors in 1.41s).
+- **Files Modified**:
+  - `src-ui/src/utils/markdown.ts`: Added highlight, task lists, inline math, and underscore parsing (202 lines).
+  - `src-ui/src/utils/markdownSanitizer.ts`: Whitelisted `"mark"` tag in `ALLOWED_TAGS` (89 lines).
+  - `src-ui/src/utils/htmlToMarkdown.ts`: Added `<mark>`, strikethrough, and task list item handlers (240 lines).
+  - `src-ui/styles/main.css`: Added theme-aware mark background and text tokens.
+  - `src-ui/styles/editor.css`: Added styles for `mark`, `.task-list-item`, and `.md-math`.
+  - `history.md`: Appended changelog entry per Rule 13.
+
+
+### 2026-11-04: Removed Quotation Marks from Search in Web & Dynamic Unselected Label
+- **Summary**: Removed surrounding quotes from web search actions and separated the context menu label into distinct base and query-specific strings:
+  - **Context Menu Dynamic Evaluation**: In `contextMenuItems.ts`, updated the `searchWeb` menu item to check `hasSel`. When text is selected, it formats `t("context.searchWebQuery", { query })` cleanly without quotes. When no text is selected (`hasSel === false`), it displays the clean static label `t("context.searchWeb")` instead of generating empty quotes `""`.
+  - **Locale Keys Separation**: In `en.json`, `id.json`, `jv-krama.json`, `jv-ngoko.json`, and `jv-malang.json`, split `context.searchWeb` into `searchWeb` (unselected base) and `searchWebQuery` (active query), stripping literal `\"{query}\"` quotes across all languages.
+  - **Documentation & References**: Updated `src-ui/src/locales/README.md` and `jawa-malangan-translations.txt` to reflect the clean `{query}` placeholder pattern.
+  - **Strict Anti-Monolith Compliance**: `contextMenuItems.ts` remains 141 lines (well below the 250-line ceiling). Verified cleanly with `npx tsc --noEmit` (0 errors), `npx vite build` (415ms), and `cargo check` (0 errors in 1.49s).
+- **Files Modified**:
+  - `src-ui/src/utils/contextMenuItems.ts`: Conditional base/query label selection (141 lines).
+  - `src-ui/src/locales/en.json`: Canonical dictionary update.
+  - `src-ui/src/locales/id.json`: Indonesian dictionary update.
+  - `src-ui/src/locales/jv-malang.json`: Malangan dictionary update.
+  - `src-ui/src/locales/jv-ngoko.json`: Ngoko dictionary update.
+  - `src-ui/src/locales/jv-krama.json`: Krama dictionary update.
+  - `src-ui/src/locales/README.md`: Contributor guide update.
+  - `jawa-malangan-translations.txt`: Reference translation update.
+  - `history.md`: Appended changelog entry per Rule 13.
+
 
 ### 2026-11-04: Comprehensive Overhaul of Cathet Interactive Tutorial Guide
 - **Summary**: Modernized and expanded the interactive tutorial guide in `src-ui/src/assets/tutorial.md` to comprehensively showcase all Cathet capabilities:
