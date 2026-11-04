@@ -1,4 +1,7 @@
 import { icons } from "../utils/monochromeIcons";
+import { formatIcons } from "../utils/contextMenuItems";
+import { FormatAction } from "../utils/formatUtils";
+import { MobileFormatBarComponent } from "./MobileFormatBar";
 
 export type MobileSyncMode = "locked" | "snap" | "paused";
 
@@ -14,19 +17,24 @@ export interface MobileActionBarCallbacks {
   onOpen: () => void;
   onToggleDualPane: () => void;
   onOpenSettings: () => void;
+  onFormat?: (action: FormatAction) => void;
   onToggleSync?: (mode: MobileSyncMode) => void;
 }
 
 export class MobileActionBarComponent {
   private element: HTMLElement;
   private pill: HTMLElement;
+  private formatBar: MobileFormatBarComponent;
   private callbacks: MobileActionBarCallbacks;
   private isPreview: boolean = false;
   private isDualPane: boolean = false;
+  private isFormatMode: boolean = false;
+  private isKeyboardOpen: boolean = false;
   private syncMode: MobileSyncMode = "locked";
   private isTogglingSync: boolean = false;
   private isSmall: boolean = false;
   private collapseTimer: ReturnType<typeof setTimeout> | null = null;
+  private btnFormat!: HTMLButtonElement;
   private btnMarkdown!: HTMLButtonElement;
   private btnDual!: HTMLButtonElement;
   private btnSync: HTMLButtonElement | null = null;
@@ -39,6 +47,12 @@ export class MobileActionBarComponent {
 
     this.render();
     this.pill = this.element.querySelector(".mobile-action-pill")!;
+    this.formatBar = new MobileFormatBarComponent(
+      this.element,
+      (action) => this.callbacks.onFormat?.(action),
+      () => this.setFormatMode(false)
+    );
+
     const container = document.getElementById(containerId) || document.body;
     container.appendChild(this.element);
     this.bindEvents();
@@ -57,6 +71,9 @@ export class MobileActionBarComponent {
         <button class="mobile-action-btn" id="mobile-btn-save" title="Save Document">
           ${icons.save}
         </button>
+        <button class="mobile-action-btn" id="mobile-btn-format" title="Format Text">
+          ${formatIcons.formatAa}
+        </button>
         <button class="mobile-action-btn" id="mobile-btn-markdown" title="Toggle Markdown Preview">
           ${icons.eye}
         </button>
@@ -69,11 +86,17 @@ export class MobileActionBarComponent {
       </div>
     `;
 
+    this.btnFormat = this.element.querySelector("#mobile-btn-format")!;
     this.btnMarkdown = this.element.querySelector("#mobile-btn-markdown")!;
     this.btnDual = this.element.querySelector("#mobile-btn-dual")!;
   }
 
   private bindEvents(): void {
+    // Prevent focus loss from editor when tapping dock buttons while keyboard is up
+    this.pill.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+    });
+
     this.pill.addEventListener("click", (e) => {
       if (this.isSmall) {
         e.stopPropagation();
@@ -83,33 +106,51 @@ export class MobileActionBarComponent {
       this.scheduleAutoCollapse();
     });
 
-    this.element.querySelector("#mobile-btn-open")?.addEventListener("click", () => {
-      this.callbacks.onOpen();
+    this.element.querySelector("#mobile-btn-open")?.addEventListener("click", () => this.callbacks.onOpen());
+    this.element.querySelector("#mobile-btn-save")?.addEventListener("click", () => this.callbacks.onSave());
+    this.btnFormat.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this.isPreview) {
+        this.setFormatMode(true);
+      }
     });
+    this.btnMarkdown.addEventListener("click", () => this.callbacks.onToggleMarkdown());
+    this.btnDual.addEventListener("click", () => this.callbacks.onToggleDualPane());
+    this.element.querySelector("#mobile-btn-settings")?.addEventListener("click", () => this.callbacks.onOpenSettings());
+  }
 
-    this.element.querySelector("#mobile-btn-save")?.addEventListener("click", () => {
-      this.callbacks.onSave();
-    });
+  setFormatMode(enabled: boolean): void {
+    this.isFormatMode = enabled;
+    this.element.classList.toggle("is-format-mode", enabled);
+    if (enabled) {
+      if (this.collapseTimer) clearTimeout(this.collapseTimer);
+      this.isSmall = false;
+      this.element.classList.remove("is-small");
+    } else {
+      this.scheduleAutoCollapse(3500);
+    }
+  }
 
-    this.btnMarkdown.addEventListener("click", () => {
-      this.callbacks.onToggleMarkdown();
-    });
-
-    this.btnDual.addEventListener("click", () => {
-      this.callbacks.onToggleDualPane();
-    });
-
-    this.element.querySelector("#mobile-btn-settings")?.addEventListener("click", () => {
-      this.callbacks.onOpenSettings();
-    });
+  setKeyboardOpen(isOpen: boolean): void {
+    this.isKeyboardOpen = isOpen;
+    if (isOpen) {
+      if (this.collapseTimer) clearTimeout(this.collapseTimer);
+      if (this.isSmall) {
+        this.expand();
+      }
+    } else {
+      if (this.isFormatMode) {
+        this.setFormatMode(false);
+      } else {
+        this.scheduleAutoCollapse(3500);
+      }
+    }
   }
 
   private updateSyncButton(): void {
     if (!this.isDualPane) {
-      if (this.btnSync) {
-        this.btnSync.remove();
-        this.btnSync = null;
-      }
+      this.btnSync?.remove();
+      this.btnSync = null;
       return;
     }
 
@@ -136,30 +177,25 @@ export class MobileActionBarComponent {
 
     const isLocked = this.syncMode !== "paused";
     const isSnap = this.syncMode === "snap";
-
     this.btnSync.classList.toggle("active", isLocked);
     this.btnSync.classList.toggle("blue-galaxy", isSnap);
     this.btnSync.innerHTML = isLocked ? icons.link : icons.unlink;
-
-    if (this.syncMode === "locked") {
-      this.btnSync.title = "Sync Scroll: Standard (Locked)";
-    } else if (this.syncMode === "snap") {
-      this.btnSync.title = "Sync Scroll: Snap Scroll (Locked)";
-    } else {
-      this.btnSync.title = "Sync Scroll: Paused";
-    }
+    this.btnSync.title =
+      this.syncMode === "locked"
+        ? "Sync Scroll: Standard (Locked)"
+        : this.syncMode === "snap"
+          ? "Sync Scroll: Snap Scroll (Locked)"
+          : "Sync Scroll: Paused";
   }
 
   scheduleAutoCollapse(delayMs: number = 3500): void {
-    if (this.collapseTimer) {
-      clearTimeout(this.collapseTimer);
-    }
-    this.collapseTimer = setTimeout(() => {
-      this.collapse();
-    }, delayMs);
+    if (this.collapseTimer) clearTimeout(this.collapseTimer);
+    if (this.isKeyboardOpen || this.isFormatMode) return;
+    this.collapseTimer = setTimeout(() => this.collapse(), delayMs);
   }
 
   collapse(): void {
+    if (this.isKeyboardOpen || this.isFormatMode) return;
     this.isSmall = true;
     this.element.classList.add("is-small");
   }
@@ -170,15 +206,13 @@ export class MobileActionBarComponent {
     this.scheduleAutoCollapse(3500);
   }
 
-  notifyInteraction(): void {
-    if (!this.isSmall) {
-      this.scheduleAutoCollapse(3500);
-    }
-  }
-
   setMarkdownPreviewState(isPreview: boolean): void {
     this.isPreview = isPreview;
     this.btnMarkdown.classList.toggle("active", isPreview);
+    this.btnFormat.classList.toggle("disabled", isPreview);
+    if (isPreview && this.isFormatMode) {
+      this.setFormatMode(false);
+    }
   }
 
   setDualPaneState(isDual: boolean): void {
@@ -189,27 +223,17 @@ export class MobileActionBarComponent {
 
   setSyncState(isLocked: boolean, snapScroll?: boolean): void {
     if (this.isTogglingSync) return;
-    if (!isLocked) {
-      this.syncMode = "paused";
-    } else if (snapScroll) {
-      this.syncMode = "snap";
-    } else {
-      this.syncMode = "locked";
-    }
+    this.syncMode = !isLocked ? "paused" : snapScroll ? "snap" : "locked";
     this.updateSyncButton();
   }
 
-  getSyncMode(): MobileSyncMode {
-    return this.syncMode;
-  }
-
   setVisible(visible: boolean): void {
-    this.element.style.display = visible ? "block" : "none";
+    this.element.style.display = visible ? "flex" : "none";
   }
 
   destroy(): void {
     if (this.collapseTimer) clearTimeout(this.collapseTimer);
+    this.formatBar.destroy();
     this.element.remove();
   }
 }
-

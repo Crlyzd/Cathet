@@ -20,6 +20,7 @@ import { HomeCoordinator } from "./services/homeCoordinator";
 import { globalEventBus } from "./utils/eventBus";
 import { formatDisplayTitle } from "./utils/pathUtils";
 import { registerShortcuts } from "./utils/shortcuts";
+import { applyMarkdownFormat } from "./utils/formatUtils";
 import { buildContextMenuItems } from "./utils/contextMenuItems";
 import { buildMainMenuItems } from "./utils/mainMenuItems";
 import { registerWindowSyncListeners } from "./utils/windowSync";
@@ -88,6 +89,7 @@ class CathetApp {
       onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
       onToggleDualPane: () => this.toggleDualPane(), onOpenTutorial: () => this.loadTutorialDocument(),
       onFontChanged: (f) => { this.editor.setFontFamily(f); this.dualPaneView?.getEditorRight()?.setFontFamily(f); },
+      onFormat: (a) => applyMarkdownFormat(this.getActiveEditor(), a),
       onToggleSync: (mode) => {
         if (this.dualPaneView) {
           if (mode === "locked") {
@@ -204,6 +206,7 @@ class CathetApp {
       onToggleAlwaysOnTop: async () => { await emit("cathet:ontop-change", (this.isAlwaysOnTop = await this.windowService.toggleAlwaysOnTop())); },
       onToggleDualPane: () => this.toggleDualPane(), onToggleMarkdown: () => this.toggleMarkdown(),
       onToggleBold: () => this.getActiveEditor().toggleBold(), onToggleItalic: () => this.getActiveEditor().toggleItalic(), onToggleUnderline: () => this.getActiveEditor().toggleUnderline(),
+      onFormat: (a) => applyMarkdownFormat(this.getActiveEditor(), a),
       onSelectAll: () => this.getActiveEditor().selectAllClean(), onToggleWordWrap: () => this.getActiveEditor().toggleWordWrap(),
       onSearchWeb: () => { const t = this.getActiveEditor().getSelectedText().trim(); if (t) openUrl(`https://www.google.com/search?q=${encodeURIComponent(t)}`).catch(console.error); },
       onQuit: () => this.windowService.close(),

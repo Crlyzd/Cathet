@@ -32,6 +32,11 @@
   user-select: none;
 }
 
+.context-submenu {
+  min-width: 215px;
+  z-index: 1002;
+}
+
 [data-theme="light"] .context-menu {
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
 }
@@ -41,6 +46,7 @@
     opacity: 0;
     transform: scale(0.97);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -59,7 +65,8 @@
   transition: background-color 0.1s ease, color 0.1s ease;
 }
 
-.context-menu-item:hover:not(.disabled) {
+.context-menu-item:hover:not(.disabled),
+.context-menu-item.active-submenu:not(.disabled) {
   background-color: var(--col-menu-sel);
   color: #ffffff;
 }
@@ -99,7 +106,18 @@
   white-space: nowrap;
 }
 
-.context-menu-item:hover:not(.disabled) .context-menu-shortcut {
+.context-menu-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 16px;
+  color: var(--col-text-muted);
+}
+
+.context-menu-item:hover:not(.disabled) .context-menu-shortcut,
+.context-menu-item.active-submenu:not(.disabled) .context-menu-shortcut,
+.context-menu-item:hover:not(.disabled) .context-menu-arrow,
+.context-menu-item.active-submenu:not(.disabled) .context-menu-arrow {
   color: rgba(255, 255, 255, 0.85);
 }
 
