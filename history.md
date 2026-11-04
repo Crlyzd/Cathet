@@ -112,6 +112,20 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-04: Functional `<details>` & `<summary>` Markdown Preview & Deferred HTML Sanitization
+- **Summary**: Resolved non-functional disclosure toggle in Markdown Preview where clicking the triangle (`>`) toggled between `▶ Details` and `▼ Details` without collapsing or revealing the underlying question and answer paragraphs:
+  - **Deferred Single-Pass Sanitization**: In `markdown.ts`, removed per-line `sanitizeHtml()` calls from `formatInline()`. Accumulates the full HTML tag hierarchy (`<details>`, `<summary>`, `<p>`, `</details>`) and calls `sanitizeHtml(out.join("\n"))` once on the final document string. This prevents `DOMParser` from prematurely auto-closing `<details>` on its opening line and preserves the intact container hierarchy.
+  - **Whitelisted Attributes in Sanitizer**: In `markdownSanitizer.ts`, added `"open"`, `"type"`, `"checked"`, and `"disabled"` to `ALLOWED_ATTRS` so native `<details open>` and GFM checkboxes preserve their interactive attributes.
+  - **Interactive Cursor & Hover Styles**: In `editor.css`, added cursor pointer, user-select prevention, and accent hover transitions for `.editor-content.markdown-preview summary`.
+  - **Clipboard Paste Fidelity**: In `htmlToMarkdown.ts`, updated `isHtmlFormatted()` and `nodeToMarkdown()` to preserve `<details${open}>` and `<summary>` formatting on external clipboard paste.
+  - **Strict Anti-Monolith Compliance**: All modified files remain strictly under 250 lines (`markdown.ts` = 246 lines, `markdownSanitizer.ts` = 80 lines, `htmlToMarkdown.ts` = 221 lines). Verified cleanly with `npx tsc --noEmit` and `npx vite build`.
+- **Files Modified**:
+  - `src-ui/src/utils/markdown.ts`: Single-pass HTML sanitization at document level (246 lines).
+  - `src-ui/src/utils/markdownSanitizer.ts`: Whitelisted `"open"`, `"type"`, `"checked"`, `"disabled"` (80 lines).
+  - `src-ui/src/utils/htmlToMarkdown.ts`: Details & summary preservation for clipboard paste (221 lines).
+  - `src-ui/styles/editor.css`: Preview styling for `<details>` and `<summary>` elements.
+  - `history.md`: Updated project changelog.
+
 ### 2026-11-02: Progressive Hidden Folder Pull-Down, Silent Dead-Zone & Lock Shackle Mechanics
 - **Summary**: Resolved immediate lock key exposure when pulling down to reveal the hidden/private notes folder on Android:
   - **True Scroll Target Validation**: Added `getScrollElement(): HTMLElement` in `HomeNoteGrid.ts` and wired `scrollTarget: () => this.noteGrid.getScrollElement()` in `HomeView.ts`. Touch gestures are now only armed when `noteGrid.scrollTop <= 0`; swiping down while scrolled into the note list now scrolls up naturally without prematurely triggering or displaying the private notes HUD.
