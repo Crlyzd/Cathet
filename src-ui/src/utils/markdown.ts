@@ -212,6 +212,8 @@ function formatInline(text: string, documentPath?: string | null): string {
     return `___CODE_SLOT_${codeSnippets.length - 1}___`;
   });
 
+  // 2. Strip HTML comments, then escape non-whitelisted raw HTML
+  s = s.replace(/<!--[\s\S]*?-->/g, '');
   // 2. Escape non-whitelisted raw HTML '<' to prevent accidental tags while keeping allowed tags intact
   s = s.replace(/<(?!\/?([a-zA-Z1-6]+)\b)/g, "&lt;");
 
@@ -241,3 +243,4 @@ function formatInline(text: string, documentPath?: string | null): string {
   // 8. Sanitize HTML for safety
   return sanitizeHtml(s);
 }
+

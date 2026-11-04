@@ -71,6 +71,15 @@ function nodeToMarkdown(node: Node): string {
   };
 
   switch (tag) {
+    case "style":
+    case "script":
+    case "noscript":
+    case "head":
+    case "meta":
+    case "link":
+    case "title":
+      return "";
+
     case "table":
       return convertTable(el) + "\n\n";
 
@@ -167,9 +176,15 @@ function convertTable(tableEl: HTMLElement): string {
   for (const row of rows) {
     const cells = Array.from(row.querySelectorAll("th, td"));
     if (cells.length === 0) continue;
-    const rowData = cells.map(cell => {
-      return nodeToMarkdown(cell).replace(/\r?\n+/g, " ").trim();
-    });
+    const rowData: string[] = [];
+    for (const cell of cells) {
+      const cellText = nodeToMarkdown(cell).replace(/\r?\n+/g, " ").replace(/\|/g, "\\|").trim();
+      rowData.push(cellText);
+      const colSpan = parseInt(cell.getAttribute("colspan") || "1", 10);
+      for (let s = 1; s < colSpan; s++) {
+        rowData.push("");
+      }
+    }
     maxCols = Math.max(maxCols, rowData.length);
     tableData.push(rowData);
   }
