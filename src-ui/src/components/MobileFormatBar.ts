@@ -28,6 +28,7 @@ const FORMAT_BUTTONS: FormatButtonDef[] = [
   { action: "quote", title: "Blockquote", iconSvg: formatIcons.quote },
   { action: "codeblock", title: "Code Block", iconSvg: formatIcons.codeblock },
   { action: "link", title: "Hyperlink", iconSvg: formatIcons.link },
+  { action: "image", title: "Insert Image", iconSvg: formatIcons.image },
   { action: "table", title: "Insert Table", iconSvg: formatIcons.table },
   { action: "rule", title: "Horizontal Rule", iconSvg: formatIcons.rule },
   { isDivider: true },
@@ -97,4 +98,3 @@ export class MobileFormatBarComponent {
     this.element.remove();
   }
 }
-

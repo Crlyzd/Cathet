@@ -1,4 +1,6 @@
 import { EditorComponent } from "../components/Editor";
+import { ImageInsertModalComponent } from "../components/ImageInsertModal";
+import { processAndInsertImageFile, insertHtmlAtCaretOrEnd } from "./editorPasteHandler";
 
 export type FormatAction =
   | "bold"
@@ -16,6 +18,7 @@ export type FormatAction =
   | "quote"
   | "codeblock"
   | "link"
+  | "image"
   | "table"
   | "rule"
   | "clear";
@@ -172,6 +175,27 @@ export function applyMarkdownFormat(editor: EditorComponent, action: FormatActio
         moveCaretBackward(11);
       }
       break;
+    case "image": {
+      const savedRange = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+      new ImageInsertModalComponent({
+        onInsert: async (res) => {
+          if (savedRange && editorEl.contains(savedRange.commonAncestorContainer)) {
+            const currentSel = window.getSelection();
+            currentSel?.removeAllRanges();
+            currentSel?.addRange(savedRange);
+          }
+          if (res.file) {
+            await processAndInsertImageFile(res.file, editorEl, (newContent) => {
+              editor.setRawContent(newContent);
+            });
+          } else if (res.markdown) {
+            insertHtmlAtCaretOrEnd(editorEl, res.markdown);
+            editor.setRawContent(editor.getText());
+          }
+        },
+      });
+      return;
+    }
     case "table":
       document.execCommand(
         "insertText",
@@ -191,4 +215,3 @@ export function applyMarkdownFormat(editor: EditorComponent, action: FormatActio
 
   editor.setRawContent(editor.getText());
 }
-

@@ -77,6 +77,7 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
         case "Q": e.preventDefault(); handlers.onFormat?.("quote"); return;
         case "C": e.preventDefault(); handlers.onFormat?.("codeblock"); return;
         case "B": e.preventDefault(); handlers.onFormat?.("table"); return;
+        case "I": e.preventDefault(); handlers.onFormat?.("image"); return;
       }
       return;
     }
