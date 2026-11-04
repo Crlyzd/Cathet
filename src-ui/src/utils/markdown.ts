@@ -3,6 +3,7 @@
  */
 import { sanitizeHtml } from "./markdownSanitizer";
 import { resolveImageSrc } from "./imagePathResolver";
+import { parseTable } from "./markdownTable";
 
 export function parseMarkdown(md: string, documentPath?: string | null): string {
   if (!md) return "";
@@ -49,6 +50,23 @@ export function parseMarkdown(md: string, documentPath?: string | null): string 
       continue;
     }
 
+    // Raw SVG vector graphic blocks (single-line or multi-line)
+    if (/^<svg\b/i.test(trimmed)) {
+      closeLists();
+      if (trimmed.includes("</svg>")) {
+        out.push(trimmed);
+      } else {
+        const svgLines: string[] = [raw];
+        while (i + 1 < lines.length) {
+          i++;
+          svgLines.push(lines[i]);
+          if (lines[i].includes("</svg>")) break;
+        }
+        out.push(svgLines.join("\n"));
+      }
+      continue;
+    }
+
     // Block HTML containers (e.g. <div>, </div>, <p>, </p>, <br/>, <details>, </details>, <summary>, <img...>)
     if (/^<\/?(div|p|br|hr|img|details|summary|table|thead|tbody|tr|th|td|blockquote)\b/i.test(trimmed)) {
       closeLists();
@@ -56,66 +74,12 @@ export function parseMarkdown(md: string, documentPath?: string | null): string 
       continue;
     }
 
-    // Markdown Table: requires header line with '|' and next line as delimiter
-    if (trimmed.includes("|") && i + 1 < lines.length && isTableDelimiter(lines[i + 1])) {
+    // Tables: GFM Markdown Pipe Table & TSV paste table
+    const tableResult = parseTable(lines, i, formatInline, documentPath);
+    if (tableResult) {
       closeLists();
-      const headerCells = parseTableCells(trimmed);
-      const delimiterCells = parseTableCells(lines[i + 1]);
-      const alignments = delimiterCells.map(getAlignment);
-
-      let tableHtml = '<div class="md-table-wrapper"><table><thead><tr>';
-      for (let c = 0; c < headerCells.length; c++) {
-        const align = alignments[c] ? ` style="text-align:${alignments[c]}"` : "";
-        tableHtml += `<th${align}>${formatInline(headerCells[c], documentPath)}</th>`;
-      }
-      tableHtml += "</tr></thead><tbody>";
-
-      i += 1; // Advance past delimiter
-
-      while (i + 1 < lines.length) {
-        const nextRow = lines[i + 1].trim();
-        if (!nextRow || !nextRow.includes("|")) break;
-        i++;
-        const bodyCells = parseTableCells(nextRow);
-        tableHtml += "<tr>";
-        for (let c = 0; c < headerCells.length; c++) {
-          const cellText = bodyCells[c] !== undefined ? bodyCells[c] : "";
-          const align = alignments[c] ? ` style="text-align:${alignments[c]}"` : "";
-          tableHtml += `<td${align}>${formatInline(cellText, documentPath)}</td>`;
-        }
-        tableHtml += "</tr>";
-      }
-
-      tableHtml += "</tbody></table></div>";
-      out.push(tableHtml);
-      continue;
-    }
-
-    // Tab-separated Table (TSV / Excel paste)
-    if (raw.includes("\t") && i + 1 < lines.length && lines[i + 1].includes("\t")) {
-      closeLists();
-      const headerCells = raw.split("\t").map(c => c.trim());
-      let tableHtml = '<div class="md-table-wrapper"><table><thead><tr>';
-      for (const h of headerCells) {
-        tableHtml += `<th>${formatInline(h, documentPath)}</th>`;
-      }
-      tableHtml += "</tr></thead><tbody>";
-
-      while (i + 1 < lines.length) {
-        const nextRow = lines[i + 1];
-        if (!nextRow.includes("\t")) break;
-        i++;
-        const bodyCells = nextRow.split("\t").map(c => c.trim());
-        tableHtml += "<tr>";
-        for (let c = 0; c < headerCells.length; c++) {
-          const cellText = bodyCells[c] !== undefined ? bodyCells[c] : "";
-          tableHtml += `<td>${formatInline(cellText, documentPath)}</td>`;
-        }
-        tableHtml += "</tr>";
-      }
-
-      tableHtml += "</tbody></table></div>";
-      out.push(tableHtml);
+      out.push(tableResult.html);
+      i = tableResult.nextIndex;
       continue;
     }
 
@@ -173,28 +137,6 @@ export function parseMarkdown(md: string, documentPath?: string | null): string 
   return sanitizeHtml(out.join("\n"));
 }
 
-function parseTableCells(rowStr: string): string[] {
-  let s = rowStr.trim();
-  if (s.startsWith("|")) s = s.slice(1);
-  if (s.endsWith("|")) s = s.slice(0, -1);
-  return s.split("|").map(c => c.trim());
-}
-
-function isTableDelimiter(rowStr: string): boolean {
-  const cells = parseTableCells(rowStr);
-  if (cells.length === 0) return false;
-  return cells.every(c => /^:?-+:?$/.test(c));
-}
-
-function getAlignment(cell: string): "left" | "center" | "right" | "" {
-  const left = cell.startsWith(":");
-  const right = cell.endsWith(":");
-  if (left && right) return "center";
-  if (right) return "right";
-  if (left) return "left";
-  return "";
-}
-
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
@@ -213,8 +155,7 @@ function formatInline(text: string, documentPath?: string | null): string {
   });
 
   // 2. Strip HTML comments, then escape non-whitelisted raw HTML
-  s = s.replace(/<!--[\s\S]*?-->/g, '');
-  // 2. Escape non-whitelisted raw HTML '<' to prevent accidental tags while keeping allowed tags intact
+  s = s.replace(/<!--[\s\S]*?-->/g, "");
   s = s.replace(/<(?!\/?([a-zA-Z1-6]+)\b)/g, "&lt;");
 
   // 3. Linked image badges: [![alt](imgUrl)](linkUrl)
@@ -240,7 +181,5 @@ function formatInline(text: string, documentPath?: string | null): string {
   // 7. Restore inline code
   s = s.replace(/___CODE_SLOT_(\d+)___/g, (_, idx) => `<code>${codeSnippets[Number(idx)]}</code>`);
 
-
   return s;
 }
-

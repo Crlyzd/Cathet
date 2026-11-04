@@ -8,12 +8,21 @@ const ALLOWED_TAGS = new Set([
   "em", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "input", "ins",
   "kbd", "li", "ol", "p", "pre", "q", "rp", "rt", "ruby", "s", "samp", "small",
   "span", "strike", "strong", "sub", "summary", "sup", "table", "tbody", "td",
-  "tfoot", "th", "thead", "tr", "u", "ul", "var", "wbr"
+  "tfoot", "th", "thead", "tr", "u", "ul", "var", "wbr",
+  // Safe SVG vector graphic elements (scripts and foreignObject strictly prohibited)
+  "svg", "g", "path", "circle", "rect", "line", "polyline", "polygon", "ellipse",
+  "text", "tspan", "defs", "clippath", "mask", "pattern", "use", "title", "desc"
 ]);
 
 const ALLOWED_ATTRS = new Set([
   "align", "alt", "checked", "class", "dir", "disabled", "height", "href", "id", "loading",
-  "name", "open", "rel", "src", "style", "target", "title", "type", "width"
+  "name", "open", "rel", "src", "style", "target", "title", "type", "width",
+  // SVG styling, geometry, and presentation attributes
+  "viewbox", "xmlns", "fill", "fill-rule", "fill-opacity", "stroke", "stroke-width",
+  "stroke-linecap", "stroke-linejoin", "stroke-dasharray", "stroke-dashoffset",
+  "stroke-opacity", "d", "cx", "cy", "r", "rx", "ry", "x", "y", "x1", "y1", "x2", "y2",
+  "points", "transform", "opacity", "clip-path", "mask", "preserveaspectratio",
+  "font-size", "font-family", "font-weight", "text-anchor"
 ]);
 
 export function sanitizeHtml(html: string): string {
@@ -33,7 +42,7 @@ function cleanNode(node: Node): void {
       const el = child as HTMLElement;
       const tag = el.tagName.toLowerCase();
 
-      // Disallow dangerous or unwanted tags (e.g. script, style, iframe, object)
+      // Disallow dangerous or unwanted tags (e.g. script, style, iframe, object, foreignobject)
       if (!ALLOWED_TAGS.has(tag)) {
         el.remove();
         continue;
