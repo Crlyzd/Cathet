@@ -26,9 +26,10 @@ pub struct ClipboardImagePayload {
 const FILTER_ALL_SUPPORTED: &[&str] = &[
     "txt", "md", "markdown", "log", "rtf", "html", "htm", "json", "yaml", "yml", "toml",
     "xml", "ini", "env", "cfg", "csv", "tsv", "js", "ts", "rs", "py", "css", "sql",
-    "sh", "bat", "ps1", "c", "cpp", "h",
+    "sh", "bat", "ps1", "c", "cpp", "h", "svg",
 ];
 const FILTER_MARKDOWN: &[&str] = &["md", "markdown"];
+const FILTER_SVG: &[&str] = &["svg"];
 const FILTER_TEXT_LOGS: &[&str] = &["txt", "log", "rtf"];
 const FILTER_DATA_CONFIG: &[&str] = &["json", "yaml", "yml", "toml", "xml", "ini", "env", "cfg", "csv", "tsv"];
 const FILTER_CODE: &[&str] = &["js", "ts", "rs", "py", "html", "htm", "css", "sql", "sh", "bat", "ps1", "c", "cpp", "h"];
@@ -89,6 +90,7 @@ pub async fn show_open_dialog(app_handle: AppHandle) -> Result<Option<FilePayloa
     let builder = builder
         .add_filter("All Supported Documents", FILTER_ALL_SUPPORTED)
         .add_filter("Markdown (*.md)", FILTER_MARKDOWN)
+        .add_filter("Scalable Vector Graphics (*.svg)", FILTER_SVG)
         .add_filter("Text & Logs (*.txt, *.log)", FILTER_TEXT_LOGS)
         .add_filter("Data & Config (*.json, *.yaml, *.toml, ...)", FILTER_DATA_CONFIG)
         .add_filter("Source Code (*.js, *.ts, *.rs, *.py, ...)", FILTER_CODE)
@@ -126,6 +128,7 @@ pub async fn show_save_dialog(
     #[cfg(not(target_os = "android"))]
     let builder = builder
         .add_filter("Markdown Document (*.md)", FILTER_MARKDOWN)
+        .add_filter("Scalable Vector Graphics (*.svg)", FILTER_SVG)
         .add_filter("Plain Text (*.txt)", &["txt"])
         .add_filter("All Files (*.*)", FILTER_ALL);
 
