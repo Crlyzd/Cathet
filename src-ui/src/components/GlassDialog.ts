@@ -2,6 +2,7 @@
  * GlassDialog.ts — Custom Frosted Glass Modal & Alert Dialog for Cathet
  * Replaces native OS alert() popups with native frosted glassmorphic UI.
  */
+import { t } from "../services/i18nService";
 
 export interface GlassDialogOptions {
   title?: string;
@@ -24,7 +25,7 @@ export function showGlassDialog(options: GlassDialogOptions): Promise<void> {
 
     const type = options.type || "info";
     const title = options.title || "Cathet";
-    const confirmText = options.confirmText || "OK";
+    const confirmText = options.confirmText || t("common.ok");
     const iconSvg = dialogIcons[type];
 
     const overlay = document.createElement("div");
@@ -59,20 +60,20 @@ export function showGlassDialog(options: GlassDialogOptions): Promise<void> {
       setTimeout(() => {
         overlay.remove();
         resolve();
-      }, 120);
+      }, 150);
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "Enter") {
+      if (e.key === "Enter" || e.key === "Escape") {
         e.preventDefault();
         cleanup();
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    btn?.addEventListener("click", () => cleanup());
+    btn?.addEventListener("click", cleanup);
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) cleanup();
     });
+    window.addEventListener("keydown", handleKeyDown);
   });
 }

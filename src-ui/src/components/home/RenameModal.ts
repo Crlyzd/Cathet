@@ -1,3 +1,5 @@
+import { t } from "../../services/i18nService";
+
 export interface RenameModalOptions {
   currentTitle: string;
   onConfirm: (newTitle: string) => void;
@@ -20,11 +22,11 @@ export class RenameModalComponent {
   private render(): void {
     this.element.innerHTML = `
       <div class="folder-modal-card">
-        <h3 class="folder-modal-title">Rename Note</h3>
-        <input type="text" class="folder-modal-input" placeholder="Note title" spellcheck="false" />
+        <h3 class="folder-modal-title">${t("home.renameTitle")}</h3>
+        <input type="text" class="folder-modal-input" placeholder="${t("home.renameTitle")}" spellcheck="false" />
         <div class="folder-modal-actions">
-          <button class="folder-modal-btn btn-cancel">Cancel</button>
-          <button class="folder-modal-btn btn-confirm primary">Save</button>
+          <button class="folder-modal-btn btn-cancel">${t("common.cancel")}</button>
+          <button class="folder-modal-btn btn-confirm primary">${t("common.save")}</button>
         </div>
       </div>
     `;
@@ -62,9 +64,8 @@ export class RenameModalComponent {
     });
   }
 
-  close(): void {
+  private close(): void {
     this.options.onCancel?.();
     this.element.remove();
   }
 }
-

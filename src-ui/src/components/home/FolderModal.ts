@@ -1,3 +1,5 @@
+import { t } from "../../services/i18nService";
+
 export interface FolderModalOptions {
   mode: "create" | "move";
   existingFolders?: string[];
@@ -22,28 +24,28 @@ export class FolderModalComponent {
     if (this.options.mode === "create") {
       this.element.innerHTML = `
         <div class="folder-modal-card">
-          <h3 class="folder-modal-title">New Folder</h3>
-          <input type="text" class="folder-modal-input" placeholder="Folder name" spellcheck="false" />
+          <h3 class="folder-modal-title">${t("home.newFolder")}</h3>
+          <input type="text" class="folder-modal-input" placeholder="${t("home.folderNamePrompt")}" spellcheck="false" />
           <div class="folder-modal-actions">
-            <button class="folder-modal-btn btn-cancel">Cancel</button>
-            <button class="folder-modal-btn btn-confirm primary">Create</button>
+            <button class="folder-modal-btn btn-cancel">${t("common.cancel")}</button>
+            <button class="folder-modal-btn btn-confirm primary">${t("common.ok")}</button>
           </div>
         </div>
       `;
     } else {
       const folders = this.options.existingFolders || [];
       const folderItems = [
-        `<div class="folder-modal-item" data-folder="All">📁 (Root / All)</div>`,
+        `<div class="folder-modal-item" data-folder="All">📁 (Root / ${t("home.allNotes")})</div>`,
         ...folders.map((f) => `<div class="folder-modal-item" data-folder="${this.escapeHtml(f)}">📁 ${this.escapeHtml(f)}</div>`),
       ].join("");
 
       this.element.innerHTML = `
         <div class="folder-modal-card">
-          <h3 class="folder-modal-title">Move to Folder</h3>
+          <h3 class="folder-modal-title">${t("common.move")}</h3>
           <div class="folder-modal-list">${folderItems}</div>
           <div class="folder-modal-actions">
-            <button class="folder-modal-btn btn-cancel">Cancel</button>
-            <button class="folder-modal-btn btn-new-folder">+ New Folder</button>
+            <button class="folder-modal-btn btn-cancel">${t("common.cancel")}</button>
+            <button class="folder-modal-btn btn-new-folder">+ ${t("home.newFolder")}</button>
           </div>
         </div>
       `;
@@ -75,9 +77,11 @@ export class FolderModalComponent {
     } else {
       this.element.querySelectorAll(".folder-modal-item").forEach((item) => {
         item.addEventListener("click", () => {
-          const folder = item.getAttribute("data-folder") || "";
-          this.options.onConfirm(folder);
-          this.close();
+          const folder = item.getAttribute("data-folder");
+          if (folder !== null) {
+            this.options.onConfirm(folder);
+            this.close();
+          }
         });
       });
 
@@ -85,19 +89,18 @@ export class FolderModalComponent {
         this.close();
         new FolderModalComponent({
           mode: "create",
-          onConfirm: (newFolder) => this.options.onConfirm(newFolder),
+          onConfirm: this.options.onConfirm,
         });
       });
     }
   }
 
   private escapeHtml(str: string): string {
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return str.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m] || m));
   }
 
-  close(): void {
+  private close(): void {
     this.options.onCancel?.();
     this.element.remove();
   }
 }
-

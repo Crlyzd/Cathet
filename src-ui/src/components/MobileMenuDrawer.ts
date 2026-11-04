@@ -1,4 +1,5 @@
 import { icons } from "../utils/monochromeIcons";
+import { t } from "../services/i18nService";
 
 export interface MobileDrawerState {
   isMarkdownPreview: boolean;
@@ -22,7 +23,7 @@ export interface MobileDrawerCallbacks {
  */
 export class MobileMenuDrawerComponent {
   private overlay: HTMLElement;
-  private isVisible: boolean = false;
+  private isVisible = false;
   private callbacks: MobileDrawerCallbacks;
 
   constructor(callbacks: MobileDrawerCallbacks) {
@@ -37,15 +38,11 @@ export class MobileMenuDrawerComponent {
 
   private bindEvents(): void {
     this.overlay.addEventListener("click", (e) => {
-      if (e.target === this.overlay) {
-        this.hide();
-      }
+      if (e.target === this.overlay) this.hide();
     });
 
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && this.isVisible) {
-        this.hide();
-      }
+      if (e.key === "Escape" && this.isVisible) this.hide();
     });
   }
 
@@ -53,33 +50,33 @@ export class MobileMenuDrawerComponent {
     this.overlay.innerHTML = `
       <div class="mobile-drawer-sheet" id="mobile-drawer-sheet">
         <div class="mobile-drawer-drag-indicator"></div>
-        <div class="mobile-drawer-header">Document Actions</div>
+        <div class="mobile-drawer-header">${t("menu.settings")}</div>
 
         <div class="mobile-drawer-item" id="drawer-item-new">
           <div class="mobile-drawer-item-left">
             <span>${icons.file}</span>
-            <span>New Document</span>
+            <span>${t("dualpane.newDocument")}</span>
           </div>
         </div>
 
         <div class="mobile-drawer-item" id="drawer-item-open">
           <div class="mobile-drawer-item-left">
             <span>${icons.folder}</span>
-            <span>Open File...</span>
+            <span>${t("dualpane.openFile")}</span>
           </div>
         </div>
 
         <div class="mobile-drawer-item" id="drawer-item-save" style="${state.canSave ? "" : "opacity: 0.5;"}">
           <div class="mobile-drawer-item-left">
             <span>${icons.save}</span>
-            <span>Save</span>
+            <span>${t("common.save")}</span>
           </div>
         </div>
 
         <div class="mobile-drawer-item" id="drawer-item-saveas">
           <div class="mobile-drawer-item-left">
             <span>${icons.save}</span>
-            <span>Save As...</span>
+            <span>${t("menu.saveAs")}</span>
           </div>
         </div>
 
@@ -88,7 +85,7 @@ export class MobileMenuDrawerComponent {
         <div class="mobile-drawer-item" id="drawer-item-dual">
           <div class="mobile-drawer-item-left">
             <span>${icons.dualpane}</span>
-            <span>Dual Pane Split</span>
+            <span>${t("menu.dualPane")}</span>
           </div>
           <span class="mobile-drawer-pill-badge ${state.isDualPane ? "active" : ""}">
             ${state.isDualPane ? "ACTIVE" : "OFF"}
@@ -98,7 +95,7 @@ export class MobileMenuDrawerComponent {
         <div class="mobile-drawer-item" id="drawer-item-markdown">
           <div class="mobile-drawer-item-left">
             <span>${icons.eye}</span>
-            <span>Markdown Mode</span>
+            <span>${t("menu.markdownPreview")}</span>
           </div>
           <span class="mobile-drawer-pill-badge ${state.isMarkdownPreview ? "active" : ""}">
             ${state.isMarkdownPreview ? "PREVIEW" : "EDIT"}
@@ -110,7 +107,7 @@ export class MobileMenuDrawerComponent {
         <div class="mobile-drawer-item" id="drawer-item-settings">
           <div class="mobile-drawer-item-left">
             <span>${icons.settings}</span>
-            <span>Settings & About</span>
+            <span>${t("menu.settings")}</span>
           </div>
         </div>
       </div>
@@ -136,9 +133,7 @@ export class MobileMenuDrawerComponent {
 
     bindItem("drawer-item-new", this.callbacks.onNewDocument);
     bindItem("drawer-item-open", this.callbacks.onOpen);
-    if (state.canSave) {
-      bindItem("drawer-item-save", this.callbacks.onSave);
-    }
+    if (state.canSave) bindItem("drawer-item-save", this.callbacks.onSave);
     bindItem("drawer-item-saveas", this.callbacks.onSaveAs);
     bindItem("drawer-item-dual", this.callbacks.onToggleDualPane);
     bindItem("drawer-item-markdown", this.callbacks.onToggleMarkdown);

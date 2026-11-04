@@ -1,5 +1,6 @@
 import { WindowService } from "../services/windowService";
 import { globalEventBus } from "../utils/eventBus";
+import { t } from "../services/i18nService";
 
 export class TopBarComponent {
   private container: HTMLElement;
@@ -15,16 +16,22 @@ export class TopBarComponent {
     this.container = el;
     this.windowService = windowService;
     this.render();
+
+    globalEventBus.on("i18n:locale-change", () => {
+      if (this.titleArea.textContent === "Untitled" || this.titleArea.textContent === t("topbar.untitled")) {
+        this.titleArea.textContent = t("topbar.untitled");
+      }
+    });
   }
 
   private render(): void {
     this.container.innerHTML = `
       <div class="topbar" id="topbar-header">
-        <div class="dot-btn" id="topbar-dot-btn" title="Menu & Settings">
+        <div class="dot-btn" id="topbar-dot-btn" title="${t("menu.settings")}">
           <span class="dot-icon"></span>
         </div>
-        <div class="topbar-drag-area" id="topbar-drag-area">Untitled</div>
-        <div class="back-btn" id="topbar-back-btn" style="display: none;" title="Back to Notes">
+        <div class="topbar-drag-area" id="topbar-drag-area">${t("topbar.untitled")}</div>
+        <div class="back-btn" id="topbar-back-btn" style="display: none;" title="${t("common.back")}">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
@@ -92,27 +99,21 @@ export class TopBarComponent {
   }
 
   getTitle(): string {
-    return this.titleArea.textContent || "Untitled";
+    return this.titleArea.textContent || t("topbar.untitled");
   }
 
-  /**
-   * Sets top bar title strictly to document file name (e.g. Untitled or notes.md)
-   */
   setTitle(fileName: string): void {
-    const cleanName = fileName ? fileName.trim() : "Untitled";
+    const cleanName = fileName ? fileName.trim() : t("topbar.untitled");
     this.titleArea.textContent = cleanName;
   }
 
-  /**
-   * Lights up the top bar dot button with glowing notification animation.
-   */
   setUpdateAvailable(isAvailable: boolean): void {
     if (isAvailable) {
       this.dotBtn.classList.add("glow-update");
       this.dotBtn.title = "Update Available! Click to open settings.";
     } else {
       this.dotBtn.classList.remove("glow-update");
-      this.dotBtn.title = "Menu & Settings";
+      this.dotBtn.title = t("menu.settings");
     }
   }
 }

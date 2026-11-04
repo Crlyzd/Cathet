@@ -1,3 +1,5 @@
+import { t } from "../../services/i18nService";
+
 export interface HomeCategoryTabsCallbacks {
   onSelectFolder: (folder: string) => void;
   onRequestNewFolder: () => void;
@@ -37,7 +39,7 @@ export class HomeCategoryTabsComponent {
     const scrollWrapper = document.createElement("div");
     scrollWrapper.className = "home-tabs-scroll";
 
-    const allChip = this.createChip("All", "All", this.activeFolder === "All");
+    const allChip = this.createChip("All", t("home.allNotes"), this.activeFolder === "All");
     scrollWrapper.appendChild(allChip);
 
     for (const folder of this.folders) {
@@ -47,7 +49,7 @@ export class HomeCategoryTabsComponent {
 
     const addChip = document.createElement("button");
     addChip.className = "home-tab-chip home-tab-add";
-    addChip.title = "Create New Folder";
+    addChip.title = t("home.createFolder");
     addChip.innerHTML = `<span class="home-tab-add-icon">+</span>`;
     addChip.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -58,17 +60,16 @@ export class HomeCategoryTabsComponent {
     this.element.appendChild(scrollWrapper);
   }
 
-  private createChip(label: string, folderValue: string, isActive: boolean): HTMLButtonElement {
+  private createChip(folderId: string, label: string, isActive: boolean): HTMLElement {
     const chip = document.createElement("button");
-    chip.className = `home-tab-chip${isActive ? " active" : ""}`;
-    chip.setAttribute("data-folder", folderValue);
+    chip.className = `home-tab-chip ${isActive ? "active" : ""}`;
+    chip.setAttribute("data-folder", folderId);
     chip.textContent = label;
-
-    chip.addEventListener("click", () => {
-      this.setActiveFolder(folderValue);
-      this.callbacks.onSelectFolder(folderValue);
+    chip.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.setActiveFolder(folderId);
+      this.callbacks.onSelectFolder(folderId);
     });
-
     return chip;
   }
 
@@ -80,4 +81,3 @@ export class HomeCategoryTabsComponent {
     this.element.remove();
   }
 }
-

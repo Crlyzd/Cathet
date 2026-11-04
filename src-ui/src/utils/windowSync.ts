@@ -4,6 +4,7 @@ import { ThemeService } from "../services/themeService";
 import { FontService } from "../services/fontService";
 import { UpdateService } from "../services/updateService";
 import { PreviewService } from "../services/previewService";
+import { I18nService } from "../services/i18nService";
 
 export interface WindowSyncContext {
   themeService: ThemeService;
@@ -15,6 +16,7 @@ export interface WindowSyncContext {
   onUpdateAvailable: (available: boolean) => void;
   onLoadTutorial: () => void;
   onSnapScrollChanged?: (enabled: boolean) => void;
+  onLanguageChanged?: (locale: string) => void;
 }
 
 /**
@@ -29,6 +31,11 @@ export function registerWindowSyncListeners(ctx: WindowSyncContext): void {
   listen<string>("cathet:font-change", (e) => {
     ctx.fontService.setFont(e.payload);
     ctx.onFontChanged(ctx.fontService.getCurrentFont().family);
+  });
+
+  listen<string>("cathet:language-change", (e) => {
+    I18nService.getInstance().setLocale(e.payload, false);
+    ctx.onLanguageChanged?.(e.payload);
   });
 
   listen<boolean>("cathet:ontop-change", (e) => {

@@ -1,4 +1,5 @@
 import { MenuItem } from "../components/PopupMenu";
+import { t } from "../services/i18nService";
 
 export interface MainMenuContext {
   isMarkdownPreview: boolean;
@@ -20,14 +21,14 @@ export interface MainMenuContext {
  */
 export function buildMainMenuItems(ctx: MainMenuContext): MenuItem[] {
   return [
-    { id: "new", label: "New Window", shortcut: "Ctrl+N", action: ctx.onNewWindow },
-    { id: "open", label: "Open...", shortcut: "Ctrl+O", action: ctx.onOpen },
-    { id: "save", label: "Save", shortcut: "Ctrl+S", disabled: ctx.isUpToDate, action: ctx.onSave },
-    { id: "saveas", label: "Save As...", shortcut: "Ctrl+Shift+S", action: ctx.onSaveAs },
+    { id: "new", label: t("menu.newWindow"), shortcut: "Ctrl+N", action: ctx.onNewWindow },
+    { id: "open", label: t("menu.open"), shortcut: "Ctrl+O", action: ctx.onOpen },
+    { id: "save", label: t("menu.save"), shortcut: "Ctrl+S", disabled: ctx.isUpToDate, action: ctx.onSave },
+    { id: "saveas", label: t("menu.saveAs"), shortcut: "Ctrl+Shift+S", action: ctx.onSaveAs },
     { id: "div_dual", label: "", isDivider: true },
     {
       id: "toggle_dualpane",
-      label: ctx.isDualPane ? "Exit Dual Pane" : "Dual Pane",
+      label: ctx.isDualPane ? t("menu.exitDualPane") : t("menu.dualPane"),
       shortcut: "Ctrl+D",
       isActive: ctx.isDualPane,
       action: ctx.onToggleDualPane,
@@ -35,14 +36,14 @@ export function buildMainMenuItems(ctx: MainMenuContext): MenuItem[] {
     { id: "div_file", label: "", isDivider: true },
     {
       id: "toggle_markdown",
-      label: ctx.isMarkdownPreview ? "Markdown: Preview" : "Markdown: Edit",
+      label: ctx.isMarkdownPreview ? t("menu.markdownPreview") : t("menu.markdownEdit"),
       shortcut: "Ctrl+M",
       isActive: ctx.isMarkdownPreview,
       action: ctx.onToggleMarkdown,
     },
     { id: "div_settings", label: "", isDivider: true },
-    { id: "settings", label: "Settings", shortcut: "Ctrl+,", isGlowing: ctx.hasUpdate, action: ctx.onOpenSettings },
+    { id: "settings", label: t("menu.settings"), shortcut: "Ctrl+,", isGlowing: ctx.hasUpdate, action: ctx.onOpenSettings },
     { id: "div_quit", label: "", isDivider: true },
-    { id: "quit", label: "Quit", shortcut: "Esc", action: ctx.onQuit },
+    { id: "quit", label: t("menu.quit"), shortcut: "Esc", action: ctx.onQuit },
   ];
 }

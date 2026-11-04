@@ -2,6 +2,7 @@ import { icons } from "../utils/monochromeIcons";
 import { formatIcons } from "../utils/contextMenuItems";
 import { FormatAction } from "../utils/formatUtils";
 import { MobileFormatBarComponent } from "./MobileFormatBar";
+import { t } from "../services/i18nService";
 
 export type MobileSyncMode = "locked" | "snap" | "paused";
 
@@ -26,13 +27,13 @@ export class MobileActionBarComponent {
   private pill: HTMLElement;
   private formatBar: MobileFormatBarComponent;
   private callbacks: MobileActionBarCallbacks;
-  private isPreview: boolean = false;
-  private isDualPane: boolean = false;
-  private isFormatMode: boolean = false;
-  private isKeyboardOpen: boolean = false;
+  private isPreview = false;
+  private isDualPane = false;
+  private isFormatMode = false;
+  private isKeyboardOpen = false;
   private syncMode: MobileSyncMode = "locked";
-  private isTogglingSync: boolean = false;
-  private isSmall: boolean = false;
+  private isTogglingSync = false;
+  private isSmall = false;
   private collapseTimer: ReturnType<typeof setTimeout> | null = null;
   private btnFormat!: HTMLButtonElement;
   private btnMarkdown!: HTMLButtonElement;
@@ -65,22 +66,22 @@ export class MobileActionBarComponent {
         <button class="mobile-dock-trigger" id="mobile-dock-trigger" title="Expand Actions">
           ${icons.ellipsis}
         </button>
-        <button class="mobile-action-btn" id="mobile-btn-open" title="Open Document">
+        <button class="mobile-action-btn" id="mobile-btn-open" title="${t("menu.open")}">
           ${icons.folder}
         </button>
-        <button class="mobile-action-btn" id="mobile-btn-save" title="Save Document">
+        <button class="mobile-action-btn" id="mobile-btn-save" title="${t("menu.save")}">
           ${icons.save}
         </button>
-        <button class="mobile-action-btn" id="mobile-btn-format" title="Format Text">
+        <button class="mobile-action-btn" id="mobile-btn-format" title="${t("context.format")}">
           ${formatIcons.formatAa}
         </button>
-        <button class="mobile-action-btn" id="mobile-btn-markdown" title="Toggle Markdown Preview">
+        <button class="mobile-action-btn" id="mobile-btn-markdown" title="${t("menu.markdownPreview")}">
           ${icons.eye}
         </button>
-        <button class="mobile-action-btn" id="mobile-btn-dual" title="Toggle Dual Pane">
+        <button class="mobile-action-btn" id="mobile-btn-dual" title="${t("menu.dualPane")}">
           ${icons.dualpane}
         </button>
-        <button class="mobile-action-btn" id="mobile-btn-settings" title="Settings & About">
+        <button class="mobile-action-btn" id="mobile-btn-settings" title="${t("menu.settings")}">
           ${icons.settings}
         </button>
       </div>
@@ -92,11 +93,7 @@ export class MobileActionBarComponent {
   }
 
   private bindEvents(): void {
-    // Prevent focus loss from editor when tapping dock buttons while keyboard is up
-    this.pill.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-    });
-
+    this.pill.addEventListener("mousedown", (e) => e.preventDefault());
     this.pill.addEventListener("click", (e) => {
       if (this.isSmall) {
         e.stopPropagation();
@@ -110,9 +107,7 @@ export class MobileActionBarComponent {
     this.element.querySelector("#mobile-btn-save")?.addEventListener("click", () => this.callbacks.onSave());
     this.btnFormat.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (!this.isPreview) {
-        this.setFormatMode(true);
-      }
+      if (!this.isPreview) this.setFormatMode(true);
     });
     this.btnMarkdown.addEventListener("click", () => this.callbacks.onToggleMarkdown());
     this.btnDual.addEventListener("click", () => this.callbacks.onToggleDualPane());
@@ -135,15 +130,10 @@ export class MobileActionBarComponent {
     this.isKeyboardOpen = isOpen;
     if (isOpen) {
       if (this.collapseTimer) clearTimeout(this.collapseTimer);
-      if (this.isSmall) {
-        this.expand();
-      }
+      if (this.isSmall) this.expand();
     } else {
-      if (this.isFormatMode) {
-        this.setFormatMode(false);
-      } else {
-        this.scheduleAutoCollapse(3500);
-      }
+      if (this.isFormatMode) this.setFormatMode(false);
+      else this.scheduleAutoCollapse(3500);
     }
   }
 
@@ -167,9 +157,7 @@ export class MobileActionBarComponent {
         try {
           this.callbacks.onToggleSync?.(this.syncMode);
         } finally {
-          setTimeout(() => {
-            this.isTogglingSync = false;
-          }, 80);
+          setTimeout(() => { this.isTogglingSync = false; }, 80);
         }
       });
       this.btnDual.insertAdjacentElement("afterend", this.btnSync);
@@ -180,15 +168,14 @@ export class MobileActionBarComponent {
     this.btnSync.classList.toggle("active", isLocked);
     this.btnSync.classList.toggle("blue-galaxy", isSnap);
     this.btnSync.innerHTML = isLocked ? icons.link : icons.unlink;
-    this.btnSync.title =
-      this.syncMode === "locked"
-        ? "Sync Scroll: Standard (Locked)"
-        : this.syncMode === "snap"
-          ? "Sync Scroll: Snap Scroll (Locked)"
-          : "Sync Scroll: Paused";
+    this.btnSync.title = this.syncMode === "locked"
+      ? t("dualpane.lockStandard")
+      : this.syncMode === "snap"
+        ? t("dualpane.snapLocked")
+        : t("dualpane.scrollPaused");
   }
 
-  scheduleAutoCollapse(delayMs: number = 3500): void {
+  scheduleAutoCollapse(delayMs = 3500): void {
     if (this.collapseTimer) clearTimeout(this.collapseTimer);
     if (this.isKeyboardOpen || this.isFormatMode) return;
     this.collapseTimer = setTimeout(() => this.collapse(), delayMs);
@@ -210,9 +197,7 @@ export class MobileActionBarComponent {
     this.isPreview = isPreview;
     this.btnMarkdown.classList.toggle("active", isPreview);
     this.btnFormat.classList.toggle("disabled", isPreview);
-    if (isPreview && this.isFormatMode) {
-      this.setFormatMode(false);
-    }
+    if (isPreview && this.isFormatMode) this.setFormatMode(false);
   }
 
   setDualPaneState(isDual: boolean): void {

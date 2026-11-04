@@ -1,4 +1,5 @@
 import { PlatformService } from "../../services/platformService";
+import { t } from "../../services/i18nService";
 
 export interface DualPaneEmptyCallbacks {
   onOpen: () => void;
@@ -24,28 +25,24 @@ export class DualPaneEmptyDropzone {
           <line x1="12" y1="18" x2="12" y2="12"></line>
           <polyline points="9 15 12 12 15 15"></polyline>
         </svg>
-        <span class="dualpane-empty-title">Secondary Document</span>
-        <span class="dualpane-empty-desc">${
-          isMobile
-            ? "Choose a note from Home, open a file, or start a new document."
-            : "Drop a text or markdown file here, or choose an existing document."
-        }</span>
+        <span class="dualpane-empty-title">${t("menu.dualPane")}</span>
+        <span class="dualpane-empty-desc">${t("dualpane.dropHint")}</span>
         <div class="dualpane-empty-actions${isMobile ? " is-mobile-actions" : ""}">
-          <button class="dualpane-empty-btn dualpane-empty-btn-primary" id="dualpane-empty-browse-btn" title="${isMobile ? "Browse Notes (Home)" : "Open Document..."}">
-            <span class="dualpane-empty-btn-full">${isMobile ? "Home" : "Open Document..."}</span>
-            <span class="dualpane-empty-btn-compact">${isMobile ? "Home" : "Open"}</span>
+          <button class="dualpane-empty-btn dualpane-empty-btn-primary" id="dualpane-empty-browse-btn" title="${isMobile ? "Home" : t("menu.open")}">
+            <span class="dualpane-empty-btn-full">${isMobile ? "Home" : t("menu.open")}</span>
+            <span class="dualpane-empty-btn-compact">${isMobile ? "Home" : t("menu.open")}</span>
           </button>
           ${
             isMobile
-              ? `<button class="dualpane-empty-btn dualpane-empty-btn-secondary" id="dualpane-empty-openfile-btn" title="Open File...">
-                  <span class="dualpane-empty-btn-full">Open File</span>
-                  <span class="dualpane-empty-btn-compact">Open File</span>
+              ? `<button class="dualpane-empty-btn dualpane-empty-btn-secondary" id="dualpane-empty-openfile-btn" title="${t("dualpane.openFile")}">
+                  <span class="dualpane-empty-btn-full">${t("dualpane.openFile")}</span>
+                  <span class="dualpane-empty-btn-compact">${t("dualpane.openFile")}</span>
                 </button>`
               : ""
           }
-          <button class="dualpane-empty-btn dualpane-empty-btn-secondary" id="dualpane-empty-new-btn" title="New Document">
-            <span class="dualpane-empty-btn-full">New Document</span>
-            <span class="dualpane-empty-btn-compact">New</span>
+          <button class="dualpane-empty-btn dualpane-empty-btn-secondary" id="dualpane-empty-new-btn" title="${t("dualpane.newDocument")}">
+            <span class="dualpane-empty-btn-full">${t("dualpane.newDocument")}</span>
+            <span class="dualpane-empty-btn-compact">${t("common.ok")}</span>
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { ContextMenuItem } from "../components/ContextMenu";
 import { EditorComponent } from "../components/Editor";
 import { applyMarkdownFormat, FormatAction } from "./formatUtils";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { t } from "../services/i18nService";
 
 export const contextIcons = {
   cut: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>`,
@@ -44,54 +45,54 @@ function buildFormatSubmenu(editor: EditorComponent): ContextMenuItem[] {
   return [
     {
       id: "fmt_style",
-      label: "Style",
+      label: t("context.style"),
       iconSvg: formatIcons.bold,
       submenu: [
-        { id: "fmt_bold", label: "Bold", shortcut: "Ctrl+B", iconSvg: formatIcons.bold, action: run("bold") },
-        { id: "fmt_italic", label: "Italic", shortcut: "Ctrl+I", iconSvg: formatIcons.italic, action: run("italic") },
-        { id: "fmt_strike", label: "Strikethrough", shortcut: "Ctrl+Shift+X", iconSvg: formatIcons.strike, action: run("strike") },
-        { id: "fmt_code", label: "Inline Code", shortcut: "Ctrl+`", iconSvg: formatIcons.code, action: run("code") },
-        { id: "fmt_highlight", label: "Highlight", shortcut: "Ctrl+Shift+H", iconSvg: formatIcons.highlight, action: run("highlight") },
-        { id: "fmt_math", label: "Inline Math", shortcut: "Ctrl+Shift+M", iconSvg: formatIcons.math, action: run("math") },
+        { id: "fmt_bold", label: t("context.bold"), shortcut: "Ctrl+B", iconSvg: formatIcons.bold, action: run("bold") },
+        { id: "fmt_italic", label: t("context.italic"), shortcut: "Ctrl+I", iconSvg: formatIcons.italic, action: run("italic") },
+        { id: "fmt_strike", label: t("context.strike"), shortcut: "Ctrl+Shift+X", iconSvg: formatIcons.strike, action: run("strike") },
+        { id: "fmt_code", label: t("context.code"), shortcut: "Ctrl+`", iconSvg: formatIcons.code, action: run("code") },
+        { id: "fmt_highlight", label: t("context.highlight"), shortcut: "Ctrl+Shift+H", iconSvg: formatIcons.highlight, action: run("highlight") },
+        { id: "fmt_math", label: t("context.math"), shortcut: "Ctrl+Shift+M", iconSvg: formatIcons.math, action: run("math") },
       ],
     },
     {
       id: "fmt_headings",
-      label: "Headings",
+      label: t("context.headings"),
       iconSvg: formatIcons.heading,
       submenu: [
-        { id: "fmt_h1", label: "Heading 1", shortcut: "Ctrl+Alt+1", iconSvg: formatIcons.h1, action: run("h1") },
-        { id: "fmt_h2", label: "Heading 2", shortcut: "Ctrl+Alt+2", iconSvg: formatIcons.h2, action: run("h2") },
-        { id: "fmt_h3", label: "Heading 3", shortcut: "Ctrl+Alt+3", iconSvg: formatIcons.h3, action: run("h3") },
+        { id: "fmt_h1", label: t("context.h1"), shortcut: "Ctrl+Alt+1", iconSvg: formatIcons.h1, action: run("h1") },
+        { id: "fmt_h2", label: t("context.h2"), shortcut: "Ctrl+Alt+2", iconSvg: formatIcons.h2, action: run("h2") },
+        { id: "fmt_h3", label: t("context.h3"), shortcut: "Ctrl+Alt+3", iconSvg: formatIcons.h3, action: run("h3") },
       ],
     },
     {
       id: "fmt_lists",
-      label: "Lists",
+      label: t("context.lists"),
       iconSvg: formatIcons.bullet,
       submenu: [
-        { id: "fmt_bullet", label: "Bullet List", shortcut: "Ctrl+Shift+U", iconSvg: formatIcons.bullet, action: run("bullet") },
-        { id: "fmt_number", label: "Numbered List", shortcut: "Ctrl+Shift+O", iconSvg: formatIcons.number, action: run("number") },
-        { id: "fmt_task", label: "Task List", shortcut: "Ctrl+Shift+T", iconSvg: formatIcons.task, action: run("task") },
+        { id: "fmt_bullet", label: t("context.bulletList"), shortcut: "Ctrl+Shift+U", iconSvg: formatIcons.bullet, action: run("bullet") },
+        { id: "fmt_number", label: t("context.numberedList"), shortcut: "Ctrl+Shift+O", iconSvg: formatIcons.number, action: run("number") },
+        { id: "fmt_task", label: t("context.taskList"), shortcut: "Ctrl+Shift+T", iconSvg: formatIcons.task, action: run("task") },
       ],
     },
     {
       id: "fmt_insert",
-      label: "Insert",
+      label: t("context.insert"),
       iconSvg: formatIcons.table,
       submenu: [
-        { id: "fmt_quote", label: "Blockquote", shortcut: "Ctrl+Shift+Q", iconSvg: formatIcons.quote, action: run("quote") },
-        { id: "fmt_codeblock", label: "Code Block", shortcut: "Ctrl+Shift+C", iconSvg: formatIcons.codeblock, action: run("codeblock") },
-        { id: "fmt_link", label: "Hyperlink", shortcut: "Ctrl+K", iconSvg: formatIcons.link, action: run("link") },
-        { id: "fmt_image", label: "Image...", shortcut: "Ctrl+Shift+I", iconSvg: formatIcons.image, action: run("image") },
-        { id: "fmt_table", label: "Table", shortcut: "Ctrl+Shift+B", iconSvg: formatIcons.table, action: run("table") },
-        { id: "fmt_rule", label: "Horizontal Rule", shortcut: "Ctrl+Alt+R", iconSvg: formatIcons.rule, action: run("rule") },
+        { id: "fmt_quote", label: t("context.blockquote"), shortcut: "Ctrl+Shift+Q", iconSvg: formatIcons.quote, action: run("quote") },
+        { id: "fmt_codeblock", label: t("context.codeBlock"), shortcut: "Ctrl+Shift+C", iconSvg: formatIcons.codeblock, action: run("codeblock") },
+        { id: "fmt_link", label: t("context.link"), shortcut: "Ctrl+K", iconSvg: formatIcons.link, action: run("link") },
+        { id: "fmt_image", label: t("context.image"), shortcut: "Ctrl+Shift+I", iconSvg: formatIcons.image, action: run("image") },
+        { id: "fmt_table", label: t("context.table"), shortcut: "Ctrl+Shift+B", iconSvg: formatIcons.table, action: run("table") },
+        { id: "fmt_rule", label: t("context.rule"), shortcut: "Ctrl+Alt+R", iconSvg: formatIcons.rule, action: run("rule") },
       ],
     },
     { id: "fmt_div", label: "", isDivider: true },
     {
       id: "fmt_clear",
-      label: "Clear Formatting",
+      label: t("context.clearFormatting"),
       shortcut: "Ctrl+\\",
       iconSvg: formatIcons.clear,
       action: run("clear"),
@@ -106,16 +107,16 @@ export function buildContextMenuItems(editor: EditorComponent): ContextMenuItem[
   const isMd = editor.getIsMarkdownPreview();
 
   return [
-    { id: "cut", label: "Cut", shortcut: "Ctrl+X", iconSvg: contextIcons.cut, disabled: !hasSel || isMd, action: () => editor.cut() },
-    { id: "copy", label: "Copy", shortcut: "Ctrl+C", iconSvg: contextIcons.copy, disabled: !hasSel, action: () => editor.copy() },
-    { id: "paste", label: "Paste", shortcut: "Ctrl+V", iconSvg: contextIcons.paste, disabled: isMd, action: () => editor.paste() },
-    { id: "undo", label: "Undo", shortcut: "Ctrl+Z", iconSvg: contextIcons.undo, disabled: isMd, action: () => editor.undo() },
-    { id: "redo", label: "Redo", shortcut: "Ctrl+Shift+Z", iconSvg: contextIcons.redo, disabled: isMd, action: () => editor.redo() },
-    { id: "selectAll", label: "Select All", shortcut: "Ctrl+A", iconSvg: contextIcons.selectAll, action: () => editor.selectAllClean() },
+    { id: "cut", label: t("context.cut"), shortcut: "Ctrl+X", iconSvg: contextIcons.cut, disabled: !hasSel || isMd, action: () => editor.cut() },
+    { id: "copy", label: t("context.copy"), shortcut: "Ctrl+C", iconSvg: contextIcons.copy, disabled: !hasSel, action: () => editor.copy() },
+    { id: "paste", label: t("context.paste"), shortcut: "Ctrl+V", iconSvg: contextIcons.paste, disabled: isMd, action: () => editor.paste() },
+    { id: "undo", label: t("context.undo"), shortcut: "Ctrl+Z", iconSvg: contextIcons.undo, disabled: isMd, action: () => editor.undo() },
+    { id: "redo", label: t("context.redo"), shortcut: "Ctrl+Shift+Z", iconSvg: contextIcons.redo, disabled: isMd, action: () => editor.redo() },
+    { id: "selectAll", label: t("context.selectAll"), shortcut: "Ctrl+A", iconSvg: contextIcons.selectAll, action: () => editor.selectAllClean() },
     { id: "div_fmt", label: "", isDivider: true },
     {
       id: "format",
-      label: "Format",
+      label: t("context.format"),
       iconSvg: formatIcons.formatAa,
       disabled: isMd,
       submenu: buildFormatSubmenu(editor),
@@ -124,7 +125,7 @@ export function buildContextMenuItems(editor: EditorComponent): ContextMenuItem[
     { id: "wordWrap", label: "Word Wrap", shortcut: "Alt+W", iconSvg: isWrap ? contextIcons.check : undefined, action: () => editor.toggleWordWrap() },
     {
       id: "searchWeb",
-      label: "Search in web",
+      label: t("context.searchWeb", { query: selectedText.length > 15 ? selectedText.slice(0, 12) + "..." : selectedText }),
       shortcut: "Ctrl+E",
       iconSvg: contextIcons.search,
       disabled: !hasSel,
