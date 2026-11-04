@@ -4,10 +4,13 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : TauriActivity() {
   companion object {
@@ -42,6 +45,19 @@ class MainActivity : TauriActivity() {
     initNativeBridge(applicationContext)
     handleIntent(intent)
     super.onCreate(savedInstanceState)
+  }
+
+  override fun onWebViewCreate(webView: WebView) {
+    super.onWebViewCreate(webView)
+    ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
+      val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+      val density = resources.displayMetrics.density.coerceAtLeast(1f)
+      val imeDp = Math.round(imeBottom / density)
+      webView.post {
+        webView.evaluateJavascript("window.__cathet_on_ime_inset&&window.__cathet_on_ime_inset($imeDp)", null)
+      }
+      ViewCompat.onApplyWindowInsets(v, insets)
+    }
   }
 
   override fun onDestroy() {
