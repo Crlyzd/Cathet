@@ -2,6 +2,8 @@ import { PlatformService } from "./platformService";
 import { SettingsModalComponent } from "../components/SettingsModal";
 import { MobileActionBarComponent, MobileSyncMode } from "../components/MobileActionBar";
 import { MobileMenuDrawerComponent, MobileDrawerState } from "../components/MobileMenuDrawer";
+import { KeyboardTracker } from "../utils/keyboardTracker";
+import { FormatAction } from "../utils/formatUtils";
 import { listen } from "@tauri-apps/api/event";
 
 export interface MobileCoordinatorActions {
@@ -13,6 +15,7 @@ export interface MobileCoordinatorActions {
   onToggleDualPane: () => void;
   onOpenTutorial: () => void;
   onFontChanged: (fontFamily: string) => void;
+  onFormat?: (action: FormatAction) => void;
   onToggleSync?: (mode: MobileSyncMode) => void;
   onSnapScrollChanged?: (enabled: boolean) => void;
 }
@@ -22,6 +25,7 @@ export class MobileCoordinator {
   private settingsModal: SettingsModalComponent | null = null;
   private menuDrawer: MobileMenuDrawerComponent | null = null;
   private actionBar: MobileActionBarComponent | null = null;
+  private keyboardTracker: KeyboardTracker | null = null;
   private actions: MobileCoordinatorActions;
 
   constructor(actions: MobileCoordinatorActions) {
@@ -39,11 +43,24 @@ export class MobileCoordinator {
         onOpen: this.actions.onOpen,
         onToggleDualPane: this.actions.onToggleDualPane,
         onOpenSettings: () => this.openSettings(),
+        onFormat: (action) => this.actions.onFormat?.(action),
         onToggleSync: (mode) => this.actions.onToggleSync?.(mode),
       });
 
-      // Auto-collapse dock on editor scrolling so it never obscures reading or typing
-      document.addEventListener("scroll", () => this.actionBar?.collapse(), { capture: true, passive: true });
+      this.keyboardTracker = new KeyboardTracker();
+      this.keyboardTracker.onChange((isOpen) => {
+        this.actionBar?.setKeyboardOpen(isOpen);
+      });
+
+      // Auto-collapse dock on editor scrolling (when keyboard is closed)
+      document.addEventListener(
+        "scroll",
+        (e) => {
+          if ((e.target as HTMLElement)?.closest?.("#mobile-action-bar")) return;
+          this.actionBar?.collapse();
+        },
+        { capture: true, passive: true }
+      );
     }
 
     // Stagger heavy secondary modals (Settings & Drawer) off Frame 0 to eliminate cold boot jank
@@ -124,6 +141,7 @@ export class MobileCoordinator {
   }
 
   destroy(): void {
+    this.keyboardTracker?.destroy();
     this.settingsModal?.destroy();
     this.menuDrawer?.destroy();
     this.actionBar?.destroy();
