@@ -1,4 +1,4 @@
-# ==============================================================================
+v# ==============================================================================
 # CATHET — JAWA MALANGAN TRANSLATION REVIEW
 # ==============================================================================
 # Petunjuk:
@@ -242,9 +242,9 @@ context.rule = Garis Lurus
 # Indonesia: Hapus Format
 context.clearFormatting = Ilangno Format
 
-# English: Search Web for "{query}"
-# Indonesia: Cari di Web untuk "{query}"
-context.searchWeb = Goleki ndek Web "{query}"
+# English: Search in Web
+# Indonesia: Cari di Web
+context.searchWeb = Goleki ndek Web
 
 
 # ------------------------------------------------------------------------------

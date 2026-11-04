@@ -125,7 +125,7 @@ export function buildContextMenuItems(editor: EditorComponent): ContextMenuItem[
     { id: "wordWrap", label: "Word Wrap", shortcut: "Alt+W", iconSvg: isWrap ? contextIcons.check : undefined, action: () => editor.toggleWordWrap() },
     {
       id: "searchWeb",
-      label: t("context.searchWeb", { query: selectedText.length > 15 ? selectedText.slice(0, 12) + "..." : selectedText }),
+      label: t("context.searchWeb"),
       shortcut: "Ctrl+E",
       iconSvg: contextIcons.search,
       disabled: !hasSel,

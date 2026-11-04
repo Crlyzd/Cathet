@@ -59,7 +59,7 @@
     "table": "Table",
     "rule": "Horizontal Rule",
     "clearFormatting": "Clear Formatting",
-    "searchWeb": "Search Web for \"{query}\""
+    "searchWeb": "Search in Web"
   },
   "topbar": {
     "untitled": "Untitled",

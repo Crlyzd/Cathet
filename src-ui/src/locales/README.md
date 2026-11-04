@@ -24,7 +24,7 @@ Open the new JSON file and translate the text on the right side of each key.
 }
 ```
 
-> **Note on Placeholders**: Some strings include dynamic placeholders in curly braces like `{count}` or `\"{query}\"`. Keep these exact placeholders in your translation so numbers and queries can be inserted dynamically.
+> **Note on Placeholders**: Some strings include dynamic placeholders in curly braces like `{count}` or `{query}`. Keep these exact placeholders in your translation so numbers and queries can be inserted dynamically.
 
 ### Step 3: Register in `src-ui/src/locales/index.ts`
 Open `src-ui/src/locales/index.ts` and add your new locale to `SUPPORTED_LOCALES`:
