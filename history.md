@@ -112,6 +112,19 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-04: Comprehensive Overhaul of Cathet Interactive Tutorial Guide
+- **Summary**: Modernized and expanded the interactive tutorial guide in `src-ui/src/assets/tutorial.md` to comprehensively showcase all Cathet capabilities:
+  - **Complete Shortcuts Matrix**: Detailed tables for document & window controls (`Ctrl + M`, `Ctrl + D`, `Ctrl + T`, `Ctrl + S`, `Ctrl + Shift + S`, `Alt + W`, etc.) and the 18-action Markdown formatting engine (`Ctrl + B`, `Ctrl + I`, `Ctrl + U`, `Ctrl + Shift + X`, `Ctrl + Shift + H`, `Ctrl + \``, `Ctrl + Shift + M`, `Ctrl + Shift + C`, `Ctrl + Shift + Q`, `Ctrl + K`, `Ctrl + Shift + I`, `Ctrl + Shift + B`, `Ctrl + Shift + U`, `Ctrl + Shift + O`, `Ctrl + Shift + T`, `Ctrl + Alt + 1/2/3`, `Ctrl + Alt + R`, `Ctrl + \`).
+  - **Rich Typography & Interactive Elements**: Added sections and live working syntax for headings, interactive checkboxes, highlighted text, underlines, math formulas, collapsible accordions (`<details><summary>`), and syntax-styled code blocks.
+  - **Spreadsheet & TSV Auto-Conversion**: Documented direct copy-paste translation from Microsoft Excel and Google Sheets into GFM tables.
+  - **Native Vector SVG Rendering**: Embedded an interactive SVG element directly in the guide demonstrating native `currentColor` theme adaptation.
+  - **Images & Clipboard Superpowers**: Explained in-memory WebP downscaling, collapsible Base64 pill badges, image insertion modal (`Ctrl + Shift + I`), and web/local image resolution.
+  - **Dual-Pane Split & Mobile Suite**: Documented horizontal/vertical dual-pane split (`Ctrl + D`), 3-state proportional scroll synchronization, 120fps HyperOS container morph, mobile formatting bar, and regional language localization.
+  - **Verification**: Verified cleanly with `npx tsc --noEmit` (0 errors).
+- **Files Modified**:
+  - `src-ui/src/assets/tutorial.md`: Comprehensive updated tutorial documentation.
+  - `history.md`: Appended changelog entry per Rule 13.
+
 ### 2026-11-04: Fixed Default App Collision & Implemented Marquee Auto-Scroll for Overflowing Text
 - **Summary**: Resolved button text wrapping/collision in Desktop Settings and implemented horizontal auto-scroll marquee for incomplete or truncated text:
   - **Button Collision Resolution**: In `src-ui/styles/settings.css`, added `gap: 12px; min-width: 0;` to `.setting-item`, set `flex: 1; min-width: 0; overflow: hidden;` on `.setting-meta`, and enforced `white-space: nowrap; flex-shrink: 0;` on `.glass-btn` and `.default-app-actions`. Updated Javanese Krama translation in `jv-krama.json` from `"Ilangaken Sesambungan"` to `"Ilangaken Sambungan"`. The button now remains a compact, single-line pill with guaranteed 12px separation from the text.
