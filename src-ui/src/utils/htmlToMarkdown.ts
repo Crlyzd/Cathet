@@ -114,6 +114,18 @@ function nodeToMarkdown(node: Node): string {
       return text ? `*${text}*` : "";
     }
 
+    case "mark": {
+      const text = childrenMd().trim();
+      return text ? `==${text}==` : "";
+    }
+
+    case "del":
+    case "s":
+    case "strike": {
+      const text = childrenMd().trim();
+      return text ? `~~${text}~~` : "";
+    }
+
     case "code": {
       if (el.parentElement?.tagName.toLowerCase() === "pre") {
         return el.textContent || "";
@@ -140,8 +152,15 @@ function nodeToMarkdown(node: Node): string {
       return "\n" + items.map((li, idx) => `${idx + 1}. ${nodeToMarkdown(li).trim()}`).join("\n") + "\n\n";
     }
 
-    case "li":
+    case "li": {
+      const checkbox = el.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        const isChecked = (checkbox as HTMLInputElement).checked;
+        const cleanText = childrenMd().replace(/^\s*\[[ xX]\]\s*/, "").trim();
+        return `[${isChecked ? "x" : " "}] ${cleanText}`;
+      }
       return childrenMd().trim();
+    }
 
     case "a": {
       const href = el.getAttribute("href") || "";

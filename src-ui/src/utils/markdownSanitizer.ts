@@ -6,7 +6,7 @@
 const ALLOWED_TAGS = new Set([
   "a", "b", "blockquote", "br", "code", "dd", "del", "details", "div", "dl", "dt",
   "em", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "input", "ins",
-  "kbd", "li", "ol", "p", "pre", "q", "rp", "rt", "ruby", "s", "samp", "small",
+  "kbd", "li", "mark", "ol", "p", "pre", "q", "rp", "rt", "ruby", "s", "samp", "small",
   "span", "strike", "strong", "sub", "summary", "sup", "table", "tbody", "td",
   "tfoot", "th", "thead", "tr", "u", "ul", "var", "wbr",
   // Safe SVG vector graphic elements (scripts and foreignObject strictly prohibited)
@@ -15,7 +15,7 @@ const ALLOWED_TAGS = new Set([
 ]);
 
 const ALLOWED_ATTRS = new Set([
-  "align", "alt", "checked", "class", "dir", "disabled", "height", "href", "id", "loading",
+  "align", "alt", "checked", "class", "data-line", "dir", "disabled", "height", "href", "id", "loading",
   "name", "open", "rel", "src", "style", "target", "title", "type", "width",
   // SVG styling, geometry, and presentation attributes
   "viewbox", "xmlns", "fill", "fill-rule", "fill-opacity", "stroke", "stroke-width",

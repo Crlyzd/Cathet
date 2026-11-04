@@ -44,13 +44,9 @@
 }
 
 /* Markdown Rendered Preview Elements */
-.editor-content.markdown-preview,
-.editor-content.markdown-preview * {
-  cursor: default;
-}
-
 .editor-content.markdown-preview {
   white-space: normal;
+  cursor: default;
 }
 
 .editor-content.markdown-preview details {
@@ -98,6 +94,34 @@
 
 .editor-content .md-spacer {
   height: 0.6em;
+}
+
+.editor-content mark {
+  background: var(--col-mark-bg);
+  color: var(--col-mark-text);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.editor-content .md-math {
+  font-family: 'Cambria Math', 'KaTeX_Math', 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 1.05em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--col-code-bg);
+}
+
+.editor-content li.task-list-item {
+  list-style-type: none;
+  margin-left: -18px;
+}
+
+.editor-content li.task-list-item input[type="checkbox"] {
+  margin-right: 8px;
+  vertical-align: middle;
+  accent-color: var(--col-accent);
+  cursor: default;
 }
 
 .editor-content code {

@@ -29,6 +29,8 @@
   --col-card-border: rgba(255, 255, 255, 0.14);
   --col-divider-subtle: rgba(255, 255, 255, 0.10);
   --col-coffee-text: #fb923c;
+  --col-mark-bg: rgba(250, 204, 21, 0.25);
+  --col-mark-text: #fef08a;
 }
 
 [data-theme="light"] {
@@ -48,6 +50,8 @@
   --col-card-border: rgba(15, 23, 42, 0.10);
   --col-divider-subtle: rgba(15, 23, 42, 0.08);
   --col-coffee-text: #ea580c;
+  --col-mark-bg: rgba(254, 240, 138, 0.70);
+  --col-mark-text: #713f12;
 }
 
 * {

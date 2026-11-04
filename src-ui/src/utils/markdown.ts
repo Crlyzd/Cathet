@@ -106,12 +106,19 @@ export function parseMarkdown(md: string, documentPath?: string | null): string 
       continue;
     }
 
-    // Unordered List
+    // Unordered List & Task Lists
     if (/^[-*+]\s+/.test(trimmed)) {
       if (inOl) { out.push("</ol>"); inOl = false; }
       if (!inUl) { out.push("<ul>"); inUl = true; }
       const itemText = trimmed.replace(/^[-*+]\s+/, "");
-      out.push(`<li>${formatInline(itemText, documentPath)}</li>`);
+      const taskMatch = itemText.match(/^\[([ xX])\]\s+(.*)$/);
+      if (taskMatch) {
+        const isChecked = taskMatch[1].toLowerCase() === "x";
+        const checkedAttr = isChecked ? " checked" : "";
+        out.push(`<li class="task-list-item"><input type="checkbox" class="task-checkbox" data-line="${i}"${checkedAttr} /> ${formatInline(taskMatch[2], documentPath)}</li>`);
+      } else {
+        out.push(`<li>${formatInline(itemText, documentPath)}</li>`);
+      }
       continue;
     }
 
@@ -147,11 +154,17 @@ function escapeHtml(str: string): string {
 }
 
 function formatInline(text: string, documentPath?: string | null): string {
-  // 1. Temporarily protect inline code blocks
+  // 1. Temporarily protect inline code blocks and math formulas
   const codeSnippets: string[] = [];
   let s = text.replace(/`([^`]+)`/g, (_, code) => {
     codeSnippets.push(escapeHtml(code));
-    return `___CODE_SLOT_${codeSnippets.length - 1}___`;
+    return `§§§CODE_${codeSnippets.length - 1}§§§`;
+  });
+
+  const mathSnippets: string[] = [];
+  s = s.replace(/\$([^\s$](?:[^$\n]*[^\s$])?)\$/g, (_, math) => {
+    mathSnippets.push(escapeHtml(math));
+    return `§§§MATH_${mathSnippets.length - 1}§§§`;
   });
 
   // 2. Strip HTML comments, then escape non-whitelisted raw HTML
@@ -173,13 +186,17 @@ function formatInline(text: string, documentPath?: string | null): string {
   // 5. Standard Markdown links: [text](linkUrl)
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 
-  // 6. Formatting: Bold, Italic, Strikethrough
+  // 6. Formatting: Highlight, Bold, Italic, Strikethrough
+  s = s.replace(/==([^=]+)==/g, "<mark>$1</mark>");
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/__([^_]+)__/g, "<strong>$1</strong>");
   s = s.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  s = s.replace(/\b_([^_]+)_\b/g, "<em>$1</em>");
   s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
 
-  // 7. Restore inline code
-  s = s.replace(/___CODE_SLOT_(\d+)___/g, (_, idx) => `<code>${codeSnippets[Number(idx)]}</code>`);
+  // 7. Restore inline code and math
+  s = s.replace(/§§§CODE_(\d+)§§§/g, (_, idx) => `<code>${codeSnippets[Number(idx)]}</code>`);
+  s = s.replace(/§§§MATH_(\d+)§§§/g, (_, idx) => `<code class="md-math">${mathSnippets[Number(idx)]}</code>`);
 
   return s;
 }
