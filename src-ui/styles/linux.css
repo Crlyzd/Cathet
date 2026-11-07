@@ -1,0 +1,76 @@
+/* ============================================================
+   linux.css — Linux Desktop (KDE Plasma 6 / KWin & Multi-DE)
+   Strictly scoped to body.is-linux (Windows & Android unaffected)
+   ============================================================ */
+
+/* 1. KDE Plasma & Linux Typography Stack */
+body.is-linux {
+  --font-ui: 'Noto Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-editor: 'Noto Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family: var(--font-ui);
+  --font-mono: 'Hack', 'Noto Sans Mono', 'Cascadia Code', 'Source Code Pro', monospace;
+}
+
+/* 2. KDE Plasma 6 & Hyprland Translucent Frosted Glass (Default & de-blur) */
+body.is-linux,
+body.is-linux[data-theme="dark"],
+[data-theme="dark"] body.is-linux,
+body.is-linux.de-blur[data-theme="dark"],
+[data-theme="dark"] body.is-linux.de-blur {
+  --col-bg-main: rgba(27, 30, 32, 0.88);
+  --col-bg-bar: rgba(35, 38, 41, 0.94);
+  --col-accent: #3daee9;
+  --col-quote-border: #3daee9;
+  --col-border: rgba(255, 255, 255, 0.12);
+}
+
+body.is-linux[data-theme="light"],
+[data-theme="light"] body.is-linux,
+body.is-linux.de-blur[data-theme="light"],
+[data-theme="light"] body.is-linux.de-blur {
+  --col-bg-main: rgba(252, 252, 252, 0.90);
+  --col-bg-bar: rgba(239, 240, 241, 0.95);
+  --col-accent: #1d99f3;
+  --col-quote-border: #1d99f3;
+  --col-border: rgba(15, 23, 42, 0.10);
+}
+
+/* 3. GNOME / Ubuntu / Non-Blur Solid Slate Fallback (de-solid) */
+body.is-linux.de-solid,
+body.is-linux.de-solid[data-theme="dark"],
+[data-theme="dark"] body.is-linux.de-solid {
+  --col-bg-main: #12141c;
+  --col-bg-bar: #161821;
+}
+
+body.is-linux.de-solid[data-theme="light"],
+[data-theme="light"] body.is-linux.de-solid {
+  --col-bg-main: #f8fafc;
+  --col-bg-bar: #ffffff;
+}
+
+/* 4. KDE Breeze 8px Window Frame & Shadow */
+body.is-linux .cathet-root,
+body.is-linux .settings-window {
+  background-color: var(--col-bg-main);
+  border-radius: 8px;
+  border: 1px solid var(--col-border);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+/* 5. 4px Invisible Frameless Window Edge-Resize Grips */
+body.is-linux .window-resize-edge {
+  position: absolute;
+  z-index: 9999;
+  pointer-events: auto;
+}
+
+body.is-linux .resize-top { top: 0; left: 8px; right: 8px; height: 4px; cursor: n-resize; }
+body.is-linux .resize-bottom { bottom: 0; left: 8px; right: 8px; height: 4px; cursor: s-resize; }
+body.is-linux .resize-left { top: 8px; bottom: 8px; left: 0; width: 4px; cursor: w-resize; }
+body.is-linux .resize-right { top: 8px; bottom: 8px; right: 0; width: 4px; cursor: e-resize; }
+body.is-linux .resize-top-left { top: 0; left: 0; width: 8px; height: 8px; cursor: nw-resize; }
+body.is-linux .resize-top-right { top: 0; right: 0; width: 8px; height: 8px; cursor: ne-resize; }
+body.is-linux .resize-bottom-left { bottom: 0; left: 0; width: 8px; height: 8px; cursor: sw-resize; }
+body.is-linux .resize-bottom-right { bottom: 0; right: 0; width: 8px; height: 8px; cursor: se-resize; }
+

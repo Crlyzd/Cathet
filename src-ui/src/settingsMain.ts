@@ -10,6 +10,7 @@ import { AssociationService, AssociationStatus } from "./services/associationSer
 import { PreviewService } from "./services/previewService";
 import { DualPaneService } from "./services/dualPaneService";
 import { I18nService } from "./services/i18nService";
+import { PlatformService } from "./services/platformService";
 import { APP_VERSION } from "./version";
 
 class SettingsApp {
@@ -33,6 +34,7 @@ class SettingsApp {
     const updateInfo = this.updateService.getUpdateInfo();
 
     this.applyTheme(currentTheme);
+    PlatformService.getInstance().applyPlatformClasses();
     invoke("sync_window_theme", { theme: currentTheme }).catch(console.error);
 
     this.tabsComponent = new SettingsTabsComponent(
