@@ -11,6 +11,50 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-07: Staging and Committing Auto-Generated Build Artifacts (`linux-schema.json`) into Git
+- **Context**: When organizing grouped git commits for Linux desktop support, `src-tauri/gen/schemas/linux-schema.json` (a 6,245-line auto-generated Tauri build byproduct) was staged and committed with backend Rust commands. When the user asked whether any junk got into the repo, the assistant initially rationalized that other `*-schema.json` files were tracked instead of recognizing that `linux-schema.json` is unreferenced and an unwanted auto-generated build artifact.
+- **User Correction**: User pointed directly to `src-tauri/gen/schemas/linux-schema.json` asking *"not even this?"*.
+- **Root Cause**: Failing to verify whether newly created files in `gen/` were necessary source files or auto-generated build side-effects. Unlike `capabilities/default.json` which specifically references `desktop-schema.json`, `linux-schema.json` is not referenced by any capability manifest and was dynamically dumped by Tauri CLI during the WSL build run.
+- **Corrective Guardrail**:
+  1. Never stage or commit auto-generated schema files or build side-effects created during build/dev cycles.
+  2. Add `src-tauri/gen/schemas/linux-schema.json` to `.gitignore` so subsequent Linux builds do not contaminate git status.
+  3. When asked to audit repository cleanliness, immediately inspect every untracked/newly created file for build generation markers and never defend ephemeral build artifacts.
+
+
+### [Mistake] 2026-11-07: PowerShell Function Pipeline stdout Pollution Leading to "The filename or extension is too long" in `wsl.exe`
+- **Context**: In `build.ps1`, `Initialize-LinuxWslEnvironment` called `Invoke-WslBashScript $distro $setupScript`, which ran `wsl.exe -d $distro -u root -- bash -c "echo '$b64' | base64 -d | bash"`.
+- **User Correction**: User shared a screenshot showing `[BUILD ERROR] Program 'wsl.exe' failed to run: The filename or extension is too longAt E:\Default\Cleanpad\build.ps1:136 char:5`.
+- **Root Cause**: In PowerShell, any stdout output from an external command called inside a function that is not redirected (`| Out-Host` or `$null =`) is automatically captured and added to the function's return pipeline. The thousands of lines printed during toolchain setup (apt, NodeSource, rustup, npm) were accumulated into the return value of `Initialize-LinuxWslEnvironment`. When assigned to `$distro`, `$distro` became a massive `Object[]` instead of a string. Passing this array to `wsl.exe -d $distro` caused PowerShell to expand every log line as an argument, overflowing the Win32 `lpCommandLine` 32 KB limit.
+- **Corrective Guardrail**:
+  1. Always pipe `wsl.exe` inside helper execution functions directly to `| Out-Host` so stdout is streamed live to the console without polluting the PowerShell pipeline.
+  2. Defensively sanitize return values for distro names (e.g., `$distro = ($distro | Where-Object { $_ -match "^[A-Za-z0-9\.\-_]+$" } | Select-Object -Last 1)`).
+
+### [Mistake] 2026-11-07: Windows CRT Stripping Double Quotes in Raw Multiline Bash Command Arguments (`build.ps1` WSL Bridge)
+- **Context**: When running `build.ps1` option `[12] Build Universal Linux AppImage`, `Initialize-LinuxWslEnvironment` passed `$cleanScript` directly as an argument to `wsl.exe -d $distro -u root -- bash -lc $cleanScript`.
+- **User Correction**: User shared a screenshot showing bash crashing on line 4 with `/bin/bash: -c: line 4: syntax error near unexpected token '>'` on `` ` echo ">>> Installing Linux WebKitGTK 4.1, GTK 3, Node.js & packaging dependencies in WSL..."' ``.
+- **Root Cause**: PowerShell flattens arguments into a single Win32 command line string (`lpCommandLine`) when calling external executables. Windows CRT argument parsing unescapes and strips inner double quotes across the Windows-to-WSL boundary, converting `echo ">>> ..."` into `echo >>> ...`, which bash treats as an illegal redirection token. In addition, Ubuntu 22.04 LTS package repos only provide Node.js `12.22.9` whereas `@tauri-apps/cli` requires Node.js `>= 18`.
+- **Corrective Guardrail**:
+  1. Never pass raw multiline scripts containing shell tokens, quotes, or JSON directly via `wsl.exe ... bash -lc <string>`.
+  2. Always use a Base64 execution bridge (`Invoke-WslBashScript`) that encodes the script to UTF-8 Base64 and executes via `echo '<b64>' | base64 -d | bash`, completely eliminating Windows CRT argument mangling, quote stripping, and CRLF corruption.
+  3. Prepend `/root/.cargo/bin:/usr/local/bin:/usr/bin:/bin` to `PATH` and configure NodeSource 20 LTS repository when installing Linux build dependencies in Ubuntu 22.04.
+
+### [Mistake] 2026-11-07: Using Backslash Quote Escaping (`\"`) Inside PowerShell Double-Quoted Strings (`build.ps1`)
+- **Context**: In `build.ps1` line 201, `$wslCmd` used `\"` inside a double-quoted PowerShell string (`"..."`) to escape JSON quotes for `--config '{\"build\":{\"beforeBuildCommand\":\"\"}}'`.
+- **User Correction**: User shared a screenshot of the VS Code Problems panel reporting `Unexpected token 'build\":{\"beforeBuildCommand\":\"\"}}'` at `[Ln 201, Col 248]`.
+- **Root Cause**: PowerShell uses the backtick (`` `"` ``) rather than backslash (`\"`) as its escape character inside double-quoted strings, so `\"` prematurely terminated the PowerShell string literal.
+- **Corrective Guardrail**:
+  1. Never use `\"` to escape quotes inside PowerShell `"..."` strings; use single-quoted here-strings (`@' ... '@`) with token replacement for multi-command bash scripts or JSON arguments.
+  2. Always validate `build.ps1` edits with `[System.Management.Automation.Language.Parser]::ParseFile(...)` to verify 0 PowerShell AST parse errors before finishing the turn.
+
+### [Mistake] 2026-11-07: Checking `Get-Command wsl` Without Verifying Installed WSL Distributions or Auto-Bootstrapping WSL Toolchain
+- **Context**: In `build.ps1`, `Invoke-LinuxBundle` checked `Get-Command wsl -ErrorAction SilentlyContinue` and immediately executed `wsl bash -lc "npm run tauri:appimage"` without checking whether any WSL Linux distribution was actually installed (`wsl.exe --list --quiet`).
+- **User Correction**: User shared a screenshot of `build.ps1` failing with `Windows Subsystem for Linux has no installed distributions` followed by `[BUILD ERROR] WSL Linux appimage build failed`.
+- **Root Cause**: `C:\Windows\System32\wsl.exe` exists by default on Windows 11 even when zero Linux distributions are installed. Furthermore, unlike `Initialize-AndroidEnvironment` which prompts and auto-installs the headless Android SDK, `Invoke-LinuxBundle` did not auto-install a WSL distro (`wsl.exe --install -d Ubuntu-22.04 --no-launch`) or auto-provision the Linux build dependencies (`libwebkit2gtk-4.1-dev`, `rustup`, `@tauri-apps/cli`, `APPIMAGE_EXTRACT_AND_RUN=1`).
+- **Corrective Guardrail**:
+  1. Never assume `Get-Command wsl` means a Linux distribution is installed; always inspect `wsl.exe --list --quiet` (stripping UTF-16 null bytes).
+  2. In `Initialize-LinuxWslEnvironment`, if no WSL distro is installed, prompt the user (`[Y/n]`) and automatically run `wsl.exe --install -d Ubuntu-22.04 --no-launch`, then execute commands via `wsl.exe -d <distro> -u root -- bash -lc ...` to bypass interactive first-boot user creation prompts.
+  3. Build frontend (`dist/`) on Windows first, auto-provision missing Linux packages and isolated `/root/.cache/cathet-tauri` CLI + `/root/.cache/cathet-target` inside WSL, and export `APPIMAGE_EXTRACT_AND_RUN=1` so `linuxdeploy` succeeds inside WSL2 without FUSE errors.
+
 ### [Mistake] 2026-11-04: Over-Engineering Dynamic Context Menu Web Search Query String
 - **Context**: When the user requested "no need for quote in the search in web", the assistant assumed the user wanted the query interpolated without quotes (`Search Web for {query}` producing e.g. `Search Web for without`), maintaining dynamic text interpolation.
 - **User Correction**: *"when I said the seacrh for web is no need quote, thats mean I dont want it to be dynamic text, just make it search in web or whatever static text the industry usualyy uses"*
@@ -118,6 +162,25 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-07: Hardened WSL Linux AppImage Build Pipeline with Base64 Script Bridge & Output Stream Isolation (`build.ps1`)
+- **Summary**: Resolved bash syntax crashes (`syntax error near unexpected token '>'`) and command-line length overflow (`The filename or extension is too long`) during WSL Linux AppImage compilation.
+  - Implemented `Invoke-WslBashScript` in `build.ps1` with UTF-8 Base64 script encoding and `| Out-Host` stream isolation, preventing Windows CRT command-line quote stripping and eliminating stdout return pollution into PowerShell's pipeline.
+  - Added defensive regex sanitization for `$distro` resolution in `Invoke-LinuxBundle`.
+  - Configured `Initialize-LinuxWslEnvironment` to install Node.js 20 LTS via official NodeSource repository in Ubuntu 22.04 LTS and prepended `/root/.cargo/bin:/usr/local/bin:/usr/bin:/bin` to `PATH`.
+  - Cleaned up unused import in `src-tauri/src/commands/association.rs` to ensure 0 compiler warnings.
+  - Verified full backend compilation in WSL (`Finished dev profile in 1m 00s` with 0 warnings and 0 errors).
+- **Affected Files**:
+  - `build.ps1` (~714 lines): Added `Invoke-WslBashScript` with `| Out-Host`, hardened distro resolution in `Invoke-LinuxBundle`.
+  - `src-tauri/src/commands/association.rs`: Gated `use std::path::Path;` to Windows target.
+
+### 2026-11-07: Hardened Version Bump Manifest Encoding in `build.ps1`
+- **Summary**: Upgraded `Invoke-VersionBump` in `build.ps1` to use .NET `[System.Text.UTF8Encoding]::new($false)` with `[System.IO.File]::ReadAllText` and `[System.IO.File]::WriteAllText` for `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`.
+  - Replaced PowerShell 5.1's default ANSI/Windows-1252 `Set-Content` writing mechanism with explicit UTF-8 without BOM, protecting Unicode glyphs (such as the em dash `—` in crate descriptions) against ANSI code page corruption or BOM pollution.
+  - Retained surgical regex replacements for top-level `version` keys in both manifest formats.
+  - Verified end-to-end version synchronization via `.\build.ps1 -TargetVersion 5.3.0 -NoPause` (exit code 0, Cargo.lock synchronized) and `npx tsc --noEmit` (exit code 0).
+- **Files Modified**:
+  - `build.ps1`: Hardened `Invoke-VersionBump` with BOM-less UTF-8 reader/writer APIs (~687 lines).
 
 ### 2026-11-04: Converted Web Search to Static Industry-Standard Label ("Search in Web")
 - **Summary**: Removed dynamic query interpolation from the context menu web search item and converted it into a clean, 100% static label across all languages:
@@ -1308,4 +1371,33 @@ px tsc --noEmit and cargo check.
     2. `- Math formulas like $E = mc^2$ with `$E = mc^2$`` demonstrating Cathet's native serif italic inline math rendering paired with its exact syntax.
 - **Files Modified**:
   - `src-ui/src/assets/tutorial.md`: Aligned Section 3 inline code and math tutorial syntax.
+  - `history.md`: Appended changelog entry per Rule 13.
+
+
+### 2026-11-07: Linux Desktop Support (Fedora KDE Plasma 6 & Multi-Distro Universal AppImage)
+
+- **Summary**:
+  1. **Desktop Environment Detection & KWin Frosted Glass (`window.rs`, `kdePortalService.ts`, `linux.css`)**:
+     - Added `get_linux_desktop_info` Tauri command in `window.rs` that inspects `XDG_CURRENT_DESKTOP` / `XDG_SESSION_DESKTOP` to distinguish blur-capable compositors (KDE Plasma KWin, Hyprland, Wayfire) from non-blur compositors (GNOME Mutter, Ubuntu, XFCE), while reading the user's custom KDE Plasma accent color from `~/.config/kdeglobals` (`AccentColor=r,g,b`) or the XDG Desktop Portal (`org.freedesktop.portal.Settings.Read`).
+     - Created `src-ui/src/services/kdePortalService.ts` (69 lines) and `src-ui/styles/linux.css` (67 lines) strictly scoped to `body.is-linux`: applies translucent Breeze frosted glass (`rgba(27, 30, 32, 0.88)` dark / `rgba(252, 252, 252, 0.90)` light) with 8px Breeze corner radius on `body.de-blur`, and solid opaque slate (`#12141c` / `#f8fafc`) on `body.de-solid` for zero text washout.
+     - Prioritized KDE Plasma typography (`Noto Sans` UI and `Hack` / `Noto Sans Mono` monospace) and mounted 8 directional 4px invisible edge-resize handles (`.window-resize-edge`) wired to `appWindow.startResizeDragging(...)`.
+  2. **Universal AppImage Self-Updater & Dolphin XDG MIME Associations (`updater.rs`, `association.rs`)**:
+     - Extended `updater.rs` (compacted to 228 lines) to match `.AppImage` release assets on Linux, set `0o755` executable permissions, replace `$APPIMAGE` in user space without root/sudo, and relaunch seamlessly.
+     - Extended `association.rs` (243 lines) with `#[cfg(target_os = "linux")]` support that generates `~/.local/share/applications/com.cathet.app.desktop` and registers `text/plain`, `text/markdown`, and `text/x-markdown` via `xdg-mime` for KDE Dolphin and Kickoff Launcher.
+  3. **Unified Build Pipeline (`build.ps1`, `tauri.conf.json`, `package.json`)**:
+     - Added `-BuildAppImage`, `-BuildRpm`, and `-BuildLinux` switches plus interactive menu option `[12]` to `build.ps1` with native Linux execution and WSL bridging on Windows.
+     - Configured `tauri.conf.json` Linux bundle settings (`appimage` and `rpm` dependencies) and registered npm shortcut scripts.
+- **Files Modified / Created**:
+  - `src-ui/src/services/platformService.ts`: Added `isLinux()` and `body.is-linux` initialization (46 lines).
+  - `src-ui/src/services/kdePortalService.ts`: Created Linux DE/portal accent service and 4px edge-resize grip mounter (69 lines).
+  - `src-ui/src/settingsMain.ts`: Initialized `PlatformService.getInstance().applyPlatformClasses()` for the desktop Settings window (213 lines).
+  - `src-ui/styles/linux.css`: Created scoped Linux / KDE Plasma 6 Breeze stylesheet (67 lines).
+  - `index.html` & `settings.html`: Linked `/src-ui/styles/linux.css`.
+  - `src-tauri/src/commands/window.rs`: Added `get_linux_desktop_info` command and KDE/Portal accent reader (225 lines).
+  - `src-tauri/src/commands/association.rs`: Added Linux `.desktop` and `xdg-mime` association handler (243 lines).
+  - `src-tauri/src/commands/updater.rs`: Added Linux `.AppImage` self-update support and compacted below 250 lines (228 lines).
+  - `src-tauri/src/lib.rs`: Registered `get_linux_desktop_info` command (124 lines).
+  - `src-tauri/tauri.conf.json` & `package.json`: Added Linux AppImage/RPM bundle config and npm scripts.
+  - `build.ps1`: Added `-BuildAppImage`, `-BuildRpm`, `-BuildLinux`, and menu option `[12]`.
+  - `.gitignore`: Ignored `src-tauri/gen/schemas/` to keep working trees clean.
   - `history.md`: Appended changelog entry per Rule 13.
