@@ -1,9 +1,10 @@
 <#
 .SYNOPSIS
-    build.ps1 - Cathet Unified Automation Pipeline (CLI, Dev, Build, Check, Bump, Android)
+    build.ps1 - Cathet Unified Automation Pipeline (CLI, Dev, Build, Check, Bump, Android, Linux AppImage/RPM)
 #>
 param(
     [switch]$Dev, [switch]$Live, [switch]$Check, [switch]$Build, [switch]$BuildX64, [switch]$BuildArm64,
+    [switch]$BuildAppImage, [switch]$BuildRpm, [switch]$BuildLinux,
     [switch]$All, [switch]$Run, [switch]$AndroidDev, [switch]$AndroidBuild, [switch]$AndroidPerf, [switch]$Patch, [switch]$Minor,
     [switch]$Major, [string]$TargetVersion, [string]$OutputDir = "release", [int]$Port = 0, [switch]$NoPause, [switch]$Help
 )
@@ -19,7 +20,7 @@ function Get-AppVersion { (Get-Content -Raw (Join-Path $ProjectRoot "package.jso
 function Get-NativeArch { if ($env:PROCESSOR_ARCHITECTURE -match "ARM64" -or $env:PROCESSOR_ARCHITEW6432 -match "ARM64") { "arm64" } else { "x64" } }
 
 function Show-HelpGuide {
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Menu | -Dev / -Live -> Hot reload | -Check -> Tests | -Build [-Run] -> Fast EXE`n  -BuildX64 / -BuildArm64 -> Release EXE | -All -> Both | -AndroidDev / -AndroidBuild -> Android`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Menu | -Dev / -Live -> Hot reload | -Check -> Tests | -Build [-Run] -> Fast EXE`n  -BuildX64 / -BuildArm64 -> Release EXE | -All -> Both | -AndroidDev / -AndroidBuild -> Android`n  -BuildAppImage / -BuildRpm / -BuildLinux -> Linux Universal AppImage / Fedora RPM`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -48,17 +49,20 @@ function Get-FreePort([int]$startPort = 5173) {
         try {
             $l = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $p)
             $l.Start(); $l.Stop(); return $p
-        } catch { continue }
+        }
+        catch { continue }
     }
     return $startPort
 }
 
 function Stop-ActiveProcesses {
     Get-Process | Where-Object { $_.ProcessName -like "cathet*" -or $_.ProcessName -eq "cleanpad" } | Stop-Process -Force -ErrorAction SilentlyContinue
-    $conn = Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue
-    if ($conn) {
-        $conn | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object {
-            Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue
+    if (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue) {
+        $conn = Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue
+        if ($conn) {
+            $conn | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object {
+                Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue
+            }
         }
     }
 }
@@ -68,14 +72,14 @@ function Invoke-CheckMode {
     npm run build
     if ($LASTEXITCODE -ne 0) { throw "Frontend build failed with exit code $LASTEXITCODE." }
     Write-Host "[Check] Running backend Cargo check..." -ForegroundColor Yellow
-    cargo check --manifest-path (Join-Path $ProjectRoot "src-tauri\Cargo.toml")
+    cargo check --manifest-path (Join-Path $ProjectRoot "src-tauri/Cargo.toml")
     if ($LASTEXITCODE -ne 0) { throw "Backend Cargo check failed with exit code $LASTEXITCODE." }
     Write-Host "`nAll checks passed successfully!" -ForegroundColor Green
 }
 
 function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$isMinor = $false, [bool]$isMajor = $false) {
-    $tauriPath = Join-Path $ProjectRoot "src-tauri\tauri.conf.json"
-    $cargoPath = Join-Path $ProjectRoot "src-tauri\Cargo.toml"; $currentVer = Get-AppVersion
+    $tauriPath = Join-Path $ProjectRoot "src-tauri/tauri.conf.json"
+    $cargoPath = Join-Path $ProjectRoot "src-tauri/Cargo.toml"; $currentVer = Get-AppVersion
     Write-Host "Current Cathet version: $currentVer" -ForegroundColor Cyan
 
     $newVer = $targetVer
@@ -89,8 +93,11 @@ function Invoke-VersionBump([string]$targetVer, [bool]$isPatch = $false, [bool]$
 
     npm version $newVer --no-git-tag-version --allow-same-version | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "npm version bump failed." }
-    (Get-Content -Raw $tauriPath) -replace '"version":\s*"[^"]+"', """version"": ""$newVer""" | Set-Content $tauriPath -NoNewline
-    (Get-Content -Raw $cargoPath) -replace '(?m)^version\s*=\s*"[^"]+"', "version = ""$newVer""" | Set-Content $cargoPath -NoNewline
+    $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+    $tauriContent = [System.IO.File]::ReadAllText($tauriPath, [System.Text.Encoding]::UTF8) -replace '"version":\s*"[^"]+"', """version"": ""$newVer"""
+    [System.IO.File]::WriteAllText($tauriPath, $tauriContent, $utf8NoBom)
+    $cargoContent = [System.IO.File]::ReadAllText($cargoPath, [System.Text.Encoding]::UTF8) -replace '(?m)^version\s*=\s*"[^"]+"', "version = ""$newVer"""
+    [System.IO.File]::WriteAllText($cargoPath, $cargoContent, $utf8NoBom)
 
     Write-Host "Synchronizing Cargo.lock..." -ForegroundColor Gray
     cargo check --manifest-path $cargoPath --quiet
@@ -104,9 +111,10 @@ function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$ve
     npm run build | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "Frontend build failed with exit code $LASTEXITCODE." }
 
-    $manifest = Join-Path $ProjectRoot "src-tauri\Cargo.toml"
-    $sourceBin = if ($targetTriple) { Join-Path $ProjectRoot "src-tauri\target\$targetTriple\$cargoProfile\cathet.exe" }
-                 else { Join-Path $ProjectRoot "src-tauri\target\$cargoProfile\cathet.exe" }
+    $manifest = Join-Path $ProjectRoot "src-tauri/Cargo.toml"
+    $binName = if ($IsLinux) { "cathet" } else { "cathet.exe" }
+    $sourceBin = if ($targetTriple) { Join-Path $ProjectRoot "src-tauri/target/$targetTriple/$cargoProfile/$binName" }
+    else { Join-Path $ProjectRoot "src-tauri/target/$cargoProfile/$binName" }
     Remove-Item -Path $sourceBin -Force -ErrorAction SilentlyContinue
 
     if ($targetTriple) { cargo build --profile $cargoProfile --target $targetTriple --manifest-path $manifest }
@@ -121,6 +129,126 @@ function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$ve
     Write-Host "Output saved: $destPath ($sizeMb MB)" -ForegroundColor Green; return $destPath
 }
 
+function Invoke-WslBashScript([string]$distro, [string]$script) {
+    $clean = $script -replace "`r`n", "`n"
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($clean)
+    $b64 = [Convert]::ToBase64String($bytes)
+    wsl.exe -d $distro -u root -- bash -c "echo '$b64' | base64 -d | bash" | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "WSL script execution failed with exit code $LASTEXITCODE." }
+}
+
+function Initialize-LinuxWslEnvironment {
+    if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
+        throw "WSL (wsl.exe) is not available on this Windows machine. Enable WSL2 to build Linux bundles from Windows."
+    }
+    $rawList = (wsl.exe --list --quiet 2>$null) -join "`n"
+    $distros = @($rawList -replace "`0", "" -split "\r?\n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch "^docker-desktop" })
+    $distro = if ($distros.Count -gt 0) { $distros[0] } else { $null }
+
+    if (-not $distro) {
+        Write-Host "`n[Linux WSL Builder] No WSL Linux distribution is installed yet." -ForegroundColor Yellow
+        $c = (Read-Host "Automatically install Ubuntu-22.04 in WSL (~450 MB) to compile Linux AppImage? [Y/n] (Default: Y)").Trim()
+        if ($c -in "n", "N") { throw "A WSL Linux distribution is required to compile Linux AppImage from Windows." }
+        Write-Host "`n>>> Downloading & registering Ubuntu-22.04 in WSL2 (Headless)..." -ForegroundColor Cyan
+        wsl.exe --install -d Ubuntu-22.04 --no-launch
+        if ($LASTEXITCODE -ne 0) { throw "Failed to install Ubuntu-22.04 via WSL." }
+        $distro = "Ubuntu-22.04"
+    }
+
+    Write-Host ">>> Verifying Linux build toolchain inside WSL ($distro)..." -ForegroundColor Cyan
+    $setupScript = @'
+set -e
+export DEBIAN_FRONTEND=noninteractive
+export PATH="/root/.cargo/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+
+if ! pkg-config --exists webkit2gtk-4.1 2>/dev/null || ! command -v patchelf >/dev/null 2>&1; then
+    echo ">>> Installing Linux WebKitGTK 4.1, GTK 3 & packaging dependencies in WSL..."
+    if command -v apt-get >/dev/null 2>&1; then
+        apt-get update -y
+        apt-get install -y build-essential curl wget file pkg-config libssl-dev libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf rpm
+    elif command -v dnf >/dev/null 2>&1; then
+        dnf install -y gcc gcc-c++ make pkgconf-pkg-config webkit2gtk4.1-devel gtk3-devel libappindicator-gtk3-devel librsvg2-devel openssl-devel curl wget file patchelf rpm-build
+    fi
+fi
+
+if ! command -v node >/dev/null 2>&1 || [ "$(node -v | cut -d'.' -f1 | tr -d 'v')" -lt 18 ]; then
+    echo ">>> Configuring Node.js 20 LTS repository in WSL..."
+    if command -v apt-get >/dev/null 2>&1; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt-get install -y nodejs
+    fi
+fi
+
+if [ ! -x "/root/.cargo/bin/cargo" ] && ! command -v cargo >/dev/null 2>&1; then
+    echo ">>> Installing Rust stable toolchain in WSL..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+fi
+
+if [ ! -x "/root/.cache/cathet-tauri/node_modules/.bin/tauri" ]; then
+    echo ">>> Installing precompiled Linux Tauri v2 CLI in WSL cache..."
+    mkdir -p /root/.cache/cathet-tauri
+    npm install --prefix /root/.cache/cathet-tauri @tauri-apps/cli@^2.0.0
+fi
+'@
+    Invoke-WslBashScript $distro $setupScript
+    return $distro
+}
+
+function Invoke-LinuxBundle([string]$bundleType = "appimage") {
+    $ver = Get-AppVersion
+    $ext = if ($bundleType -eq "rpm") { "rpm" } else { "AppImage" }
+    $destFile = Join-Path $ReleaseDir "cathet-v$ver-x86_64.$ext"
+
+    if ($IsLinux) {
+        Write-Host "`n>>> Building Linux $ext bundle natively..." -ForegroundColor Cyan
+        $env:APPIMAGE_EXTRACT_AND_RUN = "1"
+        npx tauri build --bundles $bundleType
+        if ($LASTEXITCODE -ne 0) { throw "Tauri Linux $bundleType build failed with exit code $LASTEXITCODE." }
+        $bundleDir = Join-Path $ProjectRoot "src-tauri/target/release/bundle/$bundleType"
+        $artifact = Get-ChildItem -Path $bundleDir -Filter "*.$ext" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($artifact) {
+            if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
+            Copy-Item -Path $artifact.FullName -Destination $destFile -Force
+        }
+    }
+    else {
+        $distro = Initialize-LinuxWslEnvironment
+        if ($distro -is [array]) { $distro = ($distro | Where-Object { $_ -match "^[A-Za-z0-9\.\-_]+$" } | Select-Object -Last 1) }
+        $distro = "$distro".Trim()
+        Write-Host "`n>>> Building Frontend assets on Windows..." -ForegroundColor Yellow
+        npm run build | Out-Host
+        if ($LASTEXITCODE -ne 0) { throw "Frontend build failed." }
+
+        if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
+        Write-Host "`n>>> Compiling Linux $ext inside WSL ($distro)..." -ForegroundColor Cyan
+        $wslCmdTemplate = @'
+set -e
+export PATH="/root/.cargo/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+export APPIMAGE_EXTRACT_AND_RUN=1
+export CARGO_TARGET_DIR=/root/.cache/cathet-target
+/root/.cache/cathet-tauri/node_modules/.bin/tauri build --bundles __BUNDLE__ --config '{"build":{"beforeBuildCommand":""}}'
+shopt -s nocaseglob nullglob
+artifacts=(/root/.cache/cathet-target/release/bundle/__BUNDLE__/*.__EXT__)
+if [ ${#artifacts[@]} -eq 0 ]; then
+    echo "[ERROR] Bundle artifact (*.__EXT__) not found in /root/.cache/cathet-target/release/bundle/__BUNDLE__/"
+    exit 1
+fi
+mkdir -p ./__OUTDIR__
+cp -f "${artifacts[0]}" ./__OUTDIR__/cathet-v__VER__-x86_64.__EXT__
+'@
+        $wslCmd = ($wslCmdTemplate -replace "__BUNDLE__", $bundleType -replace "__EXT__", $ext -replace "__OUTDIR__", $OutputDir -replace "__VER__", $ver)
+        Invoke-WslBashScript $distro $wslCmd
+    }
+
+    if (Test-Path $destFile) {
+        $sizeMb = [math]::Round((Get-Item $destFile).Length / 1MB, 2)
+        Write-Host "`nLinux $ext created: $destFile ($sizeMb MB)" -ForegroundColor Green
+    }
+    else {
+        throw "Expected Linux bundle was not found at: $destFile"
+    }
+}
+
 function Resolve-CompatibleJavaHome {
     $candidates = @()
     if ($env:JAVA_HOME -and (Test-Path $env:JAVA_HOME)) { $candidates += $env:JAVA_HOME }
@@ -128,8 +256,8 @@ function Resolve-CompatibleJavaHome {
     foreach ($r in $roots) {
         if (Test-Path $r) {
             Get-ChildItem -Path $r -Directory -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -match "jdk[-_]?(17|21)" } |
-                ForEach-Object { $candidates += $_.FullName }
+            Where-Object { $_.Name -match "jdk[-_]?(17|21)" } |
+            ForEach-Object { $candidates += $_.FullName }
         }
     }
     foreach ($c in $candidates) {
@@ -249,9 +377,11 @@ function Invoke-AndroidDev {
                     $sel = (Read-Host "Select target [1-$($ready.Count)] (Default: 1)").Trim()
                     $idx = if ($sel -match '^\d+$' -and [int]$sel -ge 1 -and [int]$sel -le $ready.Count) { [int]$sel - 1 } else { 0 }
                     $targetDevId = $ready[$idx].Split("`t")[0]
-                } elseif ($ready.Count -eq 1) {
+                }
+                elseif ($ready.Count -eq 1) {
                     $targetDevId = $ready[0].Split("`t")[0]
-                } elseif (Get-Command emulator -ErrorAction SilentlyContinue) {
+                }
+                elseif (Get-Command emulator -ErrorAction SilentlyContinue) {
                     $avds = @(cmd.exe /c "emulator -list-avds 2>nul")
                     if ($avds.Count -gt 0) {
                         $avd = $avds[0]; Write-Host "Starting Android emulator '$avd' with host GPU..." -ForegroundColor Yellow
@@ -267,11 +397,13 @@ function Invoke-AndroidDev {
                         }
                         $readyEmu = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\tdevice' })
                         if ($readyEmu.Count -gt 0) { $targetDevId = $readyEmu[0].Split("`t")[0] }
-                    } else { Write-Host "[Note] Connect phone via USB or create an AVD with avdmanager." -ForegroundColor Yellow }
+                    }
+                    else { Write-Host "[Note] Connect phone via USB or create an AVD with avdmanager." -ForegroundColor Yellow }
                 }
                 break
             }
-        } finally {
+        }
+        finally {
             $ErrorActionPreference = $prevEAP
         }
     }
@@ -286,7 +418,6 @@ function Invoke-AndroidDev {
     cmd.exe /c "adb -s $targetDevId wait-for-device 2>nul" | Out-Null
     cmd.exe /c "adb -s $targetDevId reverse tcp:5173 tcp:5173 2>nul" | Out-Null
 
-    # Pre-flight signature collision check: detect release installation on target device
     $isInstalled = ("" + (cmd.exe /c "adb -s $targetDevId shell pm list packages com.cathet.app 2>nul")).Trim()
     if ($isInstalled -match "com\.cathet\.app") {
         $pkgDump = ("" + (cmd.exe /c "adb -s $targetDevId shell dumpsys package com.cathet.app 2>nul"))
@@ -302,7 +433,6 @@ function Invoke-AndroidDev {
 
     Write-Host "`n>>> Starting Cathet Android Live Dev (Hot Reload) on $devName..." -ForegroundColor Cyan
 
-    # If multiple devices connected, specify target; otherwise let Tauri CLI auto-detect the single active device
     $allReady = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\t(device|emulator)' })
     if ($allReady.Count -gt 1) {
         $avdName = $null
@@ -312,7 +442,8 @@ function Invoke-AndroidDev {
         }
         $tauriDevTarget = if ($avdName) { $avdName } elseif ($m) { $m } else { $targetDevId }
         npx tauri android dev $tauriDevTarget
-    } else {
+    }
+    else {
         npx tauri android dev
     }
 }
@@ -370,10 +501,12 @@ function Invoke-AndroidPerf {
             $sel = (Read-Host "Select target [1-$($raw.Count)] (Default: 1)").Trim()
             $idx = if ($sel -match '^\d+$' -and [int]$sel -ge 1 -and [int]$sel -le $raw.Count) { [int]$sel - 1 } else { 0 }
             $targetDevId = $raw[$idx].Split("`t")[0]
-        } elseif ($raw.Count -eq 1) {
+        }
+        elseif ($raw.Count -eq 1) {
             $targetDevId = $raw[0].Split("`t")[0]
         }
-    } finally {
+    }
+    finally {
         $ErrorActionPreference = $prevEAP
     }
     if (-not $targetDevId) { throw "No active Android device or emulator available. Please connect your phone via USB or start an emulator." }
@@ -382,7 +515,6 @@ function Invoke-AndroidPerf {
 
     Write-Host "`nConnecting to Cathet on $devName..." -ForegroundColor Cyan
 
-    # Ensure app is running or prompt to start
     $pidRaw = ("" + (cmd.exe /c "adb -s $targetDevId shell pidof com.cathet.app 2>nul")).Trim()
     if (-not $pidRaw) {
         Write-Host "Cathet is not running on device. Launching com.cathet.app..." -ForegroundColor Yellow
@@ -403,7 +535,8 @@ function Invoke-AndroidPerf {
                     cmd.exe /c "adb -s $targetDevId shell dumpsys gfxinfo com.cathet.app reset 2>nul" | Out-Null
                     Write-Host "`n>>> [Frame Jank Stats Reset] <<<" -ForegroundColor Yellow
                     Start-Sleep -Milliseconds 600
-                } elseif ($key -eq [ConsoleKey]::C) {
+                }
+                elseif ($key -eq [ConsoleKey]::C) {
                     Clear-Host
                 }
             }
@@ -415,7 +548,6 @@ function Invoke-AndroidPerf {
                 continue
             }
 
-            # 1. Memory breakdown via dumpsys meminfo
             $memDump = ("" + (cmd.exe /c "adb -s $targetDevId shell dumpsys meminfo com.cathet.app 2>nul"))
             $totalPssMb = 0.0; $nativeHeapMb = 0.0; $graphicsMb = 0.0; $webviewMb = 0.0
 
@@ -432,16 +564,15 @@ function Invoke-AndroidPerf {
                 $webviewMb = [math]::Round(([double]$matches[1]) / 1024.0, 1)
             }
 
-            # 2. CPU % via top
             $topDump = ("" + (cmd.exe /c "adb -s $targetDevId shell top -b -n 1 -p $currentPid 2>nul"))
             $cpuPct = "0.0"
-            if ($topDump -match "(?m)^\s*$currentPid\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+([\d\.]+)") {
+            if ($topDump -match "(?m)^\s*$currentPid\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+([\d\.]+)") {
                 $cpuPct = $matches[1]
-            } elseif ($topDump -match '\b(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+com\.cathet\.app') {
+            }
+            elseif ($topDump -match '\b(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+com\.cathet\.app') {
                 $cpuPct = $matches[2]
             }
 
-            # 3. 120Hz frame timing and jank via dumpsys gfxinfo
             $gfxDump = ("" + (cmd.exe /c "adb -s $targetDevId shell dumpsys gfxinfo com.cathet.app 2>nul"))
             $totalFrames = "0"; $jankyFrames = "0"; $jankyPct = "0.00"
             $p50 = "--"; $p90 = "--"; $p95 = "--"; $p99 = "--"
@@ -455,7 +586,6 @@ function Invoke-AndroidPerf {
             if ($gfxDump -match '95th percentile:\s*(\d+)ms') { $p95 = "$($matches[1]) ms" }
             if ($gfxDump -match '99th percentile:\s*(\d+)ms') { $p99 = "$($matches[1]) ms" }
 
-            # Render fixed-position dashboard
             Clear-Host
             Write-Host "================ Cathet Android Task Manager ================" -ForegroundColor Cyan
             Write-Host " Device : $devName" -ForegroundColor Gray
@@ -489,15 +619,16 @@ function Invoke-AndroidPerf {
 
             Start-Sleep -Milliseconds 1200
         }
-    } finally {
+    }
+    finally {
         Write-Host "`nClosed Android Performance Monitor." -ForegroundColor Gray
     }
 }
 
 function Show-InteractiveMenu {
     $ver = Get-AppVersion; $arch = Get-NativeArch
-    Write-Host "`nSelect an action:`n  [1] Live Development (Desktop Hot Reload) [Default]`n  [2] Run Verification Checks (Vite + Cargo)`n  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe`n  [4] Build & Launch Native ($arch) Fast Executable Immediately`n  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe`n  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe`n  [7] Build All Windows Targets Release -> x64 and ARM64`n  [8] Android Live Dev (Hot Reload - USB Device / Emulator)`n  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk`n  [10] Android Performance Monitor (Live RAM / CPU / 120Hz Jank)`n  [11] Bump Project Version (Current: v$ver)`n  [Q] Exit" -ForegroundColor Yellow
-    $c = (Read-Host "Enter option [1-11, Q] (Default: 1)").Trim(); return $(if ($c) { $c } else { "1" })
+    Write-Host "`nSelect an action:`n  [1] Live Development (Desktop Hot Reload) [Default]`n  [2] Run Verification Checks (Vite + Cargo)`n  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe`n  [4] Build & Launch Native ($arch) Fast Executable Immediately`n  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe`n  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe`n  [7] Build All Windows Targets Release -> x64 and ARM64`n  [8] Android Live Dev (Hot Reload - USB Device / Emulator)`n  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk`n  [10] Android Performance Monitor (Live RAM / CPU / 120Hz Jank)`n  [11] Bump Project Version (Current: v$ver)`n  [12] Build Universal Linux AppImage -> $OutputDir/cathet-v$ver-x86_64.AppImage`n  [Q] Exit" -ForegroundColor Yellow
+    $c = (Read-Host "Enter option [1-12, Q] (Default: 1)").Trim(); return $(if ($c) { $c } else { "1" })
 }
 
 function Invoke-Pipeline([hashtable]$opts) {
@@ -505,6 +636,8 @@ function Invoke-Pipeline([hashtable]$opts) {
     if ($opts.AndroidDev) { Invoke-AndroidDev; return }
     if ($opts.AndroidBuild) { Invoke-AndroidBuild; return }
     if ($opts.AndroidPerf) { Invoke-AndroidPerf; return }
+    if ($opts.BuildAppImage -or $opts.BuildLinux) { Invoke-LinuxBundle "appimage"; return }
+    if ($opts.BuildRpm) { Invoke-LinuxBundle "rpm"; return }
     if ($opts.TargetVersion -or $opts.Patch -or $opts.Minor -or $opts.Major) {
         Invoke-VersionBump $opts.TargetVersion ([bool]$opts.Patch) ([bool]$opts.Minor) ([bool]$opts.Major); return
     }
@@ -514,22 +647,30 @@ function Invoke-Pipeline([hashtable]$opts) {
         Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
         $compiledBin = Join-Path $ReleaseDir "cathet-v$ver-$nativeArch.exe"
         Write-Host "`nAll release targets compiled successfully into '$OutputDir/'!" -ForegroundColor Green
-    } elseif ($opts.BuildArm64) { $compiledBin = Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
-    } elseif ($opts.BuildX64) { $compiledBin = Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
-    } elseif ($opts.Build) {
-        $nativeTriple = if ($nativeArch -eq "arm64") { "aarch64-pc-windows-msvc" } else { "x86_64-pc-windows-msvc" }
-        $compiledBin = Invoke-CompileTarget $nativeTriple "Windows $nativeArch" "cathet-v$ver-$nativeArch-fast.exe" "fast-release"
+    }
+    elseif ($opts.BuildArm64) {
+        $compiledBin = Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
+    }
+    elseif ($opts.BuildX64) {
+        $compiledBin = Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
+    }
+    elseif ($opts.Build) {
+        $nativeTriple = if ($IsLinux) { "x86_64-unknown-linux-gnu" } elseif ($nativeArch -eq "arm64") { "aarch64-pc-windows-msvc" } else { "x86_64-pc-windows-msvc" }
+        $binOut = if ($IsLinux) { "cathet-v$ver-linux-$nativeArch" } else { "cathet-v$ver-$nativeArch-fast.exe" }
+        $compiledBin = Invoke-CompileTarget $nativeTriple "Desktop $nativeArch" $binOut "fast-release"
     }
     if ($compiledBin -and $opts.Run) { Write-Host "Launching: $compiledBin" -ForegroundColor Cyan; Start-Process -FilePath $compiledBin }
     if ($opts.Dev -or $opts.Live) {
         $p = if ($opts.Port -gt 0) { $opts.Port } else { Get-FreePort 5173 }
         $env:PORT = "$p"; $env:VITE_PORT = "$p"
         Write-Host "`nAllocated dev port: $p. Launching Cathet (Hot Reload)..." -ForegroundColor Yellow
-        $cfg = Join-Path $env:TEMP "cathet-dev-$p.json"
+        $tmpDir = if ($env:TEMP) { $env:TEMP } else { "/tmp" }
+        $cfg = Join-Path $tmpDir "cathet-dev-$p.json"
         try {
             @{ build = @{ devUrl = "http://127.0.0.1:$p" } } | ConvertTo-Json | Set-Content $cfg
             npx tauri dev -c $cfg
-        } finally { Remove-Item $cfg -Force -ErrorAction SilentlyContinue }
+        }
+        finally { Remove-Item $cfg -Force -ErrorAction SilentlyContinue }
     }
 }
 
@@ -554,18 +695,22 @@ try {
                     elseif ($bChoice -eq "4") {
                         $v = (Read-Host "Enter target SemVer (e.g. 3.1.0)").Trim()
                         if ($v) { $runOpts.TargetVersion = $v } else { $runOpts.Patch = $true }
-                    } else { $runOpts.Patch = $true }
+                    }
+                    else { $runOpts.Patch = $true }
                 }
-                { $_ -in "q","Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
-                default { Write-Host "Invalid option '$_'. Choose 1-11 or Q." -ForegroundColor Red; continue }
+                "12" { $runOpts.BuildAppImage = $true }
+                { $_ -in "q", "Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
+                default { Write-Host "Invalid option '$_'. Choose 1-12 or Q." -ForegroundColor Red; continue }
             }
             Invoke-Pipeline $runOpts
             $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim(); if ($ans -in "q", "Q") { Invoke-Exit 0 }
         }
-    } else {
-        Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; AndroidPerf = $AndroidPerf; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port }
+    }
+    else {
+        Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; BuildAppImage = $BuildAppImage; BuildRpm = $BuildRpm; BuildLinux = $BuildLinux; All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; AndroidPerf = $AndroidPerf; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port }
         Invoke-Exit 0
     }
-} catch {
+}
+catch {
     Write-Host "`n[BUILD ERROR] $_" -ForegroundColor Red; Invoke-Exit 1
 }

@@ -17,6 +17,7 @@ release/
 
 # ── Tauri v2 Generated Mobile Wrappers & Schemas ────────────────
 # src-tauri/gen/
+src-tauri/gen/schemas/
 **/gen/android/.gradle/
 **/gen/android/build/
 **/gen/android/app/build/
