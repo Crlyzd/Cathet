@@ -23,8 +23,9 @@ use commands::updater::{
 #[cfg(desktop)]
 use commands::vibrancy::apply_frosted_glass;
 use commands::window::{
-    focus_main_window, get_always_on_top, open_new_instance, open_settings_window,
-    set_always_on_top, set_refresh_rate, set_window_min_size, sync_window_theme, toggle_always_on_top,
+    focus_main_window, get_always_on_top, get_linux_desktop_info, open_new_instance,
+    open_settings_window, set_always_on_top, set_refresh_rate, set_window_min_size,
+    sync_window_theme, toggle_always_on_top,
 };
 use state::AppState;
 #[cfg(desktop)]
@@ -100,6 +101,7 @@ pub fn run() {
             focus_main_window,
             set_window_min_size,
             set_refresh_rate,
+            get_linux_desktop_info,
             sync_window_theme,
             check_for_updates,
             download_and_install_update,
