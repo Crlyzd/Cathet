@@ -163,6 +163,28 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-08: Multi-Architecture Packaging, Microsoft Store MSIX Bundle & Native Linux Package Handover
+- **Summary**: Implemented ultra-lightweight distribution targets and unified packaging pipelines across Android, Linux, and Windows:
+  - **Linux Distribution Size Reduction (78 MB -> 3.32 MB)**: Added native Debian (`.deb`) and Red Hat (`.rpm`) packaging with system package dependencies (`libwebkit2gtk-4.1-0`, `libgtk-3-0`) in `tauri.conf.json`. Compiled `.deb` is only 3.32 MB compared to the 78.01 MB AppImage runtime bundle.
+  - **Android Architecture Splits (20.5 MB -> 6.5 MB)**: Configured Gradle ABI splitting in `build.gradle.kts` for `arm64-v8a`, `armeabi-v7a`, and `x86_64` alongside universal APK generation, reducing typical phone install size from ~20.5 MB to ~6.5 MB.
+  - **Microsoft Store Multi-Arch MSIX Bundle (`.msixbundle`)**: Added automated packaging and bundling for Microsoft Store (`curlyzed.CathetNote`) combining x64 and ARM64 `.msix` packages into a single multi-arch `.msixbundle` (~3.65 MB).
+  - **Store Compliance & Policy Enforcement**: Added `is_msix_packaged()` via Win32 `GetCurrentPackageFamilyName` in `updater_target.rs`. In Store builds, the in-app self-updater is automatically disabled with "Installed via Microsoft Store (Auto-Updated)" status badge.
+  - **Linux In-App Installer Handover**: If running as `.deb` or `.rpm`, updating downloads the package and launches the native system installer via `xdg-open` (Ubuntu Software / KDE Discover) rather than crashing on permission errors.
+  - **Build Automation Expansion**: Updated `build.ps1` with flags `-BuildMsix`, `-AllWindows`, `-BuildDeb`, `-AllLinux`, `-AndroidArm64`, `-AndroidUniversal`, `-AndroidAll`, expanding the interactive menu to options `[1]` through `[19]`.
+- **Affected Files**:
+  - `src-tauri/tauri.conf.json`: Added `deb` and `rpm` package dependency configurations.
+  - `src-tauri/gen/android/app/build.gradle.kts`: Configured Gradle ABI splits and Universal APK toggle (200 lines).
+  - `src-tauri/src/commands/mod.rs`: Registered `updater_target` submodule.
+  - `src-tauri/src/commands/updater_target.rs`: Created modular target & packaging detection helper (158 lines).
+  - `src-tauri/src/commands/updater.rs`: Modularized and disabled Store updates, integrated Linux installer handover (241 lines).
+  - `src-ui/src/services/updateService.ts`: Added `isStorePackage` state property and accessor (126 lines).
+  - `src-ui/src/components/SettingsTabs.ts`: Plumbed `isStorePackage` state (203 lines).
+  - `src-ui/src/components/settings/SettingsPane.ts`: Added Store badge and disabled update action (245 lines).
+  - `src-ui/src/settingsMain.ts`: Plumbed Store package detection to settings window (242 lines).
+  - `src-ui/src/components/SettingsMenu.ts`: Gated menu update checking for Store builds (120 lines).
+  - `build.ps1`: Added MSIX bundling, Linux multi-package, Android split pipelines, and options `[1]` through `[19]`.
+  - `history.md`: Updated institutional memory.
+
 ### 2026-11-08: Complete Android SDK Migration to `D:\BuildTools\Android\sdk` & Drive C Reclamation (+7.83 GB)
 - **Summary**: Relocated the entire 7.77 GB Android SDK (NDK 26, Build-Tools 34, Platforms, Emulator, platform-tools/adb) from Drive `C:` (`%LOCALAPPDATA%\Android\Sdk`) to `D:\BuildTools\Android\sdk\`.
   - **Cathet Configuration**: Updated `src-tauri/gen/android/local.properties` to `sdk.dir=D\:/BuildTools/Android/sdk` and hard-locked `Initialize-AndroidEnvironment` in `build.ps1` to strictly enforce `D:\BuildTools\Android\sdk`, removing any fallback to Drive `C:`.

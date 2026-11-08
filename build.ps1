@@ -4,9 +4,11 @@
 #>
 param(
     [switch]$Dev, [switch]$Live, [switch]$Check, [switch]$Build, [switch]$BuildX64, [switch]$BuildArm64,
-    [switch]$BuildAppImage, [switch]$BuildRpm, [switch]$BuildLinux,
-    [switch]$All, [switch]$Run, [switch]$AndroidDev, [switch]$AndroidBuild, [switch]$AndroidPerf, [switch]$Patch, [switch]$Minor,
-    [switch]$Major, [string]$TargetVersion, [string]$OutputDir = "release", [int]$Port = 0, [switch]$PurgeBuildTools, [switch]$NoPause, [switch]$Help
+    [switch]$BuildMsix, [switch]$AllWindows,
+    [switch]$BuildAppImage, [switch]$BuildRpm, [switch]$BuildDeb, [switch]$BuildLinux, [switch]$AllLinux,
+    [switch]$All, [switch]$Run, [switch]$AndroidDev, [switch]$AndroidBuild, [switch]$AndroidArm64, [switch]$AndroidUniversal, [switch]$AndroidAll,
+    [switch]$AndroidPerf, [switch]$Patch, [switch]$Minor, [switch]$Major, [string]$TargetVersion,
+    [string]$OutputDir = "release", [int]$Port = 0, [switch]$PurgeBuildTools, [switch]$NoPause, [switch]$Help
 )
 
 $ErrorActionPreference = "Stop"; $ProjectRoot = $PSScriptRoot; Set-Location $ProjectRoot
@@ -29,7 +31,7 @@ function Get-AppVersion { (Get-Content -Raw (Join-Path $ProjectRoot "package.jso
 function Get-NativeArch { if ($env:PROCESSOR_ARCHITECTURE -match "ARM64" -or $env:PROCESSOR_ARCHITEW6432 -match "ARM64") { "arm64" } else { "x64" } }
 
 function Show-HelpGuide {
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Menu | -Dev / -Live -> Hot reload | -Check -> Tests | -Build [-Run] -> Fast EXE`n  -BuildX64 / -BuildArm64 -> Release EXE | -All -> Both | -AndroidDev / -AndroidBuild -> Android`n  -BuildAppImage / -BuildRpm / -BuildLinux -> Linux Universal AppImage / Fedora RPM`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Interactive Menu | -Dev / -Live -> Hot reload | -Check -> Tests`n  -BuildX64 / -BuildArm64 -> Release EXE | -BuildMsix -> Microsoft Store Package (.msixbundle)`n  -AllWindows -> All Windows targets (x64 + ARM64 + Store MSIX Bundle)`n  -AndroidDev -> Android Hot Reload | -AndroidBuild / -AndroidAll -> Phone ARM64 + Universal APKs`n  -AndroidArm64 -> Phone ARM64 APK only (~6.5 MB) | -AndroidUniversal -> Universal APK (~20.5 MB)`n  -BuildDeb -> Linux Debian/Ubuntu (.deb ~3.5 MB) | -BuildRpm -> Linux Fedora KDE (.rpm ~3.5 MB)`n  -BuildAppImage -> Universal Linux AppImage (~78 MB) | -AllLinux -> All Linux formats`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -138,6 +140,139 @@ function Invoke-CompileTarget([string]$targetTriple, [string]$label, [string]$ve
     Write-Host "Output saved: $destPath ($sizeMb MB)" -ForegroundColor Green; return $destPath
 }
 
+function Invoke-WindowsMsixBundle {
+    $ver = Get-AppVersion; $quadVer = "$ver.0"
+    $destBundle = Join-Path $ReleaseDir "cathet-v$ver.msixbundle"
+
+    Write-Host "`n============================================================" -ForegroundColor Cyan
+    Write-Host "  BUILDING MICROSOFT STORE MSIX BUNDLE (ARM64 + x64)" -ForegroundColor White
+    Write-Host "============================================================" -ForegroundColor Cyan
+
+    $x64Bin = Join-Path $ReleaseDir "cathet-v$ver-x64.exe"
+    if (-not (Test-Path $x64Bin)) {
+        Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
+    }
+    $arm64Bin = Join-Path $ReleaseDir "cathet-v$ver-arm64.exe"
+    if (-not (Test-Path $arm64Bin)) {
+        Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
+    }
+
+    $makeappx = (Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin' -Filter 'makeappx.exe' -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -match '\\x64\\' } |
+        Sort-Object { $_.Directory.Parent.Name } -Descending |
+        Select-Object -First 1).FullName
+
+    if (-not $makeappx) {
+        throw "makeappx.exe was not found in Windows Kits. Install Windows 10/11 SDK to bundle MSIX packages."
+    }
+
+    $tmpRoot = Join-Path $env:TEMP "cathet-msix-staging"
+    if (Test-Path $tmpRoot) { Remove-Item -Path $tmpRoot -Recurse -Force -ErrorAction SilentlyContinue }
+    New-Item -ItemType Directory -Path $tmpRoot -Force | Out-Null
+
+    $bundleStaging = Join-Path $tmpRoot "bundle"
+    New-Item -ItemType Directory -Path $bundleStaging -Force | Out-Null
+
+    $iconDir = Join-Path $ProjectRoot "src-tauri\icons"
+    $architectures = @(
+        @{ Arch = "x64"; Bin = $x64Bin },
+        @{ Arch = "arm64"; Bin = $arm64Bin }
+    )
+
+    foreach ($entry in $architectures) {
+        $a = $entry.Arch
+        $layoutDir = Join-Path $tmpRoot $a
+        $assetsDir = Join-Path $layoutDir "Assets"
+        New-Item -ItemType Directory -Path $assetsDir -Force | Out-Null
+
+        Copy-Item -Path $entry.Bin -Destination (Join-Path $layoutDir "cathet.exe") -Force
+
+        $logoFiles = @("StoreLogo.png", "Square150x150Logo.png", "Square44x44Logo.png", "Square310x310Logo.png", "Square71x71Logo.png")
+        foreach ($lf in $logoFiles) {
+            $srcP = Join-Path $iconDir $lf
+            if (Test-Path $srcP) { Copy-Item -Path $srcP -Destination (Join-Path $assetsDir $lf) -Force }
+        }
+
+        $manifestXml = @"
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+         xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+         xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
+  <Identity Name="curlyzed.CathetNote"
+            Publisher="CN=6DDD7CD9-2258-47A2-B61F-0E60DE9FFBAE"
+            Version="$quadVer"
+            ProcessorArchitecture="$a" />
+  <Properties>
+    <DisplayName>Cathet</DisplayName>
+    <PublisherDisplayName>curlyzed</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Sleek, lightweight text and markdown editor</Description>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+  <Applications>
+    <Application Id="App" Executable="cathet.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="Cathet"
+                          Description="Sleek, lightweight text and markdown editor"
+                          BackgroundColor="transparent"
+                          Square150x150Logo="Assets\Square150x150Logo.png"
+                          Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Square71x71Logo="Assets\Square71x71Logo.png" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
+"@
+        $manifestPath = Join-Path $layoutDir "AppxManifest.xml"
+        [System.IO.File]::WriteAllText($manifestPath, $manifestXml, [System.Text.UTF8Encoding]::new($false))
+
+        Write-Host "Packing $a MSIX package via makeappx..." -ForegroundColor Gray
+        $targetMsix = Join-Path $bundleStaging "cathet-$a.msix"
+        & $makeappx pack /d $layoutDir /p $targetMsix /nv /o | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "makeappx pack for $a failed." }
+    }
+
+    Write-Host "Bundling ARM64 + x64 into MSIX Bundle..." -ForegroundColor Cyan
+    if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
+    & $makeappx bundle /d $bundleStaging /p $destBundle /bv $quadVer /o | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "makeappx bundle failed." }
+
+    $signtool = (Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin' -Filter 'signtool.exe' -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -match '\\x64\\' } |
+        Sort-Object { $_.Directory.Parent.Name } -Descending |
+        Select-Object -First 1).FullName
+
+    if ($signtool) {
+        $certSubject = "CN=6DDD7CD9-2258-47A2-B61F-0E60DE9FFBAE"
+        $cert = Get-ChildItem -Path "Cert:\CurrentUser\My" -ErrorAction SilentlyContinue | Where-Object { $_.Subject -eq $certSubject } | Select-Object -First 1
+        if (-not $cert) {
+            $cert = New-SelfSignedCertificate -Type Custom -Subject $certSubject -KeyUsage DigitalSignature -FriendlyName "Cathet Store Local Testing" -CertStoreLocation "Cert:\CurrentUser\My" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3") -ErrorAction SilentlyContinue
+        }
+        if ($cert) {
+            & $signtool sign /fd SHA256 /sha1 $cert.Thumbprint "$destBundle" 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "Signed for local testing (Microsoft Store replaces this on ingestion)." -ForegroundColor Green
+            }
+        }
+    }
+
+    Remove-Item -Path $tmpRoot -Recurse -Force -ErrorAction SilentlyContinue
+
+    if (Test-Path $destBundle) {
+        $sizeMb = [math]::Round((Get-Item $destBundle).Length / 1MB, 2)
+        Write-Host "Microsoft Store MSIX Bundle created: $destBundle ($sizeMb MB)" -ForegroundColor Green
+        return $destBundle
+    }
+    throw "MSIX Bundle was not found at: $destBundle"
+}
+
 function Invoke-WslBashScript([string]$distro, [string]$script) {
     $clean = $script -replace "`r`n", "`n"
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($clean)
@@ -222,8 +357,16 @@ fi
 
 function Invoke-LinuxBundle([string]$bundleType = "appimage") {
     $ver = Get-AppVersion
-    $ext = if ($bundleType -eq "rpm") { "rpm" } else { "AppImage" }
-    $destFile = Join-Path $ReleaseDir "cathet-v$ver-x86_64.$ext"
+    if ($bundleType -eq "all") {
+        Invoke-LinuxBundle "deb"
+        Invoke-LinuxBundle "rpm"
+        Invoke-LinuxBundle "appimage"
+        return
+    }
+
+    $ext = if ($bundleType -eq "rpm") { "rpm" } elseif ($bundleType -eq "deb") { "deb" } else { "AppImage" }
+    $destFileName = if ($bundleType -eq "deb") { "cathet-v$ver-amd64.deb" } else { "cathet-v$ver-x86_64.$ext" }
+    $destFile = Join-Path $ReleaseDir $destFileName
 
     if ($IsLinux) {
         Write-Host "`n>>> Building Linux $ext bundle natively..." -ForegroundColor Cyan
@@ -260,15 +403,15 @@ if [ ${#artifacts[@]} -eq 0 ]; then
     exit 1
 fi
 mkdir -p ./__OUTDIR__
-cp -f "${artifacts[0]}" ./__OUTDIR__/cathet-v__VER__-x86_64.__EXT__
+cp -f "${artifacts[0]}" ./__OUTDIR__/__DEST_FILE__
 '@
-        $wslCmd = ($wslCmdTemplate -replace "__BUNDLE__", $bundleType -replace "__EXT__", $ext -replace "__OUTDIR__", $OutputDir -replace "__VER__", $ver)
+        $wslCmd = ($wslCmdTemplate -replace "__BUNDLE__", $bundleType -replace "__EXT__", $ext -replace "__OUTDIR__", $OutputDir -replace "__DEST_FILE__", $destFileName)
         Invoke-WslBashScript $distro $wslCmd
     }
 
     if (Test-Path $destFile) {
         $sizeMb = [math]::Round((Get-Item $destFile).Length / 1MB, 2)
-        Write-Host "`nLinux $ext created: $destFile ($sizeMb MB)" -ForegroundColor Green
+        Write-Host "Linux $ext created: $destFile ($sizeMb MB)" -ForegroundColor Green
     }
     else {
         throw "Expected Linux bundle was not found at: $destFile"
@@ -476,35 +619,73 @@ function Invoke-AndroidDev {
     }
 }
 
-function Invoke-AndroidBuild {
+function Invoke-AndroidBuild([string]$targetType = "all") {
     Initialize-AndroidEnvironment; $ver = Get-AppVersion
     Confirm-Target @("aarch64-linux-android", "armv7-linux-androideabi", "i686-linux-android", "x86_64-linux-android")
-    Write-Host "`nCompiling Android Universal Release APK..." -ForegroundColor Cyan
+    Write-Host "`nCompiling Android APKs (Target: $targetType)..." -ForegroundColor Cyan
     npx tauri android build --apk; if ($LASTEXITCODE -ne 0) { throw "Tauri android build failed with exit code $LASTEXITCODE." }
-    $apkCandidate = (Get-ChildItem -Path (Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk") -Recurse -Filter "*release*.apk" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike "*unsigned*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
-    $apkSrc = if ($apkCandidate) { $apkCandidate.FullName } else { Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release.apk" }
-    if (-not (Test-Path $apkSrc)) {
-        $apkSrc = Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release-unsigned.apk"
+
+    $apkDir = Join-Path $ProjectRoot "src-tauri\gen\android\app\build\outputs\apk"
+    if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
+
+    $arm64Candidate = (Get-ChildItem -Path $apkDir -Recurse -Filter "*arm64-v8a*release*.apk" -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notlike "*unsigned*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
+
+    $univCandidate = (Get-ChildItem -Path $apkDir -Recurse -Filter "*universal*release*.apk" -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notlike "*unsigned*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
+
+    if (-not $univCandidate -and -not $arm64Candidate) {
+        $anyCandidate = (Get-ChildItem -Path $apkDir -Recurse -Filter "*release*.apk" -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -notlike "*unsigned*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
+        $univCandidate = $anyCandidate
     }
-    if (Test-Path $apkSrc) {
-        if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
-        $apkDest = Join-Path $ReleaseDir "cathet-v$ver-android.apk"
-        Copy-Item -Path $apkSrc -Destination $apkDest -Force
-        $sizeMb = [math]::Round((Get-Item $apkDest).Length / 1MB, 2)
-        Write-Host "Android APK created: $apkDest ($sizeMb MB)" -ForegroundColor Green
+
+    $stagedFiles = @()
+
+    if (($targetType -eq "arm64" -or $targetType -eq "all") -and $arm64Candidate) {
+        $destArm64 = Join-Path $ReleaseDir "cathet-v$ver-android-arm64.apk"
+        Copy-Item -Path $arm64Candidate.FullName -Destination $destArm64 -Force
+        $stagedFiles += $destArm64
+    }
+
+    if ($targetType -eq "universal" -or $targetType -eq "all" -or -not $arm64Candidate) {
+        if ($univCandidate) {
+            $destUniv = Join-Path $ReleaseDir "cathet-v$ver-android-universal.apk"
+            Copy-Item -Path $univCandidate.FullName -Destination $destUniv -Force
+            Copy-Item -Path $univCandidate.FullName -Destination (Join-Path $ReleaseDir "cathet-v$ver-android.apk") -Force
+            $stagedFiles += $destUniv
+        }
+    }
+
+    foreach ($f in $stagedFiles) {
+        $sizeMb = [math]::Round((Get-Item $f).Length / 1MB, 2)
+        Write-Host "Android APK created: $f ($sizeMb MB)" -ForegroundColor Green
+    }
+
+    $preferredInstall = if ($targetType -eq "arm64" -and (Test-Path (Join-Path $ReleaseDir "cathet-v$ver-android-arm64.apk"))) {
+        Join-Path $ReleaseDir "cathet-v$ver-android-arm64.apk"
+    } elseif (Test-Path (Join-Path $ReleaseDir "cathet-v$ver-android.apk")) {
+        Join-Path $ReleaseDir "cathet-v$ver-android.apk"
+    } elseif ($stagedFiles.Count -gt 0) {
+        $stagedFiles[0]
+    } else {
+        $null
+    }
+
+    if ($preferredInstall) {
         $devs = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\tdevice' })
         if ($devs.Count -gt 0) {
             $did = $devs[0].Split("`t")[0]
             $c = (Read-Host "`nInstall release APK to connected USB device ($did)? [Y/n] (Default: n)").Trim()
             if ($c -in "y", "Y") {
-                $installRes = cmd.exe /c "adb -s $did install -r `"$apkDest`" 2>&1"
+                $installRes = cmd.exe /c "adb -s $did install -r `"$preferredInstall`" 2>&1"
                 Write-Host $installRes
                 if ($installRes -match "INSTALL_FAILED_UPDATE_INCOMPATIBLE") {
                     Write-Host "`n[ALERT] Signature mismatch with existing debug installation." -ForegroundColor Yellow
                     $reinstall = (Read-Host "Uninstall old version and install new release APK? [Y/n] (Default: y)").Trim()
                     if ($reinstall -notin "n", "N") {
                         cmd.exe /c "adb -s $did uninstall com.cathet.app 2>nul" | Out-Null
-                        cmd.exe /c "adb -s $did install `"$apkDest`""
+                        cmd.exe /c "adb -s $did install `"$preferredInstall`""
                     }
                 }
                 cmd.exe /c "adb -s $did shell am start -n com.cathet.app/com.cathet.app.MainActivity"
@@ -655,7 +836,7 @@ function Invoke-AndroidPerf {
 
 function Invoke-PurgeBuildTools {
     Write-Host "`n============================================================" -ForegroundColor Yellow
-    Write-Host "  PURGE BUILDTOOLS HUB & WSL ENVIRONMENT" -ForegroundColor BrightWhite
+    Write-Host "  PURGE BUILDTOOLS HUB & WSL ENVIRONMENT" -ForegroundColor White
     Write-Host "============================================================" -ForegroundColor Yellow
     $confirm = (Read-Host "Are you sure you want to unregister Shared-Linux-Build and wipe D:\BuildTools? [y/N]").Trim()
     if ($confirm -notin "y", "Y") { Write-Host "Purge canceled." -ForegroundColor Gray; return }
@@ -679,27 +860,66 @@ function Invoke-PurgeBuildTools {
 
 function Show-InteractiveMenu {
     $ver = Get-AppVersion; $arch = Get-NativeArch
-    Write-Host "`nSelect an action:`n  [1] Live Development (Desktop Hot Reload) [Default]`n  [2] Run Verification Checks (Vite + Cargo)`n  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe`n  [4] Build & Launch Native ($arch) Fast Executable Immediately`n  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe`n  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe`n  [7] Build All Windows Targets Release -> x64 and ARM64`n  [8] Android Live Dev (Hot Reload - USB Device / Emulator)`n  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk`n  [10] Android Performance Monitor (Live RAM / CPU / 120Hz Jank)`n  [11] Bump Project Version (Current: v$ver)`n  [12] Build Universal Linux AppImage -> $OutputDir/cathet-v$ver-x86_64.AppImage`n  [13] Purge BuildTools Hub & WSL (Free up D:\ space)`n  [Q] Exit" -ForegroundColor Yellow
-    $c = (Read-Host "Enter option [1-13, Q] (Default: 1)").Trim(); return $(if ($c) { $c } else { "1" })
+    Write-Host "`nDevelopment & Fast Testing:" -ForegroundColor DarkCyan
+    Write-Host "  [1] Live Development (Desktop Hot Reload) [Default]"
+    Write-Host "  [2] Run Verification Checks (Vite + Cargo)"
+    Write-Host "  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe"
+    Write-Host "  [4] Build & Launch Native ($arch) Fast Executable Immediately"
+
+    Write-Host "`nWindows Releases:" -ForegroundColor DarkCyan
+    Write-Host "  [5] Windows x64 Release (.exe ~3.8 MB) -> $OutputDir/cathet-v$ver-x64.exe"
+    Write-Host "  [6] Windows ARM64 Release (.exe ~3.6 MB) -> $OutputDir/cathet-v$ver-arm64.exe"
+    Write-Host "  [7] Microsoft Store Package (.msixbundle ARM64 + x64 ~7.5 MB)"
+    Write-Host "  [8] All Three Windows Targets Release (x64 .exe + ARM64 .exe + Store .msixbundle)"
+
+    Write-Host "`nAndroid Releases:" -ForegroundColor DarkCyan
+    Write-Host "  [9]  Android Live Dev (Hot Reload - USB Device / Emulator)"
+    Write-Host "  [10] Build Android Phone APK (ARM64 ~6.5 MB) -> $OutputDir/cathet-v$ver-android-arm64.apk"
+    Write-Host "  [11] Build Android Universal APK (All ABIs ~20.5 MB) -> $OutputDir/cathet-v$ver-android-universal.apk"
+    Write-Host "  [12] Build All Android Targets (ARM64 + Universal) [Default]"
+    Write-Host "  [13] Android Performance Monitor (Live RAM / CPU / 120Hz Jank)"
+
+    Write-Host "`nLinux Releases:" -ForegroundColor DarkCyan
+    Write-Host "  [14] Build Linux Debian / Ubuntu (.deb ~3.5 MB) -> $OutputDir/cathet-v$ver-amd64.deb"
+    Write-Host "  [15] Build Linux Fedora KDE (.rpm ~3.5 MB) -> $OutputDir/cathet-v$ver-x86_64.rpm"
+    Write-Host "  [16] Build Universal Linux AppImage (~78 MB) -> $OutputDir/cathet-v$ver-x86_64.AppImage"
+    Write-Host "  [17] Build All Linux Formats (.deb + .rpm + .AppImage)"
+
+    Write-Host "`nUtilities:" -ForegroundColor DarkCyan
+    Write-Host "  [18] Bump Project Version (Current: v$ver)"
+    Write-Host "  [19] Purge BuildTools Hub & WSL (Free up D:\ space)"
+    Write-Host "  [Q]  Exit" -ForegroundColor Gray
+
+    $c = (Read-Host "`nEnter option [1-19, Q] (Default: 1)").Trim()
+    return $(if ($c) { $c } else { "1" })
 }
 
 function Invoke-Pipeline([hashtable]$opts) {
     if ($opts.PurgeBuildTools) { Invoke-PurgeBuildTools; return }
     if ($opts.Check) { Invoke-CheckMode; return }
     if ($opts.AndroidDev) { Invoke-AndroidDev; return }
-    if ($opts.AndroidBuild) { Invoke-AndroidBuild; return }
+    if ($opts.AndroidArm64) { Invoke-AndroidBuild "arm64"; return }
+    if ($opts.AndroidUniversal) { Invoke-AndroidBuild "universal"; return }
+    if ($opts.AndroidBuild -or $opts.AndroidAll) { Invoke-AndroidBuild "all"; return }
     if ($opts.AndroidPerf) { Invoke-AndroidPerf; return }
-    if ($opts.BuildAppImage -or $opts.BuildLinux) { Invoke-LinuxBundle "appimage"; return }
+    if ($opts.BuildDeb) { Invoke-LinuxBundle "deb"; return }
     if ($opts.BuildRpm) { Invoke-LinuxBundle "rpm"; return }
+    if ($opts.BuildAppImage -or $opts.BuildLinux) { Invoke-LinuxBundle "appimage"; return }
+    if ($opts.AllLinux) { Invoke-LinuxBundle "all"; return }
     if ($opts.TargetVersion -or $opts.Patch -or $opts.Minor -or $opts.Major) {
         Invoke-VersionBump $opts.TargetVersion ([bool]$opts.Patch) ([bool]$opts.Minor) ([bool]$opts.Major); return
     }
     $ver = Get-AppVersion; $nativeArch = Get-NativeArch; $compiledBin = $null
-    if ($opts.All) {
+    if ($opts.BuildMsix) {
+        Invoke-WindowsMsixBundle
+        return
+    }
+    if ($opts.AllWindows -or $opts.All) {
         Invoke-CompileTarget "x86_64-pc-windows-msvc" "Windows x64" "cathet-v$ver-x64.exe" "release"
         Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
-        $compiledBin = Join-Path $ReleaseDir "cathet-v$ver-$nativeArch.exe"
-        Write-Host "`nAll release targets compiled successfully into '$OutputDir/'!" -ForegroundColor Green
+        Invoke-WindowsMsixBundle
+        Write-Host "`nAll Windows release targets (x64, ARM64, and Store MSIX Bundle) built successfully into '$OutputDir/'!" -ForegroundColor Green
+        return
     }
     elseif ($opts.BuildArm64) {
         $compiledBin = Invoke-CompileTarget "aarch64-pc-windows-msvc" "Windows ARM64" "cathet-v$ver-arm64.exe" "release"
@@ -740,9 +960,11 @@ try {
             switch ($sel) {
                 "1" { $runOpts.Dev = $true }; "2" { $runOpts.Check = $true }; "3" { $runOpts.Build = $true }
                 "4" { $runOpts.Build = $true; $runOpts.Run = $true }; "5" { $runOpts.BuildX64 = $true }
-                "6" { $runOpts.BuildArm64 = $true }; "7" { $runOpts.All = $true }; "8" { $runOpts.AndroidDev = $true }
-                "9" { $runOpts.AndroidBuild = $true }; "10" { $runOpts.AndroidPerf = $true }
-                "11" {
+                "6" { $runOpts.BuildArm64 = $true }; "7" { $runOpts.BuildMsix = $true }; "8" { $runOpts.AllWindows = $true }
+                "9" { $runOpts.AndroidDev = $true }; "10" { $runOpts.AndroidArm64 = $true }
+                "11" { $runOpts.AndroidUniversal = $true }; "12" { $runOpts.AndroidAll = $true }; "13" { $runOpts.AndroidPerf = $true }
+                "14" { $runOpts.BuildDeb = $true }; "15" { $runOpts.BuildRpm = $true }; "16" { $runOpts.BuildAppImage = $true }; "17" { $runOpts.AllLinux = $true }
+                "18" {
                     $bChoice = (Read-Host "`nBump type: [1] Patch [2] Minor [3] Major [4] Custom (Default: 1)").Trim()
                     if ($bChoice -eq "2") { $runOpts.Minor = $true } elseif ($bChoice -eq "3") { $runOpts.Major = $true }
                     elseif ($bChoice -eq "4") {
@@ -751,17 +973,24 @@ try {
                     }
                     else { $runOpts.Patch = $true }
                 }
-                "12" { $runOpts.BuildAppImage = $true }
-                "13" { $runOpts.PurgeBuildTools = $true }
+                "19" { $runOpts.PurgeBuildTools = $true }
                 { $_ -in "q", "Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
-                default { Write-Host "Invalid option '$_'. Choose 1-13 or Q." -ForegroundColor Red; continue }
+                default { Write-Host "Invalid option '$_'. Choose 1-19 or Q." -ForegroundColor Red; continue }
             }
             Invoke-Pipeline $runOpts
             $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim(); if ($ans -in "q", "Q") { Invoke-Exit 0 }
         }
     }
     else {
-        Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; BuildAppImage = $BuildAppImage; BuildRpm = $BuildRpm; BuildLinux = $BuildLinux; All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; AndroidPerf = $AndroidPerf; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port; PurgeBuildTools = $PurgeBuildTools }
+        Invoke-Pipeline @{
+            Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64;
+            BuildMsix = $BuildMsix; AllWindows = $AllWindows;
+            BuildAppImage = $BuildAppImage; BuildRpm = $BuildRpm; BuildDeb = $BuildDeb; BuildLinux = $BuildLinux; AllLinux = $AllLinux;
+            All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; AndroidArm64 = $AndroidArm64;
+            AndroidUniversal = $AndroidUniversal; AndroidAll = $AndroidAll; AndroidPerf = $AndroidPerf;
+            Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion;
+            Port = $Port; PurgeBuildTools = $PurgeBuildTools
+        }
         Invoke-Exit 0
     }
 }
