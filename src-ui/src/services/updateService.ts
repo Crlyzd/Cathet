@@ -9,6 +9,7 @@ export interface UpdateInfo {
   latest_version: string;
   download_url: string;
   release_notes: string;
+  is_store_package?: boolean;
 }
 
 export interface DownloadProgress {
@@ -72,6 +73,10 @@ export class UpdateService {
 
   hasUpdate(): boolean {
     return !!this.updateInfo?.update_available;
+  }
+
+  isStorePackage(): boolean {
+    return !!this.updateInfo?.is_store_package;
   }
 
   async startDownload(onProgress: (prog: DownloadProgress) => void): Promise<string | null> {

@@ -49,6 +49,7 @@ class SettingsApp {
         fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
         updateAvailable: !!updateInfo?.update_available,
         latestVersion: updateInfo?.latest_version,
+        isStorePackage: !!updateInfo?.is_store_package,
       },
       {
         onThemeChange: (theme) => this.handleThemeChange(theme),

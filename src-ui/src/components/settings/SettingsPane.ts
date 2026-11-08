@@ -36,6 +36,7 @@ export interface SettingsPaneState {
   registeredExePath?: string | null;
   downloadState: "idle" | "downloading" | "ready";
   downloadPercent: number;
+  isStorePackage?: boolean;
 }
 
 export class SettingsPaneComponent {
@@ -66,7 +67,8 @@ export class SettingsPaneComponent {
   }
 
   private getUpdateHtml(): string {
-    const { downloadState, downloadPercent, updateAvailable } = this.state;
+    const { downloadState, downloadPercent, updateAvailable, isStorePackage } = this.state;
+    if (isStorePackage) return `<span class="update-store-badge">Managed by Store</span>`;
     if (downloadState === "downloading") {
       return `<div class="update-progress-wrap"><div class="update-progress-track"><div class="update-progress-fill" style="width: ${downloadPercent}%"></div></div><span class="update-progress-info">${downloadPercent.toFixed(0)}%</span></div>`;
     }
@@ -80,9 +82,12 @@ export class SettingsPaneComponent {
     this.autoScrollCleanup?.();
     const isMobile = PlatformService.getInstance().isMobile();
     const activePath = this.state.registeredExePath || this.state.currentExePath || "";
-    const prefix = this.state.isRegistered ? "Registered: " : "Path: ";
-    const defaultAppSubtext = activePath ? `${prefix}${activePath}` : t("settings.defaultApp");
-    const updateText = this.state.downloadState === "downloading" ? "Downloading..." : this.state.downloadState === "ready" ? "Ready!" : this.state.updateAvailable ? `v${this.state.latestVersion || "3.0"} ready` : `Up to date (v${APP_VERSION})`;
+    const defaultAppSubtext = activePath ? `${this.state.isRegistered ? "Registered: " : "Path: "}${activePath}` : t("settings.defaultApp");
+    const updateText = this.state.isStorePackage ? "Installed via Microsoft Store (Auto-Updated)"
+      : this.state.downloadState === "downloading" ? "Downloading..."
+      : this.state.downloadState === "ready" ? "Ready!"
+      : this.state.updateAvailable ? `v${this.state.latestVersion || "3.0"} ready`
+      : `Up to date (v${APP_VERSION})`;
 
     this.container.innerHTML = `
       <div class="settings-card">
@@ -151,7 +156,7 @@ export class SettingsPaneComponent {
         <div class="setting-item">
           <div class="setting-meta">
             <span class="setting-title">${t("settings.defaultApp")}</span>
-            <span class="setting-subtext" id="default-app-subtext" title="${prefix}${activePath}">
+            <span class="setting-subtext" id="default-app-subtext" title="${defaultAppSubtext}">
               <span class="subtext-content">${defaultAppSubtext}</span>
             </span>
           </div>

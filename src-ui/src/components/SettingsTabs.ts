@@ -26,6 +26,7 @@ export interface SettingsInitialState {
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;
+  isStorePackage?: boolean;
   isRegistered?: boolean;
   currentExePath?: string;
   registeredExePath?: string | null;

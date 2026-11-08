@@ -77,10 +77,13 @@ export class SettingsMenuBuilder {
         label: "",
         isDivider: true,
       },
-      {
+    ];
+
+    if (!this.updateService.isStorePackage()) {
+      items.push({
         id: "check_update",
         label: hasUpdate
-          ? `Update v${updateInfo.latest_version} Available!`
+          ? `Update v${updateInfo?.latest_version || ""} Available!`
           : "Check for Updates",
         isGlowing: hasUpdate,
         badge: hasUpdate ? "NEW" : undefined,
@@ -99,8 +102,8 @@ export class SettingsMenuBuilder {
             }
           }
         },
-      },
-    ];
+      });
+    }
 
     return items;
   }
