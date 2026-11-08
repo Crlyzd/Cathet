@@ -163,6 +163,28 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-08: Resolved Linux Settings About Tab Sizing & Scrolling, and Linux Desktop Backdrop Isolation
+- **Summary**: Addressed UI squishing and unscrollable layout in the Settings window's About & Support tab, and corrected Linux transparency behavior across KDE Plasma / Wayland and software-rasterized environments:
+  - **Settings Window Expansion (350x318 -> 360x420)**: Expanded desktop settings window inner dimensions in `commands/window.rs`, providing full vertical clearance for the Hero header, author badge, external link capsules, coffee donation buttons, bug report button, and engine footer.
+  - **About Tab Smooth Scroll Container**: Removed rigid `overflow: hidden` from `#pane-about` and `.about-box` in `styles/settings.css`, replacing it with `overflow-y: auto`, `height: auto`, and hidden scrollbars (`scrollbar-width: none`) matching `#pane-settings`.
+  - **Dynamic Linux Platform Copy**: Updated `AboutPane.ts` to dynamically render *"crafted for Linux desktop"* and *"WebKitGTK & TypeScript"* on Linux rather than hardcoding Windows frosted glass and Webview2.
+  - **Linux Backdrop Architecture (Default Solid Canvas)**: Replaced unconditional `supports_blur: true` assumption with a strict solid-by-default architecture (`de-solid` `#12141c` dark / `#f8fafc` light). Added a "Window Backdrop" toggle in `SettingsPane.ts` (Solid vs. Translucent) allowing users with KWin Force-Blur rules to opt into translucent glass, while protecting standard Wayland and VM software rasterizer (`llvmpipe`) setups from unblurred see-through desktop bleed.
+  - **Backend Modular Extraction**: Extracted `LinuxDesktopInfo` and `get_linux_desktop_info` into `commands/linux_desktop.rs` (86 lines), reducing `commands/window.rs` to 139 lines to maintain strict Anti-Monolith compliance (<250 lines/file).
+- **Affected Files**:
+  - `src-tauri/src/commands/linux_desktop.rs`: Created modular Linux desktop query helper (86 lines).
+  - `src-tauri/src/commands/mod.rs`: Registered `linux_desktop` submodule.
+  - `src-tauri/src/commands/window.rs`: Resized settings window to 360x420 and pruned Linux helpers (139 lines).
+  - `src-tauri/src/lib.rs`: Updated import of `get_linux_desktop_info` from `linux_desktop`.
+  - `src-ui/styles/settings.css`: Added smooth scroll container to `#pane-about` and natural height to `.about-box`.
+  - `src-ui/styles/linux.css`: Established Solid Slate as default Linux backdrop tokens and scoped Translucent to `de-blur`.
+  - `src-ui/src/components/settings/AboutPane.ts`: Added dynamic Linux branding & WebKitGTK stack label (133 lines).
+  - `src-ui/src/components/settings/SettingsPane.ts`: Added Linux Backdrop toggle and event bindings (238 lines).
+  - `src-ui/src/components/SettingsTabs.ts`: Plumbed `linuxBackdrop` state property (181 lines).
+  - `src-ui/src/services/kdePortalService.ts`: Added `getLinuxBackdropPreference`, `setLinuxBackdropPreference`, and event broadcast (89 lines).
+  - `src-ui/src/settingsMain.ts`: Connected backdrop state and guidance dialog to settings window (227 lines).
+  - `src-ui/src/main.ts`: Ensured `applyPlatformClasses()` runs eagerly on main app startup.
+  - `history.md`: Updated institutional memory.
+
 ### 2026-11-08: Multi-Architecture Packaging, Microsoft Store MSIX Bundle & Native Linux Package Handover
 - **Summary**: Implemented ultra-lightweight distribution targets and unified packaging pipelines across Android, Linux, and Windows:
   - **Linux Distribution Size Reduction (78 MB -> 3.32 MB)**: Added native Debian (`.deb`) and Red Hat (`.rpm`) packaging with system package dependencies (`libwebkit2gtk-4.1-0`, `libgtk-3-0`) in `tauri.conf.json`. Compiled `.deb` is only 3.32 MB compared to the 78.01 MB AppImage runtime bundle.
