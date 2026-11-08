@@ -290,14 +290,16 @@ function Resolve-CompatibleJavaHome {
 
 function Initialize-AndroidEnvironment {
     Resolve-CompatibleJavaHome
-    $sdk = if ($env:ANDROID_HOME -and (Test-Path $env:ANDROID_HOME)) { $env:ANDROID_HOME }
-    elseif ($env:ANDROID_SDK_ROOT -and (Test-Path $env:ANDROID_SDK_ROOT)) { $env:ANDROID_SDK_ROOT }
-    elseif (Test-Path "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe") { "$env:LOCALAPPDATA\Android\Sdk" } else { $null }
+    $sdk = if ($env:ANDROID_HOME -and (Test-Path (Join-Path $env:ANDROID_HOME "platform-tools\adb.exe"))) { $env:ANDROID_HOME }
+    elseif ($env:ANDROID_SDK_ROOT -and (Test-Path (Join-Path $env:ANDROID_SDK_ROOT "platform-tools\adb.exe"))) { $env:ANDROID_SDK_ROOT }
+    elseif (Test-Path "D:\BuildTools\Android\sdk\platform-tools\adb.exe") { "D:\BuildTools\Android\sdk" }
+    else { $null }
+
     if (-not $sdk) {
-        Write-Host "`n[Android SDK] Headless Android SDK is not yet installed." -ForegroundColor Yellow
-        $c = (Read-Host "Install minimal headless Android SDK (~1.2 GB)? [Y/n] (Default: Y)").Trim()
+        Write-Host "`n[Android SDK] Android SDK is not yet installed in D:\BuildTools\Android\sdk." -ForegroundColor Yellow
+        $c = (Read-Host "Install minimal headless Android SDK into D:\BuildTools (~1.2 GB)? [Y/n] (Default: Y)").Trim()
         if ($c -eq "n" -or $c -eq "N") { throw "Android SDK required. Run again and accept [Y] or install manually." }
-        Install-MinimalAndroidSdk | Out-Null; $sdk = Join-Path $env:LOCALAPPDATA "Android\Sdk"
+        $sdk = Install-MinimalAndroidSdk
     }
     $sdk = [string]$sdk; $env:ANDROID_HOME = $sdk; $env:ANDROID_SDK_ROOT = $sdk
     foreach ($sub in "platform-tools", "emulator", "cmdline-tools\latest\bin") {
@@ -316,9 +318,7 @@ function Initialize-AndroidEnvironment {
         npx tauri android init; if ($LASTEXITCODE -ne 0) { throw "Tauri android init failed." }
     }
     $lp = Join-Path $androidGen "local.properties"
-    if (-not (Test-Path $lp)) {
-        Set-Content -Path $lp -Value "sdk.dir=$($sdk.Replace('\', '/'))"
-    }
+    Set-Content -Path $lp -Value "sdk.dir=$($sdk.Replace('\', '/'))"
     $gp = Join-Path $androidGen "gradle.properties"
     if ((Test-Path $gp) -and ((Get-Content $gp -Raw) -notmatch 'kotlin\.incremental')) {
         Add-Content -Path $gp -Value "`nkotlin.incremental=false`nandroid.javaCompile.suppressSourceTargetDeprecationWarning=true"

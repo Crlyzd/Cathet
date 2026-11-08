@@ -163,6 +163,16 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-08: Complete Android SDK Migration to `D:\BuildTools\Android\sdk` & Drive C Reclamation (+7.83 GB)
+- **Summary**: Relocated the entire 7.77 GB Android SDK (NDK 26, Build-Tools 34, Platforms, Emulator, platform-tools/adb) from Drive `C:` (`%LOCALAPPDATA%\Android\Sdk`) to `D:\BuildTools\Android\sdk\`.
+  - **Cathet Configuration**: Updated `src-tauri/gen/android/local.properties` to `sdk.dir=D\:/BuildTools/Android/sdk` and hard-locked `Initialize-AndroidEnvironment` in `build.ps1` to strictly enforce `D:\BuildTools\Android\sdk`, removing any fallback to Drive `C:`.
+  - **Global Tooling**: Appended `D:\BuildTools\Android\sdk\platform-tools` to Windows User `PATH` (verified `adb version` 1.0.41 executing directly from `D:\BuildTools`).
+  - **Drive C Reclaimed**: Safely purged `C:\Users\kalek\AppData\Local\Android\Sdk`, immediately increasing Drive `C:` free space from 22.56 GB to **30.39 GB free** (+7.83 GB gained; total session gain on Drive `C:`: +17.03 GB).
+- **Affected Files**:
+  - `build.ps1`: Hard-locked Android SDK resolution and auto-installation to `D:\BuildTools\Android\sdk`.
+  - `src-tauri/gen/android/local.properties`: Updated SDK pointer to `D\:/BuildTools/Android/sdk`.
+  - `history.md`: Updated changelog.
+
 ### 2026-11-08: Unified `D:\BuildTools` Hub, Multi-Project Script Upgrades & 100+ GB Drive Reclamation
 - **Summary**: Established a centralized, cross-project development and build tools hub in `D:\BuildTools\` to prevent Drive `C:` depletion and allow single-folder lifecycle cleanup.
   - **Environment & Hub Layout**: Created `D:\BuildTools\` for `Android\sdk`, `Android\.gradle`, `Rust\.cargo`, `Rust\.rustup`, `Rust\sccache`, `Linux-WSL`, `Java`, and `tools`. Configured persistent Windows User environment variables (`ANDROID_HOME`, `ANDROID_SDK_ROOT`, `GRADLE_USER_HOME`, `CARGO_HOME`, `RUSTUP_HOME`, `SCCACHE_DIR`) and appended `D:\BuildTools\Rust\.cargo\bin` to User `PATH`.
