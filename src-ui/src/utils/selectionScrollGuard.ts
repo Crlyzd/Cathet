@@ -179,3 +179,4 @@ export class SelectionScrollGuard {
     this.rightWrapper = null;
   }
 }
+
