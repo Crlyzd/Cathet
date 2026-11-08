@@ -11,42 +11,43 @@ body.is-linux {
   --font-mono: 'Hack', 'Noto Sans Mono', 'Cascadia Code', 'Source Code Pro', monospace;
 }
 
-/* 2. KDE Plasma 6 & Hyprland Translucent Frosted Glass (Default & de-blur) */
+/* 2. Linux Desktop Default: Solid Slate (Clean, 100% Legible, Zero Bleed) */
 body.is-linux,
+body.is-linux.de-solid,
 body.is-linux[data-theme="dark"],
+body.is-linux.de-solid[data-theme="dark"],
 [data-theme="dark"] body.is-linux,
-body.is-linux.de-blur[data-theme="dark"],
-[data-theme="dark"] body.is-linux.de-blur {
-  --col-bg-main: rgba(27, 30, 32, 0.88);
-  --col-bg-bar: rgba(35, 38, 41, 0.94);
+[data-theme="dark"] body.is-linux.de-solid {
+  --col-bg-main: #12141c;
+  --col-bg-bar: #161821;
   --col-accent: #3daee9;
   --col-quote-border: #3daee9;
   --col-border: rgba(255, 255, 255, 0.12);
 }
 
 body.is-linux[data-theme="light"],
+body.is-linux.de-solid[data-theme="light"],
 [data-theme="light"] body.is-linux,
-body.is-linux.de-blur[data-theme="light"],
-[data-theme="light"] body.is-linux.de-blur {
-  --col-bg-main: rgba(252, 252, 252, 0.90);
-  --col-bg-bar: rgba(239, 240, 241, 0.95);
+[data-theme="light"] body.is-linux.de-solid {
+  --col-bg-main: #f8fafc;
+  --col-bg-bar: #ffffff;
   --col-accent: #1d99f3;
   --col-quote-border: #1d99f3;
   --col-border: rgba(15, 23, 42, 0.10);
 }
 
-/* 3. GNOME / Ubuntu / Non-Blur Solid Slate Fallback (de-solid) */
-body.is-linux.de-solid,
-body.is-linux.de-solid[data-theme="dark"],
-[data-theme="dark"] body.is-linux.de-solid {
-  --col-bg-main: #12141c;
-  --col-bg-bar: #161821;
+/* 3. Optional Opt-In Translucent Glass (for KWin Force-Blur or Hyprland) */
+body.is-linux.de-blur,
+body.is-linux.de-blur[data-theme="dark"],
+[data-theme="dark"] body.is-linux.de-blur {
+  --col-bg-main: rgba(27, 30, 32, 0.88);
+  --col-bg-bar: rgba(35, 38, 41, 0.94);
 }
 
-body.is-linux.de-solid[data-theme="light"],
-[data-theme="light"] body.is-linux.de-solid {
-  --col-bg-main: #f8fafc;
-  --col-bg-bar: #ffffff;
+body.is-linux.de-blur[data-theme="light"],
+[data-theme="light"] body.is-linux.de-blur {
+  --col-bg-main: rgba(252, 252, 252, 0.90);
+  --col-bg-bar: rgba(239, 240, 241, 0.95);
 }
 
 /* 4. KDE Breeze 8px Window Frame & Shadow */
@@ -56,6 +57,10 @@ body.is-linux .settings-window {
   border-radius: 8px;
   border: 1px solid var(--col-border);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+body.is-linux .workspace-shell {
+  background-color: var(--col-bg-main);
 }
 
 /* 5. 4px Invisible Frameless Window Edge-Resize Grips */
