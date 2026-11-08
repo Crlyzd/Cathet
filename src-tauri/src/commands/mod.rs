@@ -6,5 +6,6 @@ pub mod memory;
 pub mod migration;
 pub mod notes;
 pub mod updater;
+pub mod updater_target;
 pub mod vibrancy;
 pub mod window;

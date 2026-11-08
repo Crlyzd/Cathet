@@ -1,5 +1,11 @@
 #![allow(dead_code, unused_imports)]
 
+use super::updater_target::{
+    create_update_staging_file, find_matching_asset, is_msix_packaged, is_newer_version,
+    GithubAsset,
+};
+#[cfg(target_os = "linux")]
+use super::updater_target::{detect_linux_package_type, launch_linux_system_installer, LinuxPackageType};
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs::File;
@@ -17,6 +23,7 @@ pub struct UpdateInfo {
     pub latest_version: String,
     pub download_url: String,
     pub release_notes: String,
+    pub is_store_package: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -24,12 +31,6 @@ struct GithubRelease {
     tag_name: String,
     body: Option<String>,
     assets: Vec<GithubAsset>,
-}
-
-#[derive(Debug, Deserialize)]
-struct GithubAsset {
-    name: String,
-    browser_download_url: String,
 }
 
 #[derive(Clone, Serialize)]
@@ -46,6 +47,7 @@ fn empty_update_info() -> UpdateInfo {
         latest_version: CURRENT_VERSION.into(),
         download_url: String::new(),
         release_notes: String::new(),
+        is_store_package: is_msix_packaged(),
     }
 }
 
@@ -58,32 +60,22 @@ pub async fn check_for_updates() -> Result<UpdateInfo, String> {
 
     #[cfg(not(target_os = "android"))]
     {
-        let url = format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO);
-        let client = reqwest::Client::builder()
-            .user_agent("Cathet-Updater")
-            .build()
-            .map_err(|e| e.to_string())?;
+        if is_msix_packaged() {
+            return Ok(empty_update_info());
+        }
 
-        let response = client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| format!("Failed to fetch release: {}", e))?;
+        let url = format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO);
+        let client = reqwest::Client::builder().user_agent("Cathet-Updater").build().map_err(|e| e.to_string())?;
+        let response = client.get(&url).send().await.map_err(|e| format!("Failed to fetch release: {}", e))?;
 
         if !response.status().is_success() {
             return Ok(empty_update_info());
         }
 
-        let release: GithubRelease = response
-            .json()
-            .await
-            .map_err(|e| format!("Failed to parse release: {}", e))?;
-
+        let release: GithubRelease = response.json().await.map_err(|e| format!("Failed to parse release: {}", e))?;
         let latest_tag = release.tag_name.trim_start_matches('v');
         let has_update = is_newer_version(latest_tag, CURRENT_VERSION);
-        let download_url = find_matching_asset(&release.assets)
-            .map(|a| a.browser_download_url.clone())
-            .unwrap_or_default();
+        let download_url = find_matching_asset(&release.assets).map(|a| a.browser_download_url.clone()).unwrap_or_default();
 
         Ok(UpdateInfo {
             update_available: has_update && !download_url.is_empty(),
@@ -91,6 +83,7 @@ pub async fn check_for_updates() -> Result<UpdateInfo, String> {
             latest_version: latest_tag.into(),
             download_url,
             release_notes: release.body.unwrap_or_default(),
+            is_store_package: false,
         })
     }
 }
@@ -108,6 +101,9 @@ pub async fn download_update_payload(
 
     #[cfg(not(target_os = "android"))]
     {
+        if is_msix_packaged() {
+            return Err("Updates for Microsoft Store app are managed by Windows Store.".into());
+        }
         if download_url.is_empty() {
             return Err("Download URL is empty".into());
         }
@@ -125,7 +121,7 @@ pub async fn download_update_payload(
 
         let total_bytes = response.content_length().unwrap_or(0);
         let mut downloaded_bytes: u64 = 0;
-        let (mut file, staging_path) = create_update_staging_file()?;
+        let (mut file, staging_path) = create_update_staging_file(&download_url)?;
 
         while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
             file.write_all(&chunk).map_err(|e| e.to_string())?;
@@ -135,11 +131,25 @@ pub async fn download_update_payload(
             } else {
                 0.0
             };
-            let _ = app_handle.emit("update:progress", DownloadProgress { percent, downloaded_bytes, total_bytes });
+            let _ = app_handle.emit(
+                "update:progress",
+                DownloadProgress {
+                    percent,
+                    downloaded_bytes,
+                    total_bytes,
+                },
+            );
         }
 
         drop(file);
-        let _ = app_handle.emit("update:progress", DownloadProgress { percent: 100.0, downloaded_bytes, total_bytes });
+        let _ = app_handle.emit(
+            "update:progress",
+            DownloadProgress {
+                percent: 100.0,
+                downloaded_bytes,
+                total_bytes,
+            },
+        );
         Ok(staging_path.to_string_lossy().to_string())
     }
 }
@@ -148,6 +158,9 @@ pub async fn download_update_payload(
 pub async fn install_and_restart(temp_path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
+        if is_msix_packaged() {
+            return Err("Updates for Microsoft Store app are managed by Windows Store.".into());
+        }
         let current_exe = env::current_exe().map_err(|e| e.to_string())?;
         std::process::Command::new(&temp_path)
             .arg("--replace-old")
@@ -159,7 +172,15 @@ pub async fn install_and_restart(temp_path: String) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
         use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(&temp_path, std::fs::Permissions::from_mode(0o755));
+        let p = std::path::Path::new(&temp_path);
+        let _ = std::fs::set_permissions(p, std::fs::Permissions::from_mode(0o755));
+
+        let pkg_type = detect_linux_package_type();
+        if pkg_type == LinuxPackageType::Deb || pkg_type == LinuxPackageType::Rpm {
+            launch_linux_system_installer(p)?;
+            std::process::exit(0);
+        }
+
         let target_exe = env::var("APPIMAGE")
             .ok()
             .filter(|s| !s.is_empty())
@@ -188,13 +209,26 @@ pub async fn install_and_restart(temp_path: String) -> Result<(), String> {
 pub async fn download_and_install_update(download_url: String) -> Result<(), String> {
     #[cfg(any(target_os = "windows", target_os = "linux"))]
     {
+        if is_msix_packaged() {
+            return Err("Updates for Microsoft Store app are managed by Windows Store.".into());
+        }
         if download_url.is_empty() {
             return Err("Download URL is empty".into());
         }
-        let client = reqwest::Client::builder().user_agent("Cathet-Updater").build().map_err(|e| e.to_string())?;
-        let response = client.get(&download_url).send().await.map_err(|e| format!("Failed to download update: {}", e))?;
-        let bytes = response.bytes().await.map_err(|e| format!("Failed to read update payload: {}", e))?;
-        let (mut file, staging_exe) = create_update_staging_file()?;
+        let client = reqwest::Client::builder()
+            .user_agent("Cathet-Updater")
+            .build()
+            .map_err(|e| e.to_string())?;
+        let response = client
+            .get(&download_url)
+            .send()
+            .await
+            .map_err(|e| format!("Failed to download update: {}", e))?;
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|e| format!("Failed to read update payload: {}", e))?;
+        let (mut file, staging_exe) = create_update_staging_file(&download_url)?;
         file.write_all(&bytes).map_err(|e| e.to_string())?;
         drop(file);
         return install_and_restart(staging_exe.to_string_lossy().to_string()).await;
@@ -204,53 +238,4 @@ pub async fn download_and_install_update(download_url: String) -> Result<(), Str
         let _ = download_url;
         Err("Self-updating executable is only supported on Windows and Linux desktop.".into())
     }
-}
-
-fn create_update_staging_file() -> Result<(File, PathBuf), String> {
-    let temp_dir = env::temp_dir().join("cathet");
-    let _ = std::fs::create_dir_all(&temp_dir);
-    let ext = if cfg!(target_os = "android") {
-        "cathet_update.apk"
-    } else if cfg!(target_os = "linux") {
-        "cathet_update.AppImage"
-    } else {
-        "cathet_update.exe"
-    };
-    let temp_file = temp_dir.join(ext);
-    let _ = std::fs::remove_file(&temp_file);
-    let file = File::create(&temp_file).map_err(|e| format!("Failed to create update file: {}", e))?;
-    Ok((file, temp_file))
-}
-
-fn find_matching_asset(assets: &[GithubAsset]) -> Option<&GithubAsset> {
-    #[cfg(target_os = "android")]
-    {
-        assets.iter().find(|a| a.name.to_lowercase().ends_with(".apk"))
-    }
-    #[cfg(not(target_os = "android"))]
-    {
-        let target_ext = if cfg!(target_os = "linux") { ".appimage" } else { ".exe" };
-        let is_arm64 = cfg!(target_arch = "aarch64");
-        for asset in assets {
-            let name = asset.name.to_lowercase();
-            if !name.ends_with(target_ext) {
-                continue;
-            }
-            if is_arm64 && (name.contains("arm64") || name.contains("aarch64")) {
-                return Some(asset);
-            } else if !is_arm64 && (name.contains("x64") || name.contains("x86_64") || !name.contains("arm")) {
-                return Some(asset);
-            }
-        }
-        assets.iter().find(|a| a.name.to_lowercase().ends_with(target_ext))
-    }
-}
-
-fn is_newer_version(latest: &str, current: &str) -> bool {
-    let parse = |v: &str| -> Vec<u32> {
-        v.split('.')
-            .filter_map(|s| s.chars().take_while(|c| c.is_ascii_digit()).collect::<String>().parse().ok())
-            .collect()
-    };
-    parse(latest) > parse(current)
 }
