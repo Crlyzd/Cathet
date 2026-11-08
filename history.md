@@ -163,6 +163,22 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-08: Unified `D:\BuildTools` Hub, Multi-Project Script Upgrades & 100+ GB Drive Reclamation
+- **Summary**: Established a centralized, cross-project development and build tools hub in `D:\BuildTools\` to prevent Drive `C:` depletion and allow single-folder lifecycle cleanup.
+  - **Environment & Hub Layout**: Created `D:\BuildTools\` for `Android\sdk`, `Android\.gradle`, `Rust\.cargo`, `Rust\.rustup`, `Rust\sccache`, `Linux-WSL`, `Java`, and `tools`. Configured persistent Windows User environment variables (`ANDROID_HOME`, `ANDROID_SDK_ROOT`, `GRADLE_USER_HOME`, `CARGO_HOME`, `RUSTUP_HOME`, `SCCACHE_DIR`) and appended `D:\BuildTools\Rust\.cargo\bin` to User `PATH`.
+  - **Shared Binary Compiler Cache**: Mirrored existing Rust 1.97.1 toolchains to `D:\BuildTools\Rust\`, installed precompiled `sccache v0.10.0`, and configured `D:\BuildTools\Rust\.cargo\config.toml` with `SCCACHE_DIR = "D:\BuildTools\Rust\sccache"` capped at 10 GiB. Verified with `cargo check` in Cathet (0 compiler errors).
+  - **Eager WSL Linux Sandbox**: Downloaded and registered `Ubuntu-22.04` into `D:\BuildTools\Linux-WSL\ext4.vhdx` under the dedicated name `Shared-Linux-Build`. Bootstrapped WebKitGTK 4.1, GTK 3, SSL, Node.js 20 LTS, Rust toolchain, and Tauri CLI inside the container. Added self-healing health check to `build.ps1` to detect and repair ghost distro registrations.
+  - **Direct Script Upgrades**: Updated `D:\Cathet\build.ps1`, `D:\Bukaake\Bukaake\run.bat`, `D:\Bukaake\Bukaake\run.ps1`, `D:\ALitken\Alitken-GUI\build.ps1`, and `D:\IK\Inventory_Kamera\run_rust.bat` with direct fallbacks to `D:\BuildTools\`. Created standalone 1-click teardown utility `D:\BuildTools\tools\purge-buildtools.ps1` and integrated Option `[13]` (`-PurgeBuildTools`) in Cathet's menu.
+  - **Space Reclamation**: Purged legacy Drive `C:` caches (`.gradle`, `.cargo\registry`, `.rustup`) freeing +9.29 GB on `C:` (from 13.36 GB to 22.65 GB free). Cleaned 129 GB of stale `target\` directories across Cathet, Bukaake, and Alitken-GUI, freeing +91.67 GB on `D:` (from 13.26 GB to 104.93 GB free).
+- **Affected Files**:
+  - `build.ps1` (~758 lines): Injected `BuildTools` environment fallbacks, wired WSL to `Shared-Linux-Build` at `D:\BuildTools\Linux-WSL`, wired Android SDK to `D:\BuildTools\Android\sdk`, and added `Invoke-PurgeBuildTools` (menu option `[13]`).
+  - `D:\BuildTools\Rust\.cargo\config.toml`: Created global Cargo configuration with `sccache` and 10 GB cache cap.
+  - `D:\BuildTools\tools\purge-buildtools.ps1`: Created 1-click standalone teardown script.
+  - `D:\Bukaake\Bukaake\run.bat`, `run.ps1`: Injected direct `D:\BuildTools` environment fallbacks.
+  - `D:\ALitken\Alitken-GUI\build.ps1`: Injected direct `D:\BuildTools` environment fallbacks.
+  - `D:\IK\Inventory_Kamera\run_rust.bat`: Injected direct `D:\BuildTools` environment fallbacks.
+  - `history.md`: Updated institutional memory.
+
 ### 2026-11-07: Hardened WSL Linux AppImage Build Pipeline with Base64 Script Bridge & Output Stream Isolation (`build.ps1`)
 - **Summary**: Resolved bash syntax crashes (`syntax error near unexpected token '>'`) and command-line length overflow (`The filename or extension is too long`) during WSL Linux AppImage compilation.
   - Implemented `Invoke-WslBashScript` in `build.ps1` with UTF-8 Base64 script encoding and `| Out-Host` stream isolation, preventing Windows CRT command-line quote stripping and eliminating stdout return pollution into PowerShell's pipeline.

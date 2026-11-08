@@ -6,10 +6,15 @@ param(
     [switch]$Dev, [switch]$Live, [switch]$Check, [switch]$Build, [switch]$BuildX64, [switch]$BuildArm64,
     [switch]$BuildAppImage, [switch]$BuildRpm, [switch]$BuildLinux,
     [switch]$All, [switch]$Run, [switch]$AndroidDev, [switch]$AndroidBuild, [switch]$AndroidPerf, [switch]$Patch, [switch]$Minor,
-    [switch]$Major, [string]$TargetVersion, [string]$OutputDir = "release", [int]$Port = 0, [switch]$NoPause, [switch]$Help
+    [switch]$Major, [string]$TargetVersion, [string]$OutputDir = "release", [int]$Port = 0, [switch]$PurgeBuildTools, [switch]$NoPause, [switch]$Help
 )
 
 $ErrorActionPreference = "Stop"; $ProjectRoot = $PSScriptRoot; Set-Location $ProjectRoot
+if (-not $env:CARGO_HOME) { $env:CARGO_HOME = "D:\BuildTools\Rust\.cargo" }
+if (-not $env:RUSTUP_HOME) { $env:RUSTUP_HOME = "D:\BuildTools\Rust\.rustup" }
+if (-not $env:SCCACHE_DIR) { $env:SCCACHE_DIR = "D:\BuildTools\Rust\sccache" }
+if (-not $env:GRADLE_USER_HOME) { $env:GRADLE_USER_HOME = "D:\BuildTools\Android\.gradle" }
+if ($env:PATH -notmatch "BuildTools") { $env:PATH = "D:\BuildTools\Rust\.cargo\bin;$env:PATH" }
 $ReleaseDir = Join-Path $ProjectRoot $OutputDir
 
 function Invoke-Exit([int]$code = 0) {
@@ -141,19 +146,28 @@ function Initialize-LinuxWslEnvironment {
     if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
         throw "WSL (wsl.exe) is not available on this Windows machine. Enable WSL2 to build Linux bundles from Windows."
     }
+    $targetDistro = "Shared-Linux-Build"
+    $wslDir = "D:\BuildTools\Linux-WSL"
     $rawList = (wsl.exe --list --quiet 2>$null) -join "`n"
     $distros = @($rawList -replace "`0", "" -split "\r?\n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch "^docker-desktop" })
-    $distro = if ($distros.Count -gt 0) { $distros[0] } else { $null }
 
-    if (-not $distro) {
-        Write-Host "`n[Linux WSL Builder] No WSL Linux distribution is installed yet." -ForegroundColor Yellow
-        $c = (Read-Host "Automatically install Ubuntu-22.04 in WSL (~450 MB) to compile Linux AppImage? [Y/n] (Default: Y)").Trim()
-        if ($c -in "n", "N") { throw "A WSL Linux distribution is required to compile Linux AppImage from Windows." }
-        Write-Host "`n>>> Downloading & registering Ubuntu-22.04 in WSL2 (Headless)..." -ForegroundColor Cyan
-        wsl.exe --install -d Ubuntu-22.04 --no-launch
-        if ($LASTEXITCODE -ne 0) { throw "Failed to install Ubuntu-22.04 via WSL." }
-        $distro = "Ubuntu-22.04"
+    $distroExists = ($distros -contains $targetDistro)
+    if ($distroExists) {
+        cmd.exe /c "wsl.exe -d $targetDistro -- exec true 2>nul" | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "`n[ALERT] WSL distro '$targetDistro' is registered but corrupted or missing VHDX. Auto-repairing..." -ForegroundColor Yellow
+            wsl.exe --unregister $targetDistro 2>$null | Out-Null
+            $distroExists = $false
+        }
     }
+
+    if (-not $distroExists) {
+        if (-not (Test-Path $wslDir)) { New-Item -ItemType Directory -Path $wslDir -Force | Out-Null }
+        Write-Host "`n>>> Downloading & registering Ubuntu-22.04 into: $wslDir (Headless)..." -ForegroundColor Cyan
+        wsl.exe --install Ubuntu-22.04 --name $targetDistro --location $wslDir --no-launch
+        if ($LASTEXITCODE -ne 0) { throw "Failed to install Ubuntu-22.04 via WSL into $wslDir." }
+    }
+    $distro = $targetDistro
 
     Write-Host ">>> Verifying Linux build toolchain inside WSL ($distro)..." -ForegroundColor Cyan
     $setupScript = @'
@@ -336,7 +350,7 @@ function Initialize-AndroidEnvironment {
 }
 
 function Install-MinimalAndroidSdk {
-    $sdk = Join-Path $env:LOCALAPPDATA "Android\Sdk"; $latestDir = Join-Path $sdk "cmdline-tools\latest"
+    $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { "D:\BuildTools\Android\sdk" }; $latestDir = Join-Path $sdk "cmdline-tools\latest"
     Write-Host "`n>>> Setting up Minimal Headless Android SDK (~1.2 GB) in: $sdk" -ForegroundColor Cyan
     $tZip = Join-Path $env:TEMP "cathet-cmdline-tools.zip"; $tExt = Join-Path $env:TEMP "cathet-cmdline-tools-ext"
     Remove-Item $tZip, $tExt -Recurse -Force -ErrorAction SilentlyContinue
@@ -625,13 +639,38 @@ function Invoke-AndroidPerf {
     }
 }
 
+function Invoke-PurgeBuildTools {
+    Write-Host "`n============================================================" -ForegroundColor Yellow
+    Write-Host "  PURGE BUILDTOOLS HUB & WSL ENVIRONMENT" -ForegroundColor BrightWhite
+    Write-Host "============================================================" -ForegroundColor Yellow
+    $confirm = (Read-Host "Are you sure you want to unregister Shared-Linux-Build and wipe D:\BuildTools? [y/N]").Trim()
+    if ($confirm -notin "y", "Y") { Write-Host "Purge canceled." -ForegroundColor Gray; return }
+
+    Write-Host "`n>>> Terminating and unregistering Shared-Linux-Build WSL container..." -ForegroundColor Cyan
+    wsl.exe --terminate Shared-Linux-Build 2>$null | Out-Null
+    wsl.exe --unregister Shared-Linux-Build 2>$null | Out-Null
+
+    Write-Host ">>> Stopping running background compiler and Gradle daemons..." -ForegroundColor Cyan
+    if (Test-Path "D:\BuildTools\Rust\.cargo\bin\sccache.exe") {
+        & "D:\BuildTools\Rust\.cargo\bin\sccache.exe" --stop-server 2>$null | Out-Null
+    }
+    cmd.exe /c "taskkill /F /IM java.exe 2>nul" | Out-Null
+
+    Write-Host ">>> Purging D:\BuildTools directory..." -ForegroundColor Yellow
+    if (Test-Path "D:\BuildTools") {
+        Remove-Item -Path "D:\BuildTools" -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    Write-Host "Clean teardown complete! All space reclaimed." -ForegroundColor Green
+}
+
 function Show-InteractiveMenu {
     $ver = Get-AppVersion; $arch = Get-NativeArch
-    Write-Host "`nSelect an action:`n  [1] Live Development (Desktop Hot Reload) [Default]`n  [2] Run Verification Checks (Vite + Cargo)`n  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe`n  [4] Build & Launch Native ($arch) Fast Executable Immediately`n  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe`n  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe`n  [7] Build All Windows Targets Release -> x64 and ARM64`n  [8] Android Live Dev (Hot Reload - USB Device / Emulator)`n  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk`n  [10] Android Performance Monitor (Live RAM / CPU / 120Hz Jank)`n  [11] Bump Project Version (Current: v$ver)`n  [12] Build Universal Linux AppImage -> $OutputDir/cathet-v$ver-x86_64.AppImage`n  [Q] Exit" -ForegroundColor Yellow
-    $c = (Read-Host "Enter option [1-12, Q] (Default: 1)").Trim(); return $(if ($c) { $c } else { "1" })
+    Write-Host "`nSelect an action:`n  [1] Live Development (Desktop Hot Reload) [Default]`n  [2] Run Verification Checks (Vite + Cargo)`n  [3] Build Native ($arch) Fast Executable -> $OutputDir/cathet-v$ver-$arch-fast.exe`n  [4] Build & Launch Native ($arch) Fast Executable Immediately`n  [5] Build Windows x64 Release (Smallest) -> $OutputDir/cathet-v$ver-x64.exe`n  [6] Build Windows ARM64 Release (Smallest) -> $OutputDir/cathet-v$ver-arm64.exe`n  [7] Build All Windows Targets Release -> x64 and ARM64`n  [8] Android Live Dev (Hot Reload - USB Device / Emulator)`n  [9] Build Android Release APK -> $OutputDir/cathet-v$ver-android.apk`n  [10] Android Performance Monitor (Live RAM / CPU / 120Hz Jank)`n  [11] Bump Project Version (Current: v$ver)`n  [12] Build Universal Linux AppImage -> $OutputDir/cathet-v$ver-x86_64.AppImage`n  [13] Purge BuildTools Hub & WSL (Free up D:\ space)`n  [Q] Exit" -ForegroundColor Yellow
+    $c = (Read-Host "Enter option [1-13, Q] (Default: 1)").Trim(); return $(if ($c) { $c } else { "1" })
 }
 
 function Invoke-Pipeline([hashtable]$opts) {
+    if ($opts.PurgeBuildTools) { Invoke-PurgeBuildTools; return }
     if ($opts.Check) { Invoke-CheckMode; return }
     if ($opts.AndroidDev) { Invoke-AndroidDev; return }
     if ($opts.AndroidBuild) { Invoke-AndroidBuild; return }
@@ -699,15 +738,16 @@ try {
                     else { $runOpts.Patch = $true }
                 }
                 "12" { $runOpts.BuildAppImage = $true }
+                "13" { $runOpts.PurgeBuildTools = $true }
                 { $_ -in "q", "Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
-                default { Write-Host "Invalid option '$_'. Choose 1-12 or Q." -ForegroundColor Red; continue }
+                default { Write-Host "Invalid option '$_'. Choose 1-13 or Q." -ForegroundColor Red; continue }
             }
             Invoke-Pipeline $runOpts
             $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim(); if ($ans -in "q", "Q") { Invoke-Exit 0 }
         }
     }
     else {
-        Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; BuildAppImage = $BuildAppImage; BuildRpm = $BuildRpm; BuildLinux = $BuildLinux; All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; AndroidPerf = $AndroidPerf; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port }
+        Invoke-Pipeline @{ Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64; BuildAppImage = $BuildAppImage; BuildRpm = $BuildRpm; BuildLinux = $BuildLinux; All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; AndroidPerf = $AndroidPerf; Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion; Port = $Port; PurgeBuildTools = $PurgeBuildTools }
         Invoke-Exit 0
     }
 }
