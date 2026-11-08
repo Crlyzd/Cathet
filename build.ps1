@@ -10,11 +10,15 @@ param(
 )
 
 $ErrorActionPreference = "Stop"; $ProjectRoot = $PSScriptRoot; Set-Location $ProjectRoot
-if (-not $env:CARGO_HOME) { $env:CARGO_HOME = "D:\BuildTools\Rust\.cargo" }
-if (-not $env:RUSTUP_HOME) { $env:RUSTUP_HOME = "D:\BuildTools\Rust\.rustup" }
-if (-not $env:SCCACHE_DIR) { $env:SCCACHE_DIR = "D:\BuildTools\Rust\sccache" }
-if (-not $env:GRADLE_USER_HOME) { $env:GRADLE_USER_HOME = "D:\BuildTools\Android\.gradle" }
-if ($env:PATH -notmatch "BuildTools") { $env:PATH = "D:\BuildTools\Rust\.cargo\bin;$env:PATH" }
+if (Test-Path "D:\BuildTools\Rust\.cargo") {
+    if (-not $env:CARGO_HOME) { $env:CARGO_HOME = "D:\BuildTools\Rust\.cargo" }
+    if (-not $env:RUSTUP_HOME) { $env:RUSTUP_HOME = "D:\BuildTools\Rust\.rustup" }
+    if (-not $env:SCCACHE_DIR) { $env:SCCACHE_DIR = "D:\BuildTools\Rust\sccache" }
+    if ($env:PATH -notmatch "BuildTools") { $env:PATH = "D:\BuildTools\Rust\.cargo\bin;$env:PATH" }
+}
+if (Test-Path "D:\BuildTools\Android\.gradle") {
+    if (-not $env:GRADLE_USER_HOME) { $env:GRADLE_USER_HOME = "D:\BuildTools\Android\.gradle" }
+}
 $ReleaseDir = Join-Path $ProjectRoot $OutputDir
 
 function Invoke-Exit([int]$code = 0) {
@@ -146,10 +150,12 @@ function Initialize-LinuxWslEnvironment {
     if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
         throw "WSL (wsl.exe) is not available on this Windows machine. Enable WSL2 to build Linux bundles from Windows."
     }
-    $targetDistro = "Shared-Linux-Build"
-    $wslDir = "D:\BuildTools\Linux-WSL"
     $rawList = (wsl.exe --list --quiet 2>$null) -join "`n"
     $distros = @($rawList -replace "`0", "" -split "\r?\n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch "^docker-desktop" })
+
+    $hasBuildTools = Test-Path "D:\BuildTools"
+    $targetDistro = if ($hasBuildTools) { "Shared-Linux-Build" } elseif ($distros.Count -gt 0) { $distros[0] } else { "Ubuntu-22.04" }
+    $wslDir = if ($hasBuildTools) { "D:\BuildTools\Linux-WSL" } else { $null }
 
     $distroExists = ($distros -contains $targetDistro)
     if ($distroExists) {
@@ -162,10 +168,16 @@ function Initialize-LinuxWslEnvironment {
     }
 
     if (-not $distroExists) {
-        if (-not (Test-Path $wslDir)) { New-Item -ItemType Directory -Path $wslDir -Force | Out-Null }
-        Write-Host "`n>>> Downloading & registering Ubuntu-22.04 into: $wslDir (Headless)..." -ForegroundColor Cyan
-        wsl.exe --install Ubuntu-22.04 --name $targetDistro --location $wslDir --no-launch
-        if ($LASTEXITCODE -ne 0) { throw "Failed to install Ubuntu-22.04 via WSL into $wslDir." }
+        if ($wslDir) {
+            if (-not (Test-Path $wslDir)) { New-Item -ItemType Directory -Path $wslDir -Force | Out-Null }
+            Write-Host "`n>>> Downloading & registering Ubuntu-22.04 into: $wslDir (Headless)..." -ForegroundColor Cyan
+            wsl.exe --install Ubuntu-22.04 --name $targetDistro --location $wslDir --no-launch
+            if ($LASTEXITCODE -ne 0) { throw "Failed to install Ubuntu-22.04 via WSL into $wslDir." }
+        } else {
+            Write-Host "`n>>> Downloading & registering Ubuntu-22.04 in WSL2 (Headless)..." -ForegroundColor Cyan
+            wsl.exe --install -d Ubuntu-22.04 --no-launch
+            if ($LASTEXITCODE -ne 0) { throw "Failed to install Ubuntu-22.04 via WSL." }
+        }
     }
     $distro = $targetDistro
 
@@ -293,11 +305,13 @@ function Initialize-AndroidEnvironment {
     $sdk = if ($env:ANDROID_HOME -and (Test-Path (Join-Path $env:ANDROID_HOME "platform-tools\adb.exe"))) { $env:ANDROID_HOME }
     elseif ($env:ANDROID_SDK_ROOT -and (Test-Path (Join-Path $env:ANDROID_SDK_ROOT "platform-tools\adb.exe"))) { $env:ANDROID_SDK_ROOT }
     elseif (Test-Path "D:\BuildTools\Android\sdk\platform-tools\adb.exe") { "D:\BuildTools\Android\sdk" }
+    elseif (Test-Path "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe") { "$env:LOCALAPPDATA\Android\Sdk" }
     else { $null }
 
     if (-not $sdk) {
-        Write-Host "`n[Android SDK] Android SDK is not yet installed in D:\BuildTools\Android\sdk." -ForegroundColor Yellow
-        $c = (Read-Host "Install minimal headless Android SDK into D:\BuildTools (~1.2 GB)? [Y/n] (Default: Y)").Trim()
+        $defaultTarget = if (Test-Path "D:\BuildTools") { "D:\BuildTools\Android\sdk" } else { Join-Path $env:LOCALAPPDATA "Android\Sdk" }
+        Write-Host "`n[Android SDK] Android SDK is not yet installed." -ForegroundColor Yellow
+        $c = (Read-Host "Install minimal headless Android SDK into $defaultTarget (~1.2 GB)? [Y/n] (Default: Y)").Trim()
         if ($c -eq "n" -or $c -eq "N") { throw "Android SDK required. Run again and accept [Y] or install manually." }
         $sdk = Install-MinimalAndroidSdk
     }
@@ -350,7 +364,7 @@ function Initialize-AndroidEnvironment {
 }
 
 function Install-MinimalAndroidSdk {
-    $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { "D:\BuildTools\Android\sdk" }; $latestDir = Join-Path $sdk "cmdline-tools\latest"
+    $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } elseif (Test-Path "D:\BuildTools") { "D:\BuildTools\Android\sdk" } else { Join-Path $env:LOCALAPPDATA "Android\Sdk" }; $latestDir = Join-Path $sdk "cmdline-tools\latest"
     Write-Host "`n>>> Setting up Minimal Headless Android SDK (~1.2 GB) in: $sdk" -ForegroundColor Cyan
     $tZip = Join-Path $env:TEMP "cathet-cmdline-tools.zip"; $tExt = Join-Path $env:TEMP "cathet-cmdline-tools-ext"
     Remove-Item $tZip, $tExt -Recurse -Force -ErrorAction SilentlyContinue
