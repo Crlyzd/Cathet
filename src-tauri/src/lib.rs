@@ -17,15 +17,16 @@ use commands::notes::{
     rename_note, save_note, set_note_hidden, set_note_pinned,
 };
 use commands::memory::trim_memory;
+use commands::linux_desktop::get_linux_desktop_info;
 use commands::updater::{
     check_for_updates, download_and_install_update, download_update_payload, install_and_restart,
 };
 #[cfg(desktop)]
 use commands::vibrancy::apply_frosted_glass;
 use commands::window::{
-    focus_main_window, get_always_on_top, get_linux_desktop_info, open_new_instance,
-    open_settings_window, set_always_on_top, set_refresh_rate, set_window_min_size,
-    sync_window_theme, toggle_always_on_top,
+    focus_main_window, get_always_on_top, open_new_instance, open_settings_window,
+    set_always_on_top, set_refresh_rate, set_window_min_size, sync_window_theme,
+    toggle_always_on_top,
 };
 use state::AppState;
 #[cfg(desktop)]
