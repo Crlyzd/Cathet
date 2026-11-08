@@ -1471,3 +1471,39 @@ px tsc --noEmit and cargo check.
   - `build.ps1`: Added `-BuildAppImage`, `-BuildRpm`, `-BuildLinux`, and menu option `[12]`.
   - `.gitignore`: Ignored `src-tauri/gen/schemas/` to keep working trees clean.
   - `history.md`: Appended changelog entry per Rule 13.
+
+
+### 2026-11-09: Android Dual-Pane Selection Stabilization, Dynamic 2-Line Edge Pan, Press-and-Hold Snap & Dock Find Ribbon
+
+- **Summary**:
+  1. **Dual-Pane Text Selection Boundary & Autoscroll Stabilization (`selectionScrollGuard.ts`, `DualPaneView.ts`, `mobile.css`)**:
+     - Resolved critical Android issue where dragging text selection past the dual-pane divider line caused the container to violently snap to `scrollTop = 0` and highlight the entire note down from line 1.
+     - Created `src-ui/src/utils/selectionScrollGuard.ts` (164 lines) to intercept boundary selection autoscroll collapses ($\Delta \text{scrollTop} > 25\text{px}$) and replace them with a font-aware continuous edge auto-panning RAF ticker ($3\text{px}-8\text{px}$ ramp, strictly capped at $11\text{px}$/frame outside container).
+     - Integrated dynamic 2-line visual preview clearance ($\max(40\text{px}, \text{lineHeight} \times 2)$) based on computed line height and pinch-zoom level ($50\% - 300\%$), guaranteeing that at least two lines of readable context always remain visible ahead of the user's thumb and the Android floating text selection toolbar.
+     - Emitted a crisp micro-vibration tick (`10ms`) upon entering the auto-panning edge zone for physical confirmation.
+     - Applied scoped inactive pane selection isolation in `mobile.css` (`body.is-mobile .dualpane-pane:not(.active-pane) .editor-content { user-select: none !important; }`), completely preventing cross-pane DOM selection leaks.
+  2. **Unified Cross-Platform Sync Button: Click = Off/Pink, Press-and-Hold = Blue Galaxy (`DualPaneSplitter.ts`, `MobileActionBar.ts`, `main.ts`)**:
+     - Upgraded sync button interactions on both Desktop Splitter Badge (`DualPaneSplitter.ts`) and Mobile Dock (`MobileActionBar.ts`) using unified `bindLongPress` (`touchGesture.ts`).
+     - **Click / Tap**: Strictly cycles between **"paused" (Off)** and **"locked" (Pink Standard Lock)**, eliminating accidental cycling into Snap mode.
+     - **Press & Hold (400ms) / Desktop Right-Click**: Directly toggles **"snap" (Blue Galaxy 1:1 Snap Scroll)** with a $30\text{ms}$ haptic pulse / visual spring pop.
+     - Full bidirectional sync: updating Snap mode immediately syncs with the `Snap Scroll` toggle switch in Mobile Settings and broadcasts `cathet:snap-scroll-change` over Tauri IPC to Desktop Settings.
+  3. **In-Document Floating Search Ribbon (`MobileSearchBar.ts`, `MobileActionBar.ts`, `shortcuts.ts`, `mobile.css`)**:
+     - Created `MobileSearchBarComponent` (`src-ui/src/components/MobileSearchBar.ts`, 126 lines) mounting a floating frosted glass search ribbon above the dock.
+     - Features debounced live match counting (e.g. `1/7`), previous (`<`) and next (`>`) navigation chevrons, smooth auto-scroll to matches, and close button. Works seamlessly across Edit and Markdown Preview modes and active dual-pane editor.
+     - Added `#mobile-btn-search` to the dock action bar, and mapped `Ctrl+F` in `shortcuts.ts` and `main.ts`.
+  4. **Strict Modularity & Verification**:
+     - All 9 modified and created source files strictly comply with the <250 lines Anti-Monolith ceiling (`selectionScrollGuard.ts` = 164, `MobileSearchBar.ts` = 126, `MobileActionBar.ts` = 248, `DualPaneView.ts` = 245, `DualPaneSplitter.ts` = 176, `syncScrollController.ts` = 156, `shortcuts.ts` = 105, `mobileCoordinator.ts` = 155, `monochromeIcons.ts` = 237).
+     - Verified cleanly with `npx tsc --noEmit` (0 errors), `cargo check` (0 errors), and `npx vite build` (built in 1.33s).
+- **Files Modified / Created**:
+  - `src-ui/src/utils/selectionScrollGuard.ts`: Created selection boundary autoscroll stabilization guard (164 lines).
+  - `src-ui/src/components/MobileSearchBar.ts`: Created in-document floating search ribbon component (126 lines).
+  - `src-ui/src/components/MobileActionBar.ts`: Added dock search button and tap vs. tap-and-hold sync button (248 lines).
+  - `src-ui/src/components/dualpane/DualPaneSplitter.ts`: Added click/tap vs. press-and-hold sync mode & touch shield (176 lines).
+  - `src-ui/src/components/dualpane/DualPaneView.ts`: Integrated selection scroll guard & streamlined to under 250 lines (245 lines).
+  - `src-ui/src/utils/syncScrollController.ts`: Added selection-aware scroll suppression (156 lines).
+  - `src-ui/src/utils/shortcuts.ts`: Added `Ctrl+F` in-document find mapping (105 lines).
+  - `src-ui/src/utils/monochromeIcons.ts`: Added search and chevron icons (237 lines).
+  - `src-ui/src/services/mobileCoordinator.ts`: Added search ribbon toggling (155 lines).
+  - `src-ui/src/main.ts`: Wired dual-pane snap sync, active editor provider, and `Ctrl+F` shortcut (568 lines).
+  - `src-ui/styles/mobile.css`: Added search ribbon styles and inactive pane selection isolation.
+  - `history.md`: Appended changelog entry per Rule 13.
