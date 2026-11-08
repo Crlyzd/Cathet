@@ -18,6 +18,7 @@ export interface MobileCoordinatorActions {
   onFormat?: (action: FormatAction) => void;
   onToggleSync?: (mode: MobileSyncMode) => void;
   onSnapScrollChanged?: (enabled: boolean) => void;
+  getActiveEditor?: () => any;
 }
 
 export class MobileCoordinator {
@@ -45,6 +46,7 @@ export class MobileCoordinator {
         onOpenSettings: () => this.openSettings(),
         onFormat: (action) => this.actions.onFormat?.(action),
         onToggleSync: (mode) => this.actions.onToggleSync?.(mode),
+        getActiveEditor: () => this.actions.getActiveEditor?.(),
       });
 
       this.keyboardTracker = new KeyboardTracker();
@@ -130,6 +132,10 @@ export class MobileCoordinator {
 
   setSyncState(isLocked: boolean, snapScroll?: boolean): void {
     this.actionBar?.setSyncState(isLocked, snapScroll);
+  }
+
+  toggleSearchBar(): void {
+    this.actionBar?.toggleSearchMode();
   }
 
   isMobile(): boolean {

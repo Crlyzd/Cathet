@@ -15,6 +15,7 @@ export interface ShortcutHandlers {
   onSettings?: () => void;
   onToggleWordWrap?: () => void;
   onSearchWeb?: () => void;
+  onFind?: () => void;
   onToggleDualPane?: () => void;
   onFormat?: (action: FormatAction) => void;
 }
@@ -89,6 +90,7 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
       case "N": e.preventDefault(); handlers.onNewWindow(); break;
       case "T": e.preventDefault(); handlers.onToggleAlwaysOnTop(); break;
       case "M": e.preventDefault(); handlers.onToggleMarkdown(); break;
+      case "F": e.preventDefault(); handlers.onFind?.(); break;
       case "E": e.preventDefault(); handlers.onSearchWeb?.(); break;
       case "A": e.preventDefault(); handlers.onSelectAll(); break;
       case "B": e.preventDefault(); handlers.onFormat ? handlers.onFormat("bold") : handlers.onToggleBold(); break;
