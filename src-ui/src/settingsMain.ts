@@ -11,6 +11,7 @@ import { PreviewService } from "./services/previewService";
 import { DualPaneService } from "./services/dualPaneService";
 import { I18nService } from "./services/i18nService";
 import { PlatformService } from "./services/platformService";
+import { getLinuxBackdropPreference, setLinuxBackdropPreference } from "./services/kdePortalService";
 import { APP_VERSION } from "./version";
 
 class SettingsApp {
@@ -50,6 +51,7 @@ class SettingsApp {
         updateAvailable: !!updateInfo?.update_available,
         latestVersion: updateInfo?.latest_version,
         isStorePackage: !!updateInfo?.is_store_package,
+        linuxBackdrop: getLinuxBackdropPreference(),
       },
       {
         onThemeChange: (theme) => this.handleThemeChange(theme),
@@ -58,6 +60,17 @@ class SettingsApp {
         onAlwaysOnTopChange: (enabled) => this.handleAlwaysOnTopChange(enabled),
         onAlwaysPreviewChange: (enabled) => this.handleAlwaysPreviewChange(enabled),
         onSnapScrollChange: (enabled) => this.handleSnapScrollChange(enabled),
+        onLinuxBackdropChange: async (mode) => {
+          await setLinuxBackdropPreference(mode);
+          this.tabsComponent.updateState({ linuxBackdrop: mode });
+          if (mode === "blur") {
+            await showGlassDialog({
+              title: "Translucent Backdrop",
+              message: "On Linux (KDE Plasma / Wayland), translucent glass requires a KWin Window Rule ('Force Blur Behind: Enabled') in System Settings to blur your wallpaper.",
+              type: "info",
+            });
+          }
+        },
         onCheckUpdates: () => this.handleCheckUpdates(true),
         onStartDownload: () => this.handleStartDownload(),
         onInstallAndRestart: () => this.handleInstallAndRestart(),

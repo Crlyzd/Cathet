@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { emit, listen } from "@tauri-apps/api/event";
 
 type ResizeDirection =
   | "East"
@@ -17,6 +18,29 @@ export interface LinuxDesktopInfo {
   accentColor: string | null;
 }
 
+export type LinuxBackdropMode = "solid" | "blur";
+const STORAGE_KEY_BACKDROP = "cathet_linux_backdrop";
+
+export function getLinuxBackdropPreference(): LinuxBackdropMode {
+  const saved = localStorage.getItem(STORAGE_KEY_BACKDROP);
+  return saved === "blur" ? "blur" : "solid";
+}
+
+export function applyLinuxBackdrop(mode: LinuxBackdropMode): void {
+  document.body.classList.remove("de-blur", "de-solid");
+  document.body.classList.add(mode === "blur" ? "de-blur" : "de-solid");
+}
+
+export async function setLinuxBackdropPreference(mode: LinuxBackdropMode): Promise<void> {
+  localStorage.setItem(STORAGE_KEY_BACKDROP, mode);
+  applyLinuxBackdrop(mode);
+  try {
+    await emit("cathet:linux-backdrop-change", mode);
+  } catch (err) {
+    console.warn("Failed to emit backdrop change:", err);
+  }
+}
+
 const RESIZE_EDGES: Array<{ cls: string; dir: ResizeDirection }> = [
   { cls: "resize-top", dir: "North" },
   { cls: "resize-bottom", dir: "South" },
@@ -32,7 +56,7 @@ let initialized = false;
 
 /**
  * Initializes Linux desktop environment integration:
- * 1. Detects KDE Plasma / Hyprland blur support vs. GNOME / Ubuntu solid backdrop.
+ * 1. Defaults to clean Solid Slate backdrop; respects user-toggled translucent glass.
  * 2. Queries KDE Plasma / XDG Desktop Portal custom accent color and applies CSS tokens.
  * 3. Mounts 4px invisible edge-resize handles on the main frameless window.
  */
@@ -41,21 +65,21 @@ export async function initLinuxDesktop(): Promise<void> {
   initialized = true;
 
   mountEdgeResizeHandles();
+  applyLinuxBackdrop(getLinuxBackdropPreference());
+
+  listen<LinuxBackdropMode>("cathet:linux-backdrop-change", (event) => {
+    applyLinuxBackdrop(event.payload);
+  }).catch(console.error);
 
   try {
     const info = await invoke<LinuxDesktopInfo>("get_linux_desktop_info");
     if (!info || !info.isLinux) return;
-
-    document.body.classList.remove("de-blur", "de-solid");
-    document.body.classList.add(info.supportsBlur ? "de-blur" : "de-solid");
 
     if (info.accentColor) {
       document.documentElement.style.setProperty("--col-accent", info.accentColor);
       document.documentElement.style.setProperty("--col-quote-border", info.accentColor);
     }
   } catch (err) {
-    // Default to de-blur (KDE Plasma translucent frosted fallback) if IPC fails
-    document.body.classList.add("de-blur");
     console.warn("Failed to query Linux desktop environment info:", err);
   }
 }

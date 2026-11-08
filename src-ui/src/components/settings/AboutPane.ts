@@ -14,11 +14,19 @@ export class AboutPaneComponent {
   }
 
   public renderHtml(): string {
-    const isMobile = PlatformService.getInstance().isMobile();
+    const platform = PlatformService.getInstance();
+    const isMobile = platform.isMobile();
+    const isLinux = platform.isLinux();
     const appDesc = isMobile
       ? "Lightweight, distraction-free text & markdown editor crafted for speed and elegance."
+      : isLinux
+      ? "Lightweight, distraction-free text & markdown editor crafted for Linux desktop."
       : "Lightweight, distraction-free text & markdown editor crafted with native Windows frosted glass.";
-    const webviewStack = isMobile ? "Android WebView & TypeScript" : "Webview2 & TypeScript";
+    const webviewStack = isMobile
+      ? "Android WebView & TypeScript"
+      : isLinux
+      ? "WebKitGTK & TypeScript"
+      : "Webview2 & TypeScript";
 
     return `
       <div class="settings-card">

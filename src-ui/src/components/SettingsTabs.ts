@@ -23,6 +23,7 @@ export interface SettingsInitialState {
   isAlwaysOnTop: boolean;
   alwaysPreview: boolean;
   snapScroll: boolean;
+  linuxBackdrop?: "solid" | "blur";
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;

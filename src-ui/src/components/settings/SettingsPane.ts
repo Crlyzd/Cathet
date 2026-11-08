@@ -14,6 +14,7 @@ export interface SettingsPaneCallbacks {
   onAlwaysOnTopChange: (enabled: boolean) => void;
   onAlwaysPreviewChange: (enabled: boolean) => void;
   onSnapScrollChange: (enabled: boolean) => void;
+  onLinuxBackdropChange?: (mode: "solid" | "blur") => void;
   onConfigureDefaultApp: () => Promise<void>;
   onUnregisterDefaultApp: () => Promise<void>;
   onCheckUpdates: () => Promise<void>;
@@ -28,6 +29,7 @@ export interface SettingsPaneState {
   isAlwaysOnTop: boolean;
   alwaysPreview: boolean;
   snapScroll: boolean;
+  linuxBackdrop?: "solid" | "blur";
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;
@@ -81,6 +83,7 @@ export class SettingsPaneComponent {
     this.destroySelects();
     this.autoScrollCleanup?.();
     const isMobile = PlatformService.getInstance().isMobile();
+    const isLinux = PlatformService.getInstance().isLinux();
     const activePath = this.state.registeredExePath || this.state.currentExePath || "";
     const defaultAppSubtext = activePath ? `${this.state.isRegistered ? "Registered: " : "Path: "}${activePath}` : t("settings.defaultApp");
     const updateText = this.state.isStorePackage ? "Installed via Microsoft Store (Auto-Updated)"
@@ -128,6 +131,18 @@ export class SettingsPaneComponent {
             <input type="checkbox" id="ontop-checkbox" ${this.state.isAlwaysOnTop ? "checked" : ""} />
             <span class="switch-track"></span>
           </label>
+        </div>` : ""}
+
+        ${isLinux ? `
+        <div class="setting-item">
+          <div class="setting-meta">
+            <span class="setting-title">Window Backdrop</span>
+            <span class="setting-subtext"><span class="subtext-content">Solid canvas or translucent glass</span></span>
+          </div>
+          <div class="pill-toggle-group">
+            <button class="pill-toggle-btn ${this.state.linuxBackdrop !== "blur" ? "active" : ""}" id="btn-backdrop-solid"><span>Solid</span></button>
+            <button class="pill-toggle-btn ${this.state.linuxBackdrop === "blur" ? "active" : ""}" id="btn-backdrop-blur"><span>Translucent</span></button>
+          </div>
         </div>` : ""}
 
         <div class="setting-item">
@@ -206,6 +221,12 @@ export class SettingsPaneComponent {
     this.container.querySelector("#btn-theme-light")?.addEventListener("click", () => {
       if (this.state.theme !== "light") this.callbacks.onThemeChange("light");
     });
+    this.container.querySelector("#btn-backdrop-solid")?.addEventListener("click", () => {
+      this.callbacks.onLinuxBackdropChange?.("solid");
+    });
+    this.container.querySelector("#btn-backdrop-blur")?.addEventListener("click", () => {
+      this.callbacks.onLinuxBackdropChange?.("blur");
+    });
 
     const bind = (id: string, cb: (v: boolean) => void) => {
       (this.container.querySelector(id) as HTMLInputElement | null)?.addEventListener("change", (e) => {
@@ -223,23 +244,20 @@ export class SettingsPaneComponent {
         try { await action(); } finally { if (btn) btn.disabled = false; }
       });
     };
-    bindBtn("#btn-set-default-app", () => this.callbacks.onConfigureDefaultApp());
-    bindBtn("#btn-unregister-default-app", () => this.callbacks.onUnregisterDefaultApp());
-    bindBtn("#btn-check-updates", () => this.callbacks.onCheckUpdates());
+    bindBtn("#btn-set-default-app", this.callbacks.onConfigureDefaultApp);
+    bindBtn("#btn-unregister-default-app", this.callbacks.onUnregisterDefaultApp);
+    bindBtn("#btn-check-updates", this.callbacks.onCheckUpdates);
     this.container.querySelector("#btn-start-download")?.addEventListener("click", () => this.callbacks.onStartDownload());
     this.container.querySelector("#btn-restart-install")?.addEventListener("click", () => this.callbacks.onInstallAndRestart());
   }
 
   private destroySelects(): void {
-    this.fontSelect?.destroy();
-    this.fontSelect = null;
-    this.languageSelect?.destroy();
-    this.languageSelect = null;
+    this.fontSelect?.destroy(); this.fontSelect = null;
+    this.languageSelect?.destroy(); this.languageSelect = null;
   }
 
   public destroy(): void {
-    this.autoScrollCleanup?.();
-    this.autoScrollCleanup = null;
+    this.autoScrollCleanup?.(); this.autoScrollCleanup = null;
     this.destroySelects();
   }
 }

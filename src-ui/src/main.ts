@@ -51,6 +51,7 @@ class CathetApp {
   constructor() { this.init(); }
 
   private init(): void {
+    PlatformService.getInstance().applyPlatformClasses();
     this.topBar.setTitle("Untitled");
     this.editor.setFontFamily(this.fontService.getCurrentFont().family);
     invoke("sync_window_theme", { theme: this.themeService.getTheme() }).catch(console.error);
