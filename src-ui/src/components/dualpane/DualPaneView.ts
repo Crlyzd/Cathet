@@ -3,6 +3,7 @@ import { DualPaneHeader } from "./DualPaneHeader";
 import { DualPaneSplitter } from "./DualPaneSplitter";
 import { DualPaneEmptyDropzone } from "./DualPaneEmptyDropzone";
 import { SyncScrollController } from "../../utils/syncScrollController";
+import { SelectionScrollGuard } from "../../utils/selectionScrollGuard";
 import { formatDisplayTitle } from "../../utils/pathUtils";
 
 export interface DualPaneCallbacks {
@@ -14,6 +15,7 @@ export interface DualPaneCallbacks {
   onActivePaneChange: (pane: "left" | "right") => void;
   onTitleChange: () => void;
   onSyncChange?: (isLocked: boolean) => void;
+  onSnapChange?: (enabled: boolean) => void;
   onBackLeft?: () => void;
   onBackRight?: () => void;
 }
@@ -35,6 +37,7 @@ export class DualPaneView {
   private editorLeft: EditorComponent;
   private editorRight: EditorComponent | null = null;
   private scrollSync = new SyncScrollController();
+  private selectionGuard: SelectionScrollGuard | null = null;
   private activePane: "left" | "right" = "left";
   private callbacks: DualPaneCallbacks;
   private embeddedHomeLeft: any = null;
@@ -64,7 +67,8 @@ export class DualPaneView {
     this.splitter = new DualPaneSplitter(
       this.rootEl, (pct) => this.setSplitRatio(pct),
       () => { const l = this.scrollSync.toggleLock(); this.callbacks.onSyncChange?.(l); return l; },
-      this.scrollSync.isLocked()
+      this.scrollSync.isLocked(),
+      (snap) => { this.setSnapScroll(snap); this.callbacks.onSnapChange?.(snap); }
     );
 
     this.rightPaneEl = document.createElement("div");
@@ -99,9 +103,7 @@ export class DualPaneView {
     this.rightPaneEl.addEventListener("mousedown", () => this.setActivePane("right"));
   }
 
-  setSplitRatio(leftPercent: number): void {
-    this.leftPaneEl.style.flex = `0 0 ${leftPercent}%`;
-  }
+  setSplitRatio(pct: number): void { this.leftPaneEl.style.flex = `0 0 ${pct}%`; }
 
   setActivePane(pane: "left" | "right"): void {
     if (this.activePane === pane) return;
@@ -118,16 +120,16 @@ export class DualPaneView {
     return this.activePane === "right" && this.editorRight ? this.editorRight : this.editorLeft;
   }
 
-  setLeftTitle(title: string): void { this.headerLeft.setTitle(formatDisplayTitle(title)); }
-  setRightTitle(title: string): void { this.headerRight.setTitle(formatDisplayTitle(title)); }
-  setLeftPreviewActive(active: boolean): void { this.headerLeft.setPreviewActive(active); }
+  setLeftTitle(t: string): void { this.headerLeft.setTitle(formatDisplayTitle(t)); }
+  setRightTitle(t: string): void { this.headerRight.setTitle(formatDisplayTitle(t)); }
+  setLeftPreviewActive(a: boolean): void { this.headerLeft.setPreviewActive(a); }
 
   setSnapScroll(enabled: boolean): void { this.scrollSync.setSnapScroll(enabled); this.splitter.setSnapScroll(enabled); }
   toggleLock(): boolean {
-    const locked = this.scrollSync.toggleLock();
-    this.splitter.setSyncLocked(locked);
-    this.callbacks.onSyncChange?.(locked);
-    return locked;
+    const l = this.scrollSync.toggleLock();
+    this.splitter.setSyncLocked(l);
+    this.callbacks.onSyncChange?.(l);
+    return l;
   }
   setSyncLocked(locked: boolean): void {
     if (this.scrollSync.isLocked() !== locked) this.scrollSync.toggleLock();
@@ -158,12 +160,12 @@ export class DualPaneView {
     (pane === "left" ? this.leftHostEl : this.rightHostEl).innerHTML = "";
   }
 
-  hasEmbeddedHome(): boolean {
-    return !!(this.embeddedHomeLeft || this.embeddedHomeRight);
-  }
+  hasEmbeddedHome(): boolean { return !!(this.embeddedHomeLeft || this.embeddedHomeRight); }
 
   showEmptyRightPane(): void {
     if (this.editorRight) {
+      this.selectionGuard?.destroy();
+      this.selectionGuard = null;
       this.scrollSync.detach();
       this.editorRight.destroy();
       this.editorRight = null;
@@ -196,6 +198,16 @@ export class DualPaneView {
     const zOpt = (sibling: () => EditorComponent | null) => ({ isSyncActive: () => this.isSyncLocked(), getSiblingEditor: sibling });
     this.editorLeft.setTouchZoomOptions(zOpt(() => this.editorRight));
     this.editorRight.setTouchZoomOptions(zOpt(() => this.editorLeft));
+
+    if (this.selectionGuard) this.selectionGuard.destroy();
+    this.selectionGuard = new SelectionScrollGuard(
+      this.editorLeft.getWrapperEl(),
+      this.editorRight.getWrapperEl(),
+      () => this.activePane,
+      (src) => { if (this.scrollSync.isLocked()) this.scrollSync.resync(src); }
+    );
+    this.scrollSync.setSelectionSuppressed(() => this.selectionGuard?.isSelectionActive() ?? false);
+
     this.setActivePane("right");
     return this.editorRight;
   }
@@ -211,10 +223,7 @@ export class DualPaneView {
   getHeaderRight(): DualPaneHeader { return this.headerRight; }
   getSplitterPosition(): number { return this.splitter.getElement().getBoundingClientRect().left; }
   animateClose(callback: () => void): void {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      callback();
-      return;
-    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { callback(); return; }
     this.rightPaneEl.classList.add("exiting");
     this.splitter.getElement().classList.add("exiting");
     let called = false;
@@ -226,6 +235,8 @@ export class DualPaneView {
   destroy(): void {
     this.clearEmbeddedHome("left");
     this.clearEmbeddedHome("right");
+    this.selectionGuard?.destroy();
+    this.selectionGuard = null;
     this.editorLeft.setTouchZoomOptions(undefined);
     this.scrollSync.detach();
     if (this.emptyDropzone) this.emptyDropzone.destroy();

@@ -123,6 +123,7 @@ class CathetApp {
           this.mobileCoord?.setSyncState(true, s);
         }
       },
+      getActiveEditor: () => this.getActiveEditor(),
     });
 
     this.homeCoord = new HomeCoordinator({
@@ -209,6 +210,9 @@ class CathetApp {
       onToggleBold: () => this.getActiveEditor().toggleBold(), onToggleItalic: () => this.getActiveEditor().toggleItalic(), onToggleUnderline: () => this.getActiveEditor().toggleUnderline(),
       onFormat: (a) => applyMarkdownFormat(this.getActiveEditor(), a),
       onSelectAll: () => this.getActiveEditor().selectAllClean(), onToggleWordWrap: () => this.getActiveEditor().toggleWordWrap(),
+      onFind: () => {
+        if (this.mobileCoord) this.mobileCoord.toggleSearchBar();
+      },
       onSearchWeb: () => { const t = this.getActiveEditor().getSelectedText().trim(); if (t) openUrl(`https://www.google.com/search?q=${encodeURIComponent(t)}`).catch(console.error); },
       onQuit: () => this.windowService.close(),
     });
@@ -403,6 +407,12 @@ class CathetApp {
         onCloseDualPane: () => this.toggleDualPane(), onActivePaneChange: (p) => this.dualPaneService.setActivePane(p),
         onTitleChange: () => this.topBar.setTitle(this.dualPaneService.getFormattedTitle()),
         onSyncChange: (s) => this.mobileCoord?.setSyncState(s, this.dualPaneService.getSnapScroll()),
+        onSnapChange: (snap) => {
+          this.dualPaneService.setSnapScroll(snap);
+          this.mobileCoord?.setSyncState(this.dualPaneView?.isSyncLocked() ?? true, snap);
+          this.mobileCoord?.updateSettingsSnapScroll(snap);
+          emit("cathet:snap-scroll-change", snap).catch(console.error);
+        },
       });
       this.dualPaneView.setLeftTitle(formatDisplayTitle(this.currentFilePath));
       this.dualPaneView.setSnapScroll(this.dualPaneService.getSnapScroll());

@@ -1,5 +1,6 @@
 import { PlatformService } from "../../services/platformService";
 import { icons } from "../../utils/monochromeIcons";
+import { bindLongPress } from "../../utils/touchGesture";
 
 /**
  * DualPaneSplitter — Draggable frosted glass divider with sync scroll toggle button.
@@ -9,20 +10,24 @@ export class DualPaneSplitter {
   private syncBtn: HTMLElement;
   private onResize: (leftPercent: number) => void;
   private onToggleSync: () => boolean;
+  private onToggleSnap?: (enabled: boolean) => void;
   private isDragging: boolean = false;
   private container: HTMLElement;
   private isLocked: boolean;
   private snapScroll: boolean = false;
+  private longPressCleanup: (() => void) | null = null;
 
   constructor(
     container: HTMLElement,
     onResize: (leftPercent: number) => void,
     onToggleSync: () => boolean,
-    initialSyncLocked: boolean = true
+    initialSyncLocked: boolean = true,
+    onToggleSnap?: (enabled: boolean) => void
   ) {
     this.container = container;
     this.onResize = onResize;
     this.onToggleSync = onToggleSync;
+    this.onToggleSnap = onToggleSnap;
     this.isLocked = initialSyncLocked;
 
     this.element = document.createElement("div");
@@ -60,11 +65,41 @@ export class DualPaneSplitter {
     this.updateVisualState();
   }
 
+  private toggleSnapMode(): void {
+    const nextSnap = !this.snapScroll;
+    this.snapScroll = nextSnap;
+    if (nextSnap && !this.isLocked) {
+      this.isLocked = true;
+    }
+    this.updateVisualState();
+    try { if ("vibrate" in navigator) navigator.vibrate(30); } catch (_) {}
+    this.onToggleSnap?.(this.snapScroll);
+  }
+
   private bindEvents(): void {
-    this.syncBtn.addEventListener("click", (e) => {
+    this.longPressCleanup = bindLongPress(this.syncBtn, {
+      thresholdMs: 400,
+      onClick: (e) => {
+        e.stopPropagation();
+        if (this.snapScroll) {
+          this.snapScroll = false;
+          this.onToggleSnap?.(false);
+          this.setSyncLocked(false);
+          return;
+        }
+        const newState = this.onToggleSync();
+        this.setSyncLocked(newState);
+      },
+      onLongPress: (e) => {
+        e.stopPropagation();
+        this.toggleSnapMode();
+      },
+    });
+
+    this.syncBtn.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      const newState = this.onToggleSync();
-      this.setSyncLocked(newState);
+      this.toggleSnapMode();
     });
 
     this.element.addEventListener("dblclick", (e) => {
@@ -81,6 +116,8 @@ export class DualPaneSplitter {
 
     this.element.addEventListener("touchstart", (e) => {
       if ((e.target as HTMLElement).closest(".dualpane-sync-badge")) return;
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.toString().trim().length > 0) return;
       this.startDragging();
     }, { passive: true });
   }
@@ -129,6 +166,10 @@ export class DualPaneSplitter {
   }
 
   destroy(): void {
+    if (this.longPressCleanup) {
+      this.longPressCleanup();
+      this.longPressCleanup = null;
+    }
     this.element.remove();
   }
 }
