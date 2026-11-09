@@ -118,7 +118,9 @@ export class HomeViewComponent {
           container: this.element,
           scrollTarget: () => this.noteGrid.getScrollElement(),
           contentTarget: () => this.noteGrid.getScrollElement(),
-          thresholdPx: 135,
+          thresholdPx: 340,
+          deadZonePx: 180,
+          turnThresholdPx: 80,
           onTrigger: async () => {
             if (!this.isPrivateMode && !this.isSelectionMode && await BiometricService.getInstance().authenticate("Unlock Private Notes", "Confirm fingerprint or device PIN")) {
               this.enterPrivateNotesMode();

@@ -1,8 +1,13 @@
 /**
- * overscrollPullDown.ts — Secret pull-down gesture recognizer for Private Notes
- * Strictly active on Android when the note list is scrolled to the top.
- * Features a silent dead-zone, progressive shackle descent, and elastic spring-back.
+ * overscrollPullDown.ts — 2D "Pull Down & Turn Right" Vault Gesture Recognizer
+ * Secret gesture for Private Notes on Android:
+ * 1. Deep pull-down past silent dead-zone (>180px raw).
+ * 2. Vault locks in at engagement zone (>340px raw).
+ * 3. Horizontal thumb drag to the right rotates the key 90° with tactile haptics.
+ * 4. Releasing touch when unlocked triggers biometric authentication.
  */
+
+import { VaultLockHud } from "../components/home/VaultLockHud";
 
 export interface OverscrollPullDownOptions {
   container: HTMLElement;
@@ -10,8 +15,11 @@ export interface OverscrollPullDownOptions {
   contentTarget?: () => HTMLElement | null;
   thresholdPx?: number;
   deadZonePx?: number;
+  turnThresholdPx?: number;
   onTrigger: () => void;
 }
+
+type PullState = "IDLE" | "PULLING" | "ENGAGED" | "TURNING" | "UNLOCKED";
 
 export class OverscrollPullDownDetector {
   private container: HTMLElement;
@@ -19,17 +27,17 @@ export class OverscrollPullDownDetector {
   private contentTarget?: () => HTMLElement | null;
   private thresholdPx: number;
   private deadZonePx: number;
+  private turnThresholdPx: number;
   private onTrigger: () => void;
 
   private startY = 0;
-  private currentY = 0;
-  private isTracking = false;
-  private hasVibrated = false;
+  private turnStartX = 0;
+  private state: PullState = "IDLE";
+  private hud: VaultLockHud;
 
-  private hudEl!: HTMLElement;
-  private lockIconEl!: HTMLElement;
-  private shackleEl!: HTMLElement;
-  private labelEl!: HTMLElement;
+  private ticked30 = false;
+  private ticked60 = false;
+  private hasEngagedVibrated = false;
 
   private touchStartHandler!: (e: TouchEvent) => void;
   private touchMoveHandler!: (e: TouchEvent) => void;
@@ -39,34 +47,13 @@ export class OverscrollPullDownDetector {
     this.container = options.container;
     this.scrollTarget = options.scrollTarget;
     this.contentTarget = options.contentTarget;
-    this.thresholdPx = options.thresholdPx || 135;
-    this.deadZonePx = options.deadZonePx || 65;
+    this.thresholdPx = options.thresholdPx || 340;
+    this.deadZonePx = options.deadZonePx || 180;
+    this.turnThresholdPx = options.turnThresholdPx || 80;
     this.onTrigger = options.onTrigger;
 
-    this.createHud();
+    this.hud = new VaultLockHud(this.container);
     this.bindEvents();
-  }
-
-  private createHud(): void {
-    const existing = this.container.querySelector(".home-pulldown-hud");
-    if (existing) existing.remove();
-
-    this.hudEl = document.createElement("div");
-    this.hudEl.className = "home-pulldown-hud";
-    this.hudEl.innerHTML = `
-      <div class="home-pulldown-pill">
-        <svg class="home-pulldown-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-          <path class="home-lock-shackle" d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-        <span class="home-pulldown-label">Pull down for private notes</span>
-      </div>
-    `;
-
-    this.lockIconEl = this.hudEl.querySelector(".home-pulldown-icon")!;
-    this.shackleEl = this.hudEl.querySelector(".home-lock-shackle")!;
-    this.labelEl = this.hudEl.querySelector(".home-pulldown-label")!;
-    this.container.prepend(this.hudEl);
   }
 
   private bindEvents(): void {
@@ -76,73 +63,98 @@ export class OverscrollPullDownDetector {
       const scrollTop = scrollEl ? scrollEl.scrollTop : this.container.scrollTop;
       if (scrollTop <= 0) {
         this.startY = e.touches[0].clientY;
-        this.isTracking = true;
-        this.hasVibrated = false;
+        this.state = "IDLE";
+        this.ticked30 = false;
+        this.ticked60 = false;
+        this.hasEngagedVibrated = false;
       }
     };
 
     this.touchMoveHandler = (e: TouchEvent) => {
-      if (!this.isTracking || e.touches.length !== 1) return;
-      const rawDelta = e.touches[0].clientY - this.startY;
-      if (rawDelta <= 0) {
-        this.resetHud();
-        return;
-      }
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const rawDeltaY = touch.clientY - this.startY;
+      if (rawDeltaY <= 0 && this.state === "IDLE") return;
 
-      // Overscroll damping
-      const damped = Math.min(180, Math.pow(rawDelta, 0.82) * 2);
-      this.currentY = damped;
-
-      // Displace content elastically
+      // Elastic vertical displacement for note list content
+      const dampedY = Math.min(220, Math.pow(Math.max(0, rawDeltaY), 0.82) * 1.8);
       const contentEl = this.contentTarget?.();
       if (contentEl) {
-        contentEl.style.transform = `translateY(${damped * 0.65}px)`;
+        contentEl.style.transform = `translateY(${dampedY * 0.6}px)`;
       }
 
-      if (damped <= this.deadZonePx) {
-        // Silent dead-zone: lock HUD is completely invisible
-        this.hudEl.style.opacity = "0";
-        this.hudEl.style.visibility = "hidden";
-        this.hudEl.classList.remove("threshold-reached");
-        this.shackleEl.style.transform = "translateY(-5px)";
-        this.labelEl.style.opacity = "0";
-        this.hasVibrated = false;
+      if (rawDeltaY <= this.deadZonePx) {
+        // Silent dead-zone: zero hints or visibility
+        this.hud.setDescent(0, -70);
+        this.hud.setEngaged(false);
+        this.state = "IDLE";
         return;
       }
 
-      // Past dead-zone: progressive appearance
-      this.hudEl.style.visibility = "visible";
-      this.hudEl.style.transform = `translateY(${damped - 45}px)`;
+      // Past dead-zone: progressive emergence
+      const pullProgress = Math.min(1, (rawDeltaY - this.deadZonePx) / (this.thresholdPx - this.deadZonePx));
+      const hudY = Math.min(68, (dampedY - 60));
+      this.hud.setDescent(pullProgress, hudY);
 
-      const progress = Math.min(1, (damped - this.deadZonePx) / (this.thresholdPx - this.deadZonePx));
-      this.hudEl.style.opacity = `${progress}`;
+      if (rawDeltaY >= this.thresholdPx) {
+        if (this.state === "IDLE" || this.state === "PULLING") {
+          this.state = "ENGAGED";
+          this.turnStartX = touch.clientX;
+          this.hud.setEngaged(true);
+          if (!this.hasEngagedVibrated) {
+            this.hasEngagedVibrated = true;
+            try { navigator.vibrate?.(12); } catch (_) {}
+          }
+        }
 
-      // Shackle moves from detached translateY(-5px) to closed translateY(0px)
-      const shackleY = -5 * (1 - progress);
-      this.shackleEl.style.transform = `translateY(${shackleY}px)`;
-      this.labelEl.style.opacity = progress > 0.4 ? `${(progress - 0.4) / 0.6}` : "0";
+        // Horizontal turn tracking
+        const deltaX = touch.clientX - this.turnStartX;
+        if (deltaX > 0) {
+          const turnProgress = Math.min(1, deltaX / this.turnThresholdPx);
+          const degrees = turnProgress * 90;
+          this.hud.setRotation(degrees);
 
-      if (damped >= this.thresholdPx) {
-        this.hudEl.classList.add("threshold-reached");
-        this.labelEl.textContent = "Release to view private notes";
-        this.shackleEl.style.transform = "translateY(0px)";
-        if (!this.hasVibrated) {
-          this.hasVibrated = true;
-          try { navigator.vibrate?.(15); } catch (_) {}
+          if (degrees >= 30 && !this.ticked30) {
+            this.ticked30 = true;
+            try { navigator.vibrate?.(8); } catch (_) {}
+          }
+          if (degrees >= 60 && !this.ticked60) {
+            this.ticked60 = true;
+            try { navigator.vibrate?.(12); } catch (_) {}
+          }
+
+          if (turnProgress >= 1) {
+            if (this.state !== "UNLOCKED") {
+              this.state = "UNLOCKED";
+              this.hud.setUnlocked(true);
+              try { navigator.vibrate?.([15, 30, 20]); } catch (_) {}
+            }
+          } else {
+            if (this.state === "UNLOCKED") {
+              this.hud.setUnlocked(false);
+            }
+            this.state = "TURNING";
+          }
+        } else {
+          this.hud.setRotation(0);
+          this.hud.setUnlocked(false);
+          this.state = "ENGAGED";
         }
       } else {
-        this.hudEl.classList.remove("threshold-reached");
-        this.labelEl.textContent = "Pull down for private notes";
-        this.hasVibrated = false;
+        this.state = "PULLING";
+        this.hud.setEngaged(false);
+        this.hud.setRotation(0);
+        this.hasEngagedVibrated = false;
+        this.ticked30 = false;
+        this.ticked60 = false;
       }
     };
 
     this.touchEndHandler = () => {
-      if (!this.isTracking) return;
-      const wasReached = this.currentY >= this.thresholdPx;
-      this.isTracking = false;
+      const isReadyToUnlock = this.state === "UNLOCKED";
+      this.state = "IDLE";
       this.animateReset(() => {
-        if (wasReached) {
+        if (isReadyToUnlock) {
           this.onTrigger();
         }
       });
@@ -154,33 +166,20 @@ export class OverscrollPullDownDetector {
     this.container.addEventListener("touchcancel", this.touchEndHandler, { passive: true });
   }
 
-  private resetHud(): void {
-    this.hudEl.style.transform = "translateY(-60px)";
-    this.hudEl.style.opacity = "0";
-    this.hudEl.style.visibility = "hidden";
-    this.hudEl.classList.remove("threshold-reached");
-    this.shackleEl.style.transform = "translateY(-5px)";
-    this.labelEl.style.opacity = "0";
-    this.currentY = 0;
-  }
-
   private animateReset(onDone?: () => void): void {
     const contentEl = this.contentTarget?.();
     const transition = "transform 0.28s cubic-bezier(0.2, 0, 0, 1)";
-    this.hudEl.style.transition = `${transition}, opacity 0.22s ease`;
     if (contentEl) {
       contentEl.style.transition = transition;
       contentEl.style.transform = "translateY(0)";
     }
-    this.resetHud();
-    setTimeout(() => {
-      this.hudEl.style.transition = "";
+    this.hud.reset(true, () => {
       if (contentEl) {
         contentEl.style.transition = "";
         contentEl.style.transform = "";
       }
       onDone?.();
-    }, 290);
+    });
   }
 
   destroy(): void {
@@ -188,6 +187,6 @@ export class OverscrollPullDownDetector {
     this.container.removeEventListener("touchmove", this.touchMoveHandler);
     this.container.removeEventListener("touchend", this.touchEndHandler);
     this.container.removeEventListener("touchcancel", this.touchEndHandler);
-    this.hudEl.remove();
+    this.hud.destroy();
   }
 }

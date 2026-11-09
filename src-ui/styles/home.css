@@ -442,8 +442,8 @@
   }
 }
 
-/* Secret Overscroll Pull-Down Lock HUD (Android Home) */
-.home-pulldown-hud {
+/* Secret 2D Vault Lock HUD (Android Home) */
+.vault-lock-hud {
   position: absolute;
   top: 0;
   left: 0;
@@ -453,55 +453,69 @@
   align-items: center;
   pointer-events: none;
   z-index: 100;
-  transform: translateY(-60px);
+  transform: translateY(-70px);
   opacity: 0;
   will-change: transform, opacity;
 }
 
-.home-pulldown-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  background: var(--col-menu-bg, rgba(24, 26, 33, 0.82));
+.vault-cylinder {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--col-menu-bg, rgba(24, 26, 33, 0.85));
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--col-border, rgba(255, 255, 255, 0.08));
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--col-border, rgba(255, 255, 255, 0.12));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--col-text-muted, #94a3b8);
-  font-size: 13px;
-  font-weight: 500;
-  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+  will-change: transform, border-color, box-shadow;
 }
 
-.home-pulldown-hud.threshold-reached .home-pulldown-pill {
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.4);
-  background: rgba(14, 165, 233, 0.18);
+.vault-dial-ring {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  pointer-events: none;
+  color: var(--col-text-muted, #94a3b8);
 }
 
-.home-pulldown-icon {
-  flex-shrink: 0;
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
-}
-
-.home-lock-shackle {
-  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1);
+.vault-key-rotor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  transform-origin: center center;
+  transition: color 0.15s ease;
   will-change: transform;
 }
 
-.home-pulldown-label {
-  transition: opacity 0.15s ease;
-  white-space: nowrap;
+.vault-key-icon {
+  flex-shrink: 0;
 }
 
-.home-pulldown-hud.threshold-reached .home-pulldown-icon {
-  transform: scale(1.15);
+.vault-lock-hud.is-engaged .vault-cylinder {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.25), 0 4px 20px rgba(0, 0, 0, 0.35);
+  color: #38bdf8;
+  transform: scale(1.06);
 }
 
-.home-pulldown-hud.threshold-reached .home-lock-shackle {
-  transform: translateY(0) !important;
+.vault-lock-hud.is-unlocked .vault-cylinder {
+  border-color: #38bdf8;
+  background: rgba(14, 165, 233, 0.2);
+  box-shadow: 0 0 26px rgba(56, 189, 248, 0.65), 0 4px 20px rgba(0, 0, 0, 0.4);
+  color: #38bdf8;
+  transform: scale(1.12);
+}
+
+.vault-lock-hud.is-unlocked .vault-key-rotor {
+  color: #38bdf8;
 }
 
 /* Exit Private Notes Button */
