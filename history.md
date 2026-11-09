@@ -227,6 +227,18 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-09: Linux Release Cryptographic Signing Pipeline (OpenPGP / GPG & RPM Headers)
+- **Summary**:
+  - Implemented automated cryptographic signing pipeline for all Linux release artifacts (`.AppImage`, `.rpm`, `.deb`).
+  - Added `Ensure-LinuxGpgKey` in `build.ps1` to automatically bootstrap an RSA-4096 release signing key (`Cathet Release Signing Key <release@cathet.app>`) unattended in WSL2 (`Shared-Linux-Build`) and native Linux, configure `~/.rpmmacros` with `%_signature gpg` and `%_gpg_digest_algo sha256`, and export ASCII-armored public key to `release/cathet-release-key.asc` alongside release assets.
+  - Added `Invoke-LinuxSigning` in `build.ps1` to embed GPG signatures directly into `.rpm` packages via `rpmsign --addsign`, generate detached `.asc` signatures for `.AppImage` and `.deb`, and create signed universal checksum manifests (`SHA256SUMS` and `SHA256SUMS.asc`).
+  - Wired automated signing into `Invoke-LinuxBundle` so all Linux builds are automatically signed on completion, and added `-SignLinux` CLI flag and interactive menu option `[21]`.
+  - Updated `.gitignore` to safely exclude private key exports (`*.priv.asc`, `*.key`, `*.gpg`, `*.p12`, `*.pfx`).
+- **Affected Files**:
+  - `build.ps1`
+  - `.gitignore`
+  - `history.md`
+
 ### 2026-11-09: Mobile Settings High Refresh Rate Localization Generalization (120Hz/144Hz/165Hz+)
 - **Summary**:
   - Confirmed Android native backend (`MainActivity.kt`) dynamically queries hardware `display.supportedModes` and activates `modes.maxByOrNull { it.refreshRate }`, natively unlocking 120Hz, 144Hz, 165Hz+ peak display refresh rates.
