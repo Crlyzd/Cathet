@@ -218,6 +218,18 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-09: Mobile Settings High Refresh Rate Localization Generalization (120Hz/144Hz/165Hz+)
+- **Summary**:
+  - Confirmed Android native backend (`MainActivity.kt`) dynamically queries hardware `display.supportedModes` and activates `modes.maxByOrNull { it.refreshRate }`, natively unlocking 120Hz, 144Hz, 165Hz+ peak display refresh rates.
+  - Renamed setting title from "High Refresh Rate (120Hz)" to "High Refresh Rate" and updated subtitle to "Maximum display refresh rate vs 60Hz battery saver" across all 5 supported locales.
+- **Affected Files**:
+  - `src-ui/src/locales/en.json`
+  - `src-ui/src/locales/id.json`
+  - `src-ui/src/locales/jv-krama.json`
+  - `src-ui/src/locales/jv-malang.json`
+  - `src-ui/src/locales/jv-ngoko.json`
+  - `history.md`
+
 ### 2026-11-09: Android Rotary Safe Combination Dial HUD & Native Ratchet Haptics Integration
 - **Summary**:
   - Replaced the static Lucide house key icon and misaligned outer ring in the Android Private Notes pull-down gesture with an authentic mechanical rotary safe combination tumbler dial.
