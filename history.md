@@ -1799,3 +1799,22 @@ px tsc --noEmit and cargo check.
   - `src-ui/src/components/home/HomeView.ts`: Wired new 2D detector thresholds (216 lines).
   - `src-ui/styles/home.css`: Added frosted vault dial, rotating key rotor, and luminous glow classes.
   - `history.md`: Appended changelog entry per Rule 13.
+
+### 2026-11-09: Repository License & Documentation Alignment to GNU GPLv3
+
+- **Summary**:
+  1. **GNU General Public License v3.0 (GPL-3.0-or-later)**:
+     - Added official GNU GPLv3 license text (`LICENSE`) to the repository root with `Copyright (C) 2026 Crlyzd`.
+     - Replaced outdated MIT license references.
+  2. **README Documentation Alignment**:
+     - Updated Platform badge to include Linux (`Windows | Android | Linux`).
+     - Expanded Architecture badge to cover Linux packages (`x64 | ARM64 | APK | AppImage | RPM | DEB`).
+     - Updated License badge to `GPL v3` pointing to `LICENSE`.
+     - Updated License footer section to specify GNU General Public License v3.0 (GPL-3.0-or-later) and `Copyright © 2026 Crlyzd`.
+  3. **Verification**:
+     - Synchronous TypeScript check (`npx tsc --noEmit`) verified.
+     - Cargo check (`cargo check --manifest-path src-tauri/Cargo.toml`) verified.
+- **Files Modified / Created**:
+  - `LICENSE`: Added GNU GPLv3 license text with author copyright declaration.
+  - `README.md`: Updated platform/arch/license badges and license footer.
+  - `history.md`: Appended project changelog entry per Rule 13.

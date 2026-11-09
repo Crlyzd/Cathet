@@ -4,9 +4,9 @@
 
 **A sleek, ultra-lightweight, cross-platform frosted-glass text & markdown editor for Windows and Android that just gets out of your way.**
 
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Android-0078D6?logo=windows&logoColor=white)](https://github.com/Crlyzd/Cathet)
-[![Architecture](https://img.shields.io/badge/Arch-x64%20%7C%20ARM64%20%7C%20Universal%20APK-orange)](https://github.com/Crlyzd/Cathet/releases)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?logo=linux&logoColor=white)](https://github.com/Crlyzd/Cathet)
+[![Architecture](https://img.shields.io/badge/Arch-x64%20%7C%20ARM64%20%7C%20APK%20%7C%20AppImage%20%7C%20RPM%20%7C%20DEB-orange)](https://github.com/Crlyzd/Cathet/releases)
+[![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/Crlyzd/Cathet?color=purple&label=Release)](https://github.com/Crlyzd/Cathet/releases/latest)
 
 <br/>
@@ -241,4 +241,5 @@ Cathet is free, open-source, and made with love.
 
 ## 📄 License
 
-Cathet is open-source software licensed under the [MIT License](LICENSE).
+Cathet is open-source software licensed under the [GNU General Public License v3.0](LICENSE) (GPL-3.0-or-later).
+Copyright © 2026 Crlyzd.
