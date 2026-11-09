@@ -116,8 +116,6 @@ export class DualPaneSplitter {
 
     this.element.addEventListener("touchstart", (e) => {
       if ((e.target as HTMLElement).closest(".dualpane-sync-badge")) return;
-      const sel = window.getSelection();
-      if (sel && !sel.isCollapsed && sel.toString().trim().length > 0) return;
       this.startDragging();
     }, { passive: true });
   }

@@ -14,11 +14,6 @@ export class SyncScrollController {
   private isSyncing: boolean = false;
   private activeDriver: "left" | "right" | null = null;
   private driverTimer: number | null = null;
-  private isSelectionSuppressed?: () => boolean;
-
-  setSelectionSuppressed(fn: () => boolean): void {
-    this.isSelectionSuppressed = fn;
-  }
 
   private onLeftScroll = (): void => {
     this.handleScroll("left");
@@ -121,7 +116,6 @@ export class SyncScrollController {
 
   private handleScroll(source: "left" | "right"): void {
     if (!this.locked || this.isSyncing || !this.leftEl || !this.rightEl) return;
-    if (this.isSelectionSuppressed?.()) return;
     if (this.activeDriver && this.activeDriver !== source) return;
 
     this.activeDriver = source;

@@ -3,7 +3,6 @@ import { DualPaneHeader } from "./DualPaneHeader";
 import { DualPaneSplitter } from "./DualPaneSplitter";
 import { DualPaneEmptyDropzone } from "./DualPaneEmptyDropzone";
 import { SyncScrollController } from "../../utils/syncScrollController";
-import { SelectionScrollGuard } from "../../utils/selectionScrollGuard";
 import { formatDisplayTitle } from "../../utils/pathUtils";
 
 export interface DualPaneCallbacks {
@@ -180,8 +179,6 @@ export class DualPaneView {
     const zOpt = (sibling: () => EditorComponent | null) => ({ isSyncActive: () => this.isSyncLocked(), getSiblingEditor: sibling });
     this.editorLeft.setTouchZoomOptions(zOpt(() => this.editorRight));
     this.editorRight.setTouchZoomOptions(zOpt(() => this.editorLeft));
-
-    this.scrollSync.setSelectionSuppressed(() => SelectionScrollGuard.getInstance().isSelectionActive());
 
     this.setActivePane("right");
     return this.editorRight;

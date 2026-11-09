@@ -102,12 +102,6 @@ body.is-mobile .editor-wrapper {
   overflow-anchor: none !important;
 }
 
-body.is-mobile .editor-wrapper.selection-frozen {
-  overflow-y: hidden !important;
-  overflow: hidden !important;
-  touch-action: none !important;
-}
-
 body.is-mobile .editor-content {
   touch-action: manipulation !important;
   -webkit-touch-callout: default !important;
@@ -511,11 +505,6 @@ body.is-mobile .dualpane-pane {
   width: 100% !important;
   height: auto !important;
   min-height: 0 !important;
-}
-
-body.is-mobile .dualpane-pane:not(.active-pane) .editor-content {
-  user-select: none !important;
-  -webkit-user-select: none !important;
 }
 
 body.is-mobile .dualpane-pane-left {
