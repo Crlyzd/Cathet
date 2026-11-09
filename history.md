@@ -1650,3 +1650,31 @@ px tsc --noEmit and cargo check.
   - `src-ui/src/components/dualpane/DualPaneSplitter.ts`: Removed artificial selection check on touchstart (173 lines).
   - `src-ui/styles/mobile.css`: Removed selection freeze and inactive pane user-select overrides.
   - `history.md`: Logged mistake guardrail and changelog entry per Rule 13.
+
+### 2026-11-09: 2D "Pull Down & Turn Right" Mechanical Vault Access for Private Folder (Android)
+
+- **Summary**:
+  1. **Substantially Lower & Stealth Dead-Zone**:
+     - Increased silent dead-zone from 65px to 180px raw drag (`deadZonePx: 180`), completely eliminating accidental exposure during normal scroll bounce or flick-to-top.
+     - Deepened engagement threshold to 340px raw drag (`thresholdPx: 340`), requiring an intentional, deep pull down (~40% of screen height).
+     - Removed the blatant text banner (`"Pull down for private notes"`) to keep private folder access completely stealthy.
+  2. **2D "Pull Down & Turn Right" Vault Combination Gesture**:
+     - Pulling down deep past 340px drops a frosted glass vault cylinder into place with a subtle detent vibration (`vibrate(12)`).
+     - Swiping thumb horizontally to the right rotates the skeleton key inside the cylinder from 0° to 90° in real-time.
+     - Micro-haptic ticks fire as the tumbler turns at 30° and 60°, culminating in a solid double-click vibration (`vibrate([15, 30, 20])`) and glowing cyan halo at 90°.
+     - Releasing the thumb while turned unlocks `BiometricService.authenticate(...)`. Releasing early springs back smoothly to 0° and retracts the vault into the top bar.
+  3. **Strict Modularity & Anti-Monolith Compliance**:
+     - Extracted SVG vault cylinder and rotor mechanics into dedicated `src-ui/src/components/home/VaultLockHud.ts` (92 lines).
+     - Refactored `src-ui/src/utils/overscrollPullDown.ts` to 170 lines with clean 2D state machine (`IDLE` -> `PULLING` -> `ENGAGED` -> `TURNING` -> `UNLOCKED`).
+     - Kept `src-ui/src/components/home/HomeView.ts` at 216 lines.
+     - Styled frosted glass tumbler, dial markings, and cyan glow in `src-ui/styles/home.css`.
+  4. **Verification**:
+     - `npx tsc --noEmit` passed with 0 errors.
+     - `cargo check --manifest-path src-tauri/Cargo.toml` passed with 0 errors.
+     - All files strictly comply with the <250 lines Anti-Monolith ceiling (`VaultLockHud.ts`: 92 lines, `overscrollPullDown.ts`: 170 lines, `HomeView.ts`: 216 lines).
+- **Files Modified / Created**:
+  - `src-ui/src/components/home/VaultLockHud.ts`: Created dedicated vault cylinder & key rotor HUD (92 lines).
+  - `src-ui/src/utils/overscrollPullDown.ts`: Refactored to 2D Pull Down & Turn Right state machine with tactile haptics (170 lines).
+  - `src-ui/src/components/home/HomeView.ts`: Wired new 2D detector thresholds (216 lines).
+  - `src-ui/styles/home.css`: Added frosted vault dial, rotating key rotor, and luminous glow classes.
+  - `history.md`: Appended changelog entry per Rule 13.
