@@ -8,7 +8,7 @@ param(
     [switch]$BuildAppImage, [switch]$BuildRpm, [switch]$BuildDeb, [switch]$BuildLinux, [switch]$AllLinux,
     [switch]$All, [switch]$Run, [switch]$AndroidDev, [switch]$AndroidBuild, [switch]$AndroidArm64, [switch]$AndroidUniversal, [switch]$AndroidAll,
     [switch]$AndroidPerf, [switch]$Patch, [switch]$Minor, [switch]$Major, [string]$TargetVersion,
-    [string]$OutputDir = "release", [int]$Port = 0, [switch]$PurgeBuildTools, [switch]$NoPause, [switch]$Help
+    [string]$OutputDir = "release", [int]$Port = 0, [switch]$Clean, [switch]$PurgeBuildTools, [switch]$NoPause, [switch]$Help
 )
 
 $ErrorActionPreference = "Stop"; $ProjectRoot = $PSScriptRoot; Set-Location $ProjectRoot
@@ -31,7 +31,7 @@ function Get-AppVersion { (Get-Content -Raw (Join-Path $ProjectRoot "package.jso
 function Get-NativeArch { if ($env:PROCESSOR_ARCHITECTURE -match "ARM64" -or $env:PROCESSOR_ARCHITEW6432 -match "ARM64") { "arm64" } else { "x64" } }
 
 function Show-HelpGuide {
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Interactive Menu | -Dev / -Live -> Hot reload | -Check -> Tests`n  -BuildX64 / -BuildArm64 -> Release EXE | -BuildMsix -> Microsoft Store Package (.msixbundle)`n  -AllWindows -> All Windows targets (x64 + ARM64 + Store MSIX Bundle)`n  -AndroidDev -> Android Hot Reload | -AndroidBuild / -AndroidAll -> Phone ARM64 + Universal APKs`n  -AndroidArm64 -> Phone ARM64 APK only (~6.5 MB) | -AndroidUniversal -> Universal APK (~20.5 MB)`n  -BuildDeb -> Linux Debian/Ubuntu (.deb ~3.5 MB) | -BuildRpm -> Linux Fedora KDE (.rpm ~3.5 MB)`n  -BuildAppImage -> Universal Linux AppImage (~78 MB) | -AllLinux -> All Linux formats`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Interactive Menu | -Dev / -Live -> Hot reload | -Check -> Tests`n  -BuildX64 / -BuildArm64 -> Release EXE | -BuildMsix -> Microsoft Store Package (.msixbundle)`n  -AllWindows -> All Windows targets (x64 + ARM64 + Store MSIX Bundle)`n  -AndroidDev -> Android Hot Reload | -AndroidBuild / -AndroidAll -> Phone ARM64 + Universal APKs`n  -AndroidArm64 -> Phone ARM64 APK only (~6.5 MB) | -AndroidUniversal -> Universal APK (~20.5 MB)`n  -BuildDeb -> Linux Debian/Ubuntu (.deb ~3.5 MB) | -BuildRpm -> Linux Fedora KDE (.rpm ~3.5 MB)`n  -BuildAppImage -> Universal Linux AppImage (~78 MB) | -AllLinux -> All Linux formats`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Clean -> Purge local & WSL build caches (~9.7 GB)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -859,6 +859,44 @@ function Invoke-PurgeBuildTools {
     Write-Host "Clean teardown complete! All space reclaimed." -ForegroundColor Green
 }
 
+function Invoke-CleanBuildArtifacts {
+    Write-Host "`n============================================================" -ForegroundColor Yellow
+    Write-Host "  CLEAN BUILD CACHES & COMPILATION TARGETS" -ForegroundColor White
+    Write-Host "============================================================" -ForegroundColor Yellow
+    Stop-ActiveProcesses
+
+    $pathsToClean = @(
+        (Join-Path $ProjectRoot "src-tauri\target"),
+        (Join-Path $ProjectRoot "src-tauri\gen\android\app\build"),
+        (Join-Path $ProjectRoot "src-tauri\gen\android\.gradle"),
+        (Join-Path $ProjectRoot "dist")
+    )
+
+    $reclaimedBytes = 0
+    foreach ($p in $pathsToClean) {
+        if (Test-Path $p) {
+            Write-Host "Calculating size and removing: $p..." -ForegroundColor Gray
+            $size = (Get-ChildItem $p -Recurse -File -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+            if ($size) { $reclaimedBytes += $size }
+            Remove-Item -Path $p -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Host "  [OK] Removed $([math]::Round($size / 1MB, 2)) MB" -ForegroundColor Green
+        }
+    }
+
+    if (Get-Command wsl.exe -ErrorAction SilentlyContinue) {
+        $distros = @(wsl.exe --list --quiet 2>$null | Where-Object { $_ -match "Shared-Linux-Build" })
+        if ($distros.Count -gt 0) {
+            Write-Host "Purging WSL Linux build target cache (/root/.cache/cathet-target)..." -ForegroundColor Gray
+            wsl.exe -d Shared-Linux-Build -u root -- rm -rf /root/.cache/cathet-target 2>$null | Out-Null
+            Write-Host "  [OK] WSL Linux target cache purged." -ForegroundColor Green
+        }
+    }
+
+    $totalReclaimedMb = [math]::Round($reclaimedBytes / 1MB, 2)
+    $totalReclaimedGb = [math]::Round($reclaimedBytes / 1GB, 2)
+    Write-Host "`nAll build caches purged successfully! Reclaimed ~$totalReclaimedMb MB (~$totalReclaimedGb GB)." -ForegroundColor Green
+}
+
 function Show-InteractiveMenu {
     $ver = Get-AppVersion; $arch = Get-NativeArch
     Write-Host "`nDevelopment & Fast Testing:" -ForegroundColor DarkCyan
@@ -889,13 +927,15 @@ function Show-InteractiveMenu {
     Write-Host "`nUtilities:" -ForegroundColor DarkCyan
     Write-Host "  [18] Bump Project Version (Current: v$ver)"
     Write-Host "  [19] Purge BuildTools Hub & WSL (Free up D:\ space)"
+    Write-Host "  [20] Clean Build Caches & Targets (Rust, Android, WSL, Dist)"
     Write-Host "  [Q]  Exit" -ForegroundColor Gray
 
-    $c = (Read-Host "`nEnter option [1-19, Q] (Default: 1)").Trim()
+    $c = (Read-Host "`nEnter option [1-20, Q] (Default: 1)").Trim()
     return $(if ($c) { $c } else { "1" })
 }
 
 function Invoke-Pipeline([hashtable]$opts) {
+    if ($opts.Clean) { Invoke-CleanBuildArtifacts; return }
     if ($opts.PurgeBuildTools) { Invoke-PurgeBuildTools; return }
     if ($opts.Check) { Invoke-CheckMode; return }
     if ($opts.AndroidDev) { Invoke-AndroidDev; return }
@@ -975,8 +1015,9 @@ try {
                     else { $runOpts.Patch = $true }
                 }
                 "19" { $runOpts.PurgeBuildTools = $true }
+                "20" { $runOpts.Clean = $true }
                 { $_ -in "q", "Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
-                default { Write-Host "Invalid option '$_'. Choose 1-19 or Q." -ForegroundColor Red; continue }
+                default { Write-Host "Invalid option '$_'. Choose 1-20 or Q." -ForegroundColor Red; continue }
             }
             Invoke-Pipeline $runOpts
             $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim(); if ($ans -in "q", "Q") { Invoke-Exit 0 }
@@ -990,7 +1031,7 @@ try {
             All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; AndroidArm64 = $AndroidArm64;
             AndroidUniversal = $AndroidUniversal; AndroidAll = $AndroidAll; AndroidPerf = $AndroidPerf;
             Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion;
-            Port = $Port; PurgeBuildTools = $PurgeBuildTools
+            Port = $Port; Clean = $Clean; PurgeBuildTools = $PurgeBuildTools
         }
         Invoke-Exit 0
     }
