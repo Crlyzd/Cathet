@@ -63,9 +63,5 @@ export class ThemeService {
   private applyTheme(theme: Theme): void {
     document.documentElement.setAttribute("data-theme", theme);
     document.body.setAttribute("data-theme", theme);
-    const root = document.getElementById("app");
-    if (root) {
-      root.setAttribute("data-theme", theme);
-    }
   }
 }

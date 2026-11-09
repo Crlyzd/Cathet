@@ -13,11 +13,29 @@ body.is-linux {
 
 /* 2. Linux Desktop Default: Solid Slate (Clean, 100% Legible, Zero Bleed) */
 body.is-linux,
+body.is-linux #app,
+body.is-linux .cathet-root,
+body.is-linux .workspace-shell,
 body.is-linux.de-solid,
+body.is-linux.de-solid #app,
+body.is-linux.de-solid .cathet-root,
+body.is-linux.de-solid .workspace-shell,
 body.is-linux[data-theme="dark"],
+body.is-linux[data-theme="dark"] #app,
+body.is-linux[data-theme="dark"] .cathet-root,
+body.is-linux[data-theme="dark"] .workspace-shell,
 body.is-linux.de-solid[data-theme="dark"],
+body.is-linux.de-solid[data-theme="dark"] #app,
+body.is-linux.de-solid[data-theme="dark"] .cathet-root,
+body.is-linux.de-solid[data-theme="dark"] .workspace-shell,
 [data-theme="dark"] body.is-linux,
-[data-theme="dark"] body.is-linux.de-solid {
+[data-theme="dark"] body.is-linux #app,
+[data-theme="dark"] body.is-linux .cathet-root,
+[data-theme="dark"] body.is-linux .workspace-shell,
+[data-theme="dark"] body.is-linux.de-solid,
+[data-theme="dark"] body.is-linux.de-solid #app,
+[data-theme="dark"] body.is-linux.de-solid .cathet-root,
+[data-theme="dark"] body.is-linux.de-solid .workspace-shell {
   --col-bg-main: #12141c;
   --col-bg-bar: #161821;
   --col-accent: #3daee9;
@@ -26,9 +44,21 @@ body.is-linux.de-solid[data-theme="dark"],
 }
 
 body.is-linux[data-theme="light"],
+body.is-linux[data-theme="light"] #app,
+body.is-linux[data-theme="light"] .cathet-root,
+body.is-linux[data-theme="light"] .workspace-shell,
 body.is-linux.de-solid[data-theme="light"],
+body.is-linux.de-solid[data-theme="light"] #app,
+body.is-linux.de-solid[data-theme="light"] .cathet-root,
+body.is-linux.de-solid[data-theme="light"] .workspace-shell,
 [data-theme="light"] body.is-linux,
-[data-theme="light"] body.is-linux.de-solid {
+[data-theme="light"] body.is-linux #app,
+[data-theme="light"] body.is-linux .cathet-root,
+[data-theme="light"] body.is-linux .workspace-shell,
+[data-theme="light"] body.is-linux.de-solid,
+[data-theme="light"] body.is-linux.de-solid #app,
+[data-theme="light"] body.is-linux.de-solid .cathet-root,
+[data-theme="light"] body.is-linux.de-solid .workspace-shell {
   --col-bg-main: #f8fafc;
   --col-bg-bar: #ffffff;
   --col-accent: #1d99f3;
@@ -38,14 +68,29 @@ body.is-linux.de-solid[data-theme="light"],
 
 /* 3. Optional Opt-In Translucent Glass (for KWin Force-Blur or Hyprland) */
 body.is-linux.de-blur,
+body.is-linux.de-blur #app,
+body.is-linux.de-blur .cathet-root,
+body.is-linux.de-blur .workspace-shell,
 body.is-linux.de-blur[data-theme="dark"],
-[data-theme="dark"] body.is-linux.de-blur {
+body.is-linux.de-blur[data-theme="dark"] #app,
+body.is-linux.de-blur[data-theme="dark"] .cathet-root,
+body.is-linux.de-blur[data-theme="dark"] .workspace-shell,
+[data-theme="dark"] body.is-linux.de-blur,
+[data-theme="dark"] body.is-linux.de-blur #app,
+[data-theme="dark"] body.is-linux.de-blur .cathet-root,
+[data-theme="dark"] body.is-linux.de-blur .workspace-shell {
   --col-bg-main: rgba(27, 30, 32, 0.88);
   --col-bg-bar: rgba(35, 38, 41, 0.94);
 }
 
 body.is-linux.de-blur[data-theme="light"],
-[data-theme="light"] body.is-linux.de-blur {
+body.is-linux.de-blur[data-theme="light"] #app,
+body.is-linux.de-blur[data-theme="light"] .cathet-root,
+body.is-linux.de-blur[data-theme="light"] .workspace-shell,
+[data-theme="light"] body.is-linux.de-blur,
+[data-theme="light"] body.is-linux.de-blur #app,
+[data-theme="light"] body.is-linux.de-blur .cathet-root,
+[data-theme="light"] body.is-linux.de-blur .workspace-shell {
   --col-bg-main: rgba(252, 252, 252, 0.90);
   --col-bg-bar: rgba(239, 240, 241, 0.95);
 }
