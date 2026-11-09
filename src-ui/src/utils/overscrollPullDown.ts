@@ -8,6 +8,7 @@
  */
 
 import { VaultLockHud } from "../components/home/VaultLockHud";
+import { triggerHapticTick, triggerHapticUnlock, triggerHapticEngage } from "./hapticFeedback";
 
 export interface OverscrollPullDownOptions {
   container: HTMLElement;
@@ -35,8 +36,7 @@ export class OverscrollPullDownDetector {
   private state: PullState = "IDLE";
   private hud: VaultLockHud;
 
-  private ticked30 = false;
-  private ticked60 = false;
+  private lastDetentStep = 0;
   private hasEngagedVibrated = false;
 
   private touchStartHandler!: (e: TouchEvent) => void;
@@ -64,8 +64,7 @@ export class OverscrollPullDownDetector {
       if (scrollTop <= 0) {
         this.startY = e.touches[0].clientY;
         this.state = "IDLE";
-        this.ticked30 = false;
-        this.ticked60 = false;
+        this.lastDetentStep = 0;
         this.hasEngagedVibrated = false;
       }
     };
@@ -103,7 +102,7 @@ export class OverscrollPullDownDetector {
           this.hud.setEngaged(true);
           if (!this.hasEngagedVibrated) {
             this.hasEngagedVibrated = true;
-            try { navigator.vibrate?.(12); } catch (_) {}
+            triggerHapticEngage();
           }
         }
 
@@ -114,20 +113,20 @@ export class OverscrollPullDownDetector {
           const degrees = turnProgress * 90;
           this.hud.setRotation(degrees);
 
-          if (degrees >= 30 && !this.ticked30) {
-            this.ticked30 = true;
-            try { navigator.vibrate?.(8); } catch (_) {}
-          }
-          if (degrees >= 60 && !this.ticked60) {
-            this.ticked60 = true;
-            try { navigator.vibrate?.(12); } catch (_) {}
+          // Ratchet haptic clicks every 9° (matching dial graduation ticks)
+          const currentDetent = Math.floor(degrees / 9);
+          if (currentDetent !== this.lastDetentStep) {
+            this.lastDetentStep = currentDetent;
+            if (currentDetent > 0 && degrees < 90) {
+              triggerHapticTick();
+            }
           }
 
           if (turnProgress >= 1) {
             if (this.state !== "UNLOCKED") {
               this.state = "UNLOCKED";
               this.hud.setUnlocked(true);
-              try { navigator.vibrate?.([15, 30, 20]); } catch (_) {}
+              triggerHapticUnlock();
             }
           } else {
             if (this.state === "UNLOCKED") {
@@ -139,14 +138,14 @@ export class OverscrollPullDownDetector {
           this.hud.setRotation(0);
           this.hud.setUnlocked(false);
           this.state = "ENGAGED";
+          this.lastDetentStep = 0;
         }
       } else {
         this.state = "PULLING";
         this.hud.setEngaged(false);
         this.hud.setRotation(0);
         this.hasEngagedVibrated = false;
-        this.ticked30 = false;
-        this.ticked60 = false;
+        this.lastDetentStep = 0;
       }
     };
 

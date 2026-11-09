@@ -460,14 +460,14 @@
 
 .vault-cylinder {
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  background: var(--col-menu-bg, rgba(24, 26, 33, 0.85));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--col-menu-bg, rgba(24, 26, 33, 0.92));
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--col-border, rgba(255, 255, 255, 0.12));
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -476,46 +476,40 @@
   will-change: transform, border-color, box-shadow;
 }
 
-.vault-dial-ring {
-  position: absolute;
-  top: 2px;
-  left: 2px;
+.vault-safe-dial {
+  width: 58px;
+  height: 58px;
   pointer-events: none;
-  color: var(--col-text-muted, #94a3b8);
 }
 
-.vault-key-rotor {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  transform-origin: center center;
-  transition: color 0.15s ease;
+.vault-safe-rotor {
+  transform-origin: 60px 60px;
   will-change: transform;
-}
-
-.vault-key-icon {
-  flex-shrink: 0;
 }
 
 .vault-lock-hud.is-engaged .vault-cylinder {
   border-color: rgba(56, 189, 248, 0.5);
   box-shadow: 0 0 16px rgba(56, 189, 248, 0.25), 0 4px 20px rgba(0, 0, 0, 0.35);
-  color: #38bdf8;
-  transform: scale(1.06);
+  transform: scale(1.05);
 }
 
 .vault-lock-hud.is-unlocked .vault-cylinder {
-  border-color: #38bdf8;
-  background: rgba(14, 165, 233, 0.2);
-  box-shadow: 0 0 26px rgba(56, 189, 248, 0.65), 0 4px 20px rgba(0, 0, 0, 0.4);
-  color: #38bdf8;
-  transform: scale(1.12);
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 28px rgba(16, 185, 129, 0.55), 0 4px 24px rgba(0, 0, 0, 0.5);
+  transform: scale(1.1);
 }
 
-.vault-lock-hud.is-unlocked .vault-key-rotor {
-  color: #38bdf8;
+.vault-lock-hud.is-unlocked .vault-safe-hub {
+  stroke: #10b981 !important;
+}
+
+.vault-lock-hud.is-unlocked .vault-safe-hub-notch {
+  stroke: #10b981 !important;
+}
+
+.vault-lock-hud.is-unlocked .vault-safe-hub-dot {
+  fill: #10b981 !important;
 }
 
 /* Exit Private Notes Button */
