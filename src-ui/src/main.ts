@@ -25,6 +25,7 @@ import { buildContextMenuItems } from "./utils/contextMenuItems";
 import { buildMainMenuItems } from "./utils/mainMenuItems";
 import { registerWindowSyncListeners } from "./utils/windowSync";
 import { setupKeyboardCommitListener } from "./utils/editorPasteHandler";
+import { SelectionScrollGuard } from "./utils/selectionScrollGuard";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -52,6 +53,7 @@ class CathetApp {
 
   private init(): void {
     PlatformService.getInstance().applyPlatformClasses();
+    SelectionScrollGuard.getInstance();
     this.topBar.setTitle("Untitled");
     this.editor.setFontFamily(this.fontService.getCurrentFont().family);
     invoke("sync_window_theme", { theme: this.themeService.getTheme() }).catch(console.error);

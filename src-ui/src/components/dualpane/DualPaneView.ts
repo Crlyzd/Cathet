@@ -37,7 +37,6 @@ export class DualPaneView {
   private editorLeft: EditorComponent;
   private editorRight: EditorComponent | null = null;
   private scrollSync = new SyncScrollController();
-  private selectionGuard: SelectionScrollGuard | null = null;
   private activePane: "left" | "right" = "left";
   private callbacks: DualPaneCallbacks;
   private embeddedHomeLeft: any = null;
@@ -101,6 +100,8 @@ export class DualPaneView {
 
     this.leftPaneEl.addEventListener("mousedown", () => this.setActivePane("left"));
     this.rightPaneEl.addEventListener("mousedown", () => this.setActivePane("right"));
+    this.leftPaneEl.addEventListener("touchstart", () => this.setActivePane("left"), { passive: true });
+    this.rightPaneEl.addEventListener("touchstart", () => this.setActivePane("right"), { passive: true });
   }
 
   setSplitRatio(pct: number): void { this.leftPaneEl.style.flex = `0 0 ${pct}%`; }
@@ -123,29 +124,12 @@ export class DualPaneView {
   setLeftTitle(t: string): void { this.headerLeft.setTitle(formatDisplayTitle(t)); }
   setRightTitle(t: string): void { this.headerRight.setTitle(formatDisplayTitle(t)); }
   setLeftPreviewActive(a: boolean): void { this.headerLeft.setPreviewActive(a); }
-
   setSnapScroll(enabled: boolean): void { this.scrollSync.setSnapScroll(enabled); this.splitter.setSnapScroll(enabled); }
-  toggleLock(): boolean {
-    const l = this.scrollSync.toggleLock();
-    this.splitter.setSyncLocked(l);
-    this.callbacks.onSyncChange?.(l);
-    return l;
-  }
-  setSyncLocked(locked: boolean): void {
-    if (this.scrollSync.isLocked() !== locked) this.scrollSync.toggleLock();
-    this.splitter.setSyncLocked(locked);
-    this.callbacks.onSyncChange?.(locked);
-  }
+  toggleLock(): boolean { const l = this.scrollSync.toggleLock(); this.splitter.setSyncLocked(l); this.callbacks.onSyncChange?.(l); return l; }
+  setSyncLocked(locked: boolean): void { if (this.scrollSync.isLocked() !== locked) this.scrollSync.toggleLock(); this.splitter.setSyncLocked(locked); this.callbacks.onSyncChange?.(locked); }
   isSyncLocked(): boolean { return this.scrollSync.isLocked(); }
-  toggleLeftPreview(): void {
-    this.headerLeft.setPreviewActive(this.editorLeft.toggleMarkdownPreview());
-    this.scrollSync.resync("left");
-  }
-  toggleRightPreview(): void {
-    if (!this.editorRight) return;
-    this.headerRight.setPreviewActive(this.editorRight.toggleMarkdownPreview());
-    this.scrollSync.resync("right");
-  }
+  toggleLeftPreview(): void { this.headerLeft.setPreviewActive(this.editorLeft.toggleMarkdownPreview()); this.scrollSync.resync("left"); }
+  toggleRightPreview(): void { if (!this.editorRight) return; this.headerRight.setPreviewActive(this.editorRight.toggleMarkdownPreview()); this.scrollSync.resync("right"); }
 
   setEmbeddedHome(pane: "left" | "right", instance: any): void {
     const cur = pane === "left" ? this.embeddedHomeLeft : this.embeddedHomeRight;
@@ -164,8 +148,6 @@ export class DualPaneView {
 
   showEmptyRightPane(): void {
     if (this.editorRight) {
-      this.selectionGuard?.destroy();
-      this.selectionGuard = null;
       this.scrollSync.detach();
       this.editorRight.destroy();
       this.editorRight = null;
@@ -199,14 +181,7 @@ export class DualPaneView {
     this.editorLeft.setTouchZoomOptions(zOpt(() => this.editorRight));
     this.editorRight.setTouchZoomOptions(zOpt(() => this.editorLeft));
 
-    if (this.selectionGuard) this.selectionGuard.destroy();
-    this.selectionGuard = new SelectionScrollGuard(
-      this.editorLeft.getWrapperEl(),
-      this.editorRight.getWrapperEl(),
-      () => this.activePane,
-      (src) => { if (this.scrollSync.isLocked()) this.scrollSync.resync(src); }
-    );
-    this.scrollSync.setSelectionSuppressed(() => this.selectionGuard?.isSelectionActive() ?? false);
+    this.scrollSync.setSelectionSuppressed(() => SelectionScrollGuard.getInstance().isSelectionActive());
 
     this.setActivePane("right");
     return this.editorRight;
@@ -235,8 +210,6 @@ export class DualPaneView {
   destroy(): void {
     this.clearEmbeddedHome("left");
     this.clearEmbeddedHome("right");
-    this.selectionGuard?.destroy();
-    this.selectionGuard = null;
     this.editorLeft.setTouchZoomOptions(undefined);
     this.scrollSync.detach();
     if (this.emptyDropzone) this.emptyDropzone.destroy();

@@ -529,22 +529,27 @@ body.is-dragging .dualpane-empty {
   .dualpane-empty {
     padding: 14px 12px;
   }
+
   .dualpane-empty-card {
     padding: 16px 14px;
     gap: 8px;
     border-radius: 10px;
   }
+
   .dualpane-empty-icon {
     width: 24px;
     height: 24px;
   }
+
   .dualpane-empty-title {
     font-size: 12px;
   }
+
   .dualpane-empty-desc {
     font-size: 10.5px;
     line-height: 1.35;
   }
+
   .dualpane-empty-btn {
     padding: 4px 10px;
     font-size: 10.5px;
@@ -555,39 +560,48 @@ body.is-dragging .dualpane-empty {
   .dualpane-empty {
     padding: 10px 14px;
   }
+
   .dualpane-empty-card {
     padding: 10px 12px;
     gap: 5px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
   }
+
   [data-theme="light"] .dualpane-empty-card {
     box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
   }
+
   .dualpane-empty-actions {
     gap: 4px;
   }
+
   .dualpane-empty-icon {
     width: 20px;
     height: 20px;
   }
+
   .dualpane-empty-title {
     font-size: 11.5px;
     white-space: nowrap;
   }
+
   .dualpane-empty-desc {
     font-size: 10px;
     line-height: 1.3;
   }
+
   .dualpane-empty-btn {
     padding: 3px 6px;
     font-size: 9.5px;
     border-radius: 5px;
     min-width: 28px;
   }
+
   .dualpane-empty-btn-full {
     display: none;
   }
+
   .dualpane-empty-btn-compact {
     display: inline;
   }
@@ -597,27 +611,33 @@ body.is-dragging .dualpane-empty {
   .dualpane-empty {
     padding: 8px 12px;
   }
+
   .dualpane-empty-card {
     padding: 8px 10px;
     gap: 4px;
   }
+
   .dualpane-empty-actions {
     flex-direction: column;
     gap: 3px;
     width: 100%;
     box-sizing: border-box;
   }
+
   .dualpane-empty-icon {
     width: 16px;
     height: 16px;
   }
+
   .dualpane-empty-title {
     font-size: 10.5px;
     white-space: nowrap;
   }
+
   .dualpane-empty-desc {
     display: none;
   }
+
   .dualpane-empty-btn {
     width: 100%;
     box-sizing: border-box;
@@ -632,20 +652,25 @@ body.is-dragging .dualpane-empty {
   .dualpane-empty {
     padding: 8px 14px;
   }
+
   .dualpane-empty-card {
     padding: 8px 12px;
     gap: 4px;
   }
+
   .dualpane-empty-icon {
     width: 18px;
     height: 18px;
   }
+
   .dualpane-empty-title {
     font-size: 11.5px;
   }
+
   .dualpane-empty-desc {
     display: none;
   }
+
   .dualpane-empty-btn {
     padding: 3px 10px;
     font-size: 10px;
@@ -661,6 +686,7 @@ body.is-dragging .dualpane-empty {
     opacity: 0;
     transform: translateX(32px);
   }
+
   100% {
     opacity: 1;
     transform: translateX(0);
@@ -672,6 +698,7 @@ body.is-dragging .dualpane-empty {
     opacity: 1;
     transform: translateX(0);
   }
+
   100% {
     opacity: 0;
     transform: translateX(32px);
@@ -683,6 +710,7 @@ body.is-dragging .dualpane-empty {
     opacity: 0;
     transform: translateY(28px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -694,6 +722,7 @@ body.is-dragging .dualpane-empty {
     opacity: 1;
     transform: translateY(0);
   }
+
   100% {
     opacity: 0;
     transform: translateY(24px);
@@ -701,13 +730,23 @@ body.is-dragging .dualpane-empty {
 }
 
 @keyframes splitterFadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes splitterFadeOut {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 .dualpane-pane-right.entering {
@@ -730,10 +769,16 @@ body.is-dragging .dualpane-empty {
   will-change: opacity;
 }
 
-body.is-mobile .dualpane-pane-right.entering { animation-name: dualPaneEnterBottom; }
-body.is-mobile .dualpane-pane-right.exiting { animation-name: dualPaneExitBottom; }
+body.is-mobile .dualpane-pane-right.entering {
+  animation-name: dualPaneEnterBottom;
+}
+
+body.is-mobile .dualpane-pane-right.exiting {
+  animation-name: dualPaneExitBottom;
+}
 
 @media (prefers-reduced-motion: reduce) {
+
   .dualpane-pane-right.entering,
   .dualpane-pane-right.exiting,
   .dualpane-splitter.entering,
@@ -744,4 +789,3 @@ body.is-mobile .dualpane-pane-right.exiting { animation-name: dualPaneExitBottom
     opacity: 1 !important;
   }
 }
-
