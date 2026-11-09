@@ -38,6 +38,7 @@ export class MobileActionBarComponent {
   private btnFormat!: HTMLButtonElement;
   private btnMarkdown!: HTMLButtonElement;
   private btnDual!: HTMLButtonElement;
+  private btnSettings: HTMLButtonElement | null = null;
   private btnSync: HTMLButtonElement | null = null;
 
   constructor(containerId: string, callbacks: MobileActionBarCallbacks) {
@@ -72,8 +73,8 @@ export class MobileActionBarComponent {
         <button class="mobile-action-btn" id="mobile-btn-open" title="${t("menu.open")}">${icons.folder}</button>
         <button class="mobile-action-btn" id="mobile-btn-save" title="${t("menu.save")}">${icons.save}</button>
         <button class="mobile-action-btn" id="mobile-btn-search" title="${t("home.searchPlaceholder") || "Find"}">${icons.search}</button>
-        <button class="mobile-action-btn" id="mobile-btn-format" title="${t("context.format")}">${formatIcons.formatAa}</button>
         <button class="mobile-action-btn" id="mobile-btn-markdown" title="${t("menu.markdownPreview")}">${icons.eye}</button>
+        <button class="mobile-action-btn" id="mobile-btn-format" title="${t("context.format")}">${formatIcons.formatAa}</button>
         <button class="mobile-action-btn" id="mobile-btn-dual" title="${t("menu.dualPane")}">${icons.dualpane}</button>
         <button class="mobile-action-btn" id="mobile-btn-settings" title="${t("menu.settings")}">${icons.settings}</button>
       </div>
@@ -82,16 +83,13 @@ export class MobileActionBarComponent {
     this.btnFormat = this.element.querySelector("#mobile-btn-format")!;
     this.btnMarkdown = this.element.querySelector("#mobile-btn-markdown")!;
     this.btnDual = this.element.querySelector("#mobile-btn-dual")!;
+    this.btnSettings = this.element.querySelector("#mobile-btn-settings");
   }
 
   private bindEvents(): void {
     this.pill.addEventListener("mousedown", (e) => e.preventDefault());
     this.pill.addEventListener("click", (e) => {
-      if (this.isSmall) {
-        e.stopPropagation();
-        this.expand();
-        return;
-      }
+      if (this.isSmall) { e.stopPropagation(); this.expand(); return; }
       this.scheduleAutoCollapse();
     });
 
@@ -104,7 +102,7 @@ export class MobileActionBarComponent {
     });
     this.btnMarkdown.addEventListener("click", () => this.callbacks.onToggleMarkdown());
     this.btnDual.addEventListener("click", () => this.callbacks.onToggleDualPane());
-    this.element.querySelector("#mobile-btn-settings")?.addEventListener("click", () => this.callbacks.onOpenSettings());
+    this.btnSettings?.addEventListener("click", () => this.callbacks.onOpenSettings());
   }
 
   setFormatMode(enabled: boolean): void {
@@ -227,6 +225,7 @@ export class MobileActionBarComponent {
   setDualPaneState(isDual: boolean): void {
     this.isDualPane = isDual;
     this.btnDual.classList.toggle("active", isDual);
+    if (this.btnSettings) this.btnSettings.style.display = isDual ? "none" : "";
     this.updateSyncButton();
   }
 

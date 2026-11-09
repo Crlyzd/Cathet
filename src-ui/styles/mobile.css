@@ -99,6 +99,13 @@ body.is-mobile .editor-wrapper {
   -webkit-overflow-scrolling: touch !important;
   touch-action: pan-y !important;
   overscroll-behavior-y: contain;
+  overflow-anchor: none !important;
+}
+
+body.is-mobile .editor-wrapper.selection-frozen {
+  overflow-y: hidden !important;
+  overflow: hidden !important;
+  touch-action: none !important;
 }
 
 body.is-mobile .editor-content {
@@ -106,6 +113,7 @@ body.is-mobile .editor-content {
   -webkit-touch-callout: default !important;
   user-select: text !important;
   -webkit-user-select: text !important;
+  overflow-anchor: none !important;
 }
 
 /* 2. Touch-Friendly Top Bar */
@@ -178,7 +186,7 @@ body.is-mobile.is-keyboard-open .mobile-action-bar {
     border-radius 340ms cubic-bezier(0.2, 0, 0, 1),
     box-shadow 340ms ease;
   overflow: hidden;
-  max-width: 396px;
+  max-width: min(440px, calc(100vw - 20px));
 }
 
 body.is-mobile[data-theme="light"] .mobile-action-pill {
