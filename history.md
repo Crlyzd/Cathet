@@ -227,6 +227,19 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-10: Cross-Platform Documentation Parity & v5.4.0 README.md Overhaul
+- **Summary**:
+  - Overhauled `README.md` to reflect full cross-platform capabilities across Windows, Linux, and Android for Cathet v5.4.0.
+  - Added Linux distribution documentation covering Debian (`.deb` ~3.3 MB), Red Hat (`.rpm` ~3.3 MB with embedded GPG signatures), and universal AppImage (`.AppImage` ~78 MB), along with release verification using `cathet-release-key.asc` and `SHA256SUMS.asc`.
+  - Added Linux Desktop Highlights detailing WebKitGTK 4.1 & GTK 3 engine, desktop environment auto-detection (KDE Plasma, GNOME, XFCE), Solid Slate default canvas with configurable blur, XDG MIME associations, and native updater handover via `xdg-open`.
+  - Documented Android v5.4.0 features including the 2D pull-down and turn-right rotary safe combination tumbler dial HUD with native ratchet haptics (`CLOCK_TICK`), CSS Custom Highlight API in-document search, zero-footprint scrollbars, and phone ARM64 split APKs (~7.2 MB).
+  - Documented Microsoft Store multi-architecture MSIX bundle (`.msixbundle` ~3.7 MB) and store auto-updater policy integration.
+  - Aligned desktop shortcuts (`Ctrl + F` search), mobile touch gestures table, FAQs, and developer single-script automation (`build.ps1`) commands.
+- **Affected Files**:
+  - `README.md`
+  - `history.md`
+
+
 ### 2026-11-09: Package Metadata Licensing & Author Attribution Configuration (GPL-3.0 & Crlyzd)
 - **Summary**:
   - Configured project author attribution (`Crlyzd`) and SPDX standard license (`GPL-3.0-or-later`) across `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`.
