@@ -49,6 +49,27 @@ class MainActivity : TauriActivity() {
 
   override fun onWebViewCreate(webView: WebView) {
     super.onWebViewCreate(webView)
+    webView.addJavascriptInterface(object {
+      @android.webkit.JavascriptInterface
+      fun performHaptic(type: String) {
+        activeInstance?.runOnUiThread {
+          val v = webView
+          when (type) {
+            "tick" -> {
+              v.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING)
+            }
+            "unlock" -> {
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                v.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING)
+              } else {
+                v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+              }
+            }
+            else -> v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+          }
+        }
+      }
+    }, "CathetNativeHaptic")
     ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
       val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
       val density = resources.displayMetrics.density.coerceAtLeast(1f)
