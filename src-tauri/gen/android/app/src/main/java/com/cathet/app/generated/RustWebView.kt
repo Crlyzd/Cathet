@@ -104,6 +104,7 @@ class RustWebView(context: Context, val initScripts: Array<String>, val id: Stri
     
 
 
+
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
         val ic = super.onCreateInputConnection(outAttrs) ?: return null
         val mimeTypes = arrayOf(
