@@ -173,3 +173,4 @@ export function scrollToMatch(wrapper: HTMLElement, range: Range, smooth = false
     parent?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "center" });
   }
 }
+
