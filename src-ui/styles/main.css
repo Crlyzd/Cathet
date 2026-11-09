@@ -105,6 +105,27 @@
   color: inherit;
 }
 
+/* In-Document Search Highlight API */
+::highlight(cathet-search-match) {
+  background-color: rgba(250, 204, 21, 0.4);
+  color: inherit;
+}
+
+::highlight(cathet-search-current) {
+  background-color: #f59e0b;
+  color: #000000;
+}
+
+[data-theme="light"] ::highlight(cathet-search-match) {
+  background-color: rgba(234, 179, 8, 0.35);
+  color: inherit;
+}
+
+[data-theme="light"] ::highlight(cathet-search-current) {
+  background-color: #f59e0b;
+  color: #ffffff;
+}
+
 html,
 body {
   width: 100%;

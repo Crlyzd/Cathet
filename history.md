@@ -11,6 +11,18 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-09: Relying on Archaic `window.find()` for In-Document Search Causing IME Dismissal & Scroll Failures
+- **Context**: In `MobileSearchBar.ts`, `handleQueryChange` invoked `(window as any).find(q, false, false, true)` on every `input` event to find matches in the document.
+- **User Correction**: *"search doesnt jump to the searche text, also, typing each word makes keyboard dissapeard each word typed"*
+- **Root Cause**:
+  1. `window.find()` modifies the window DOM selection to highlight matches. In Chromium / Android WebView, setting the window selection outside of the active text `<input>` causes `<input>` to blur, which commands the Android IME (Gboard) to close immediately on every typed character or committed word.
+  2. `window.find()` only attempts to scroll the root window (`window.scrollTo`), but in a fixed 100vh desktop/mobile app layout (`overflow: hidden; height: 100vh;`), the root window cannot scroll; the actual scrolling container is `.editor-wrapper` (`overflow: auto`). `window.find()` does not scroll inner overflow containers.
+- **Corrective Guardrail**:
+  1. NEVER use `window.find()` for in-app search.
+  2. Use DOM TreeWalker Range detection (`domSearch.ts`) and CSS Custom Highlight API (`CSS.highlights.set("cathet-search-match", ...)` / `cathet-search-current`) which does not mutate the DOM or touch window selection, keeping `<input>` focused so the virtual keyboard stays open.
+  3. Scroll `.editor-wrapper` directly to the calculated relative offset of the matched `Range` (`wrapper.scrollTo(...)`) placed comfortably in the upper 30% of the visible container above the keyboard/dock.
+  4. Attach `preventDefault()` on `pointerdown` and `mousedown` for search navigation controls so tapping Next/Prev never blurs the search `<input>`.
+
 ### [Mistake] 2026-11-09: Intercepting & Artificially Controlling Mobile Selection/Scrolling
 - **Context**: Attempted multiple synthetic mechanisms (`SelectionScrollGuard`, RAF panning, boundary caret clamping, `.selection-frozen`, `scrollTop` event locks, and selection suppression in scroll sync) to override native Android selection and autoscroll behavior. In practice, these synthetic interventions continuously fought Chromium's native selection physics, causing violent slings to top, cross-pane selection leaks, and blocked manual swipe scrolls.
 - **User Correction**: *"yo I revert your implementtaion, it doesnt fucking work, at this point just remove all the code controlling how slecting/scrolling work in the app for the android version"*
@@ -181,6 +193,13 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-09: Overhauled In-Document Search with CSS Custom Highlight API & Direct Wrapper Scrolling
+- **Summary**:
+  - Fixed soft keyboard disappearing on each typed word by eliminating `window.find()` in `MobileSearchBar.ts`. Replaced with `domSearch.ts` using the CSS Custom Highlight API (`::highlight(cathet-search-match)` and `::highlight(cathet-search-current)`). The search input maintains uninterrupted focus throughout typing and navigation.
+  - Fixed search not scrolling or jumping to matched text by calculating the exact relative offset between the matched `Range` and the active `.editor-wrapper`, using `wrapper.scrollTo()` to smoothly/instantly position matches at ~30% container height (safely above the keyboard and floating search ribbon).
+  - Attached `preventDefault()` on `pointerdown` and `mousedown` for search bar navigation buttons (`#mobile-search-prev`, `#mobile-search-next`) and container, preventing focus loss and IME dismissal when cycling matches.
+  - Affected files: `src-ui/src/utils/domSearch.ts`, `src-ui/src/components/MobileSearchBar.ts`, `src-ui/styles/main.css`, `history.md`.
 
 ### 2026-11-09: Centered Markdown Preview Hero Button & Dynamic Settings Swap in Mobile Dock
 - **Summary**:

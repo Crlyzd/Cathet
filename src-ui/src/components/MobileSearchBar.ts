@@ -1,6 +1,12 @@
 import { icons } from "../utils/monochromeIcons";
 import { t } from "../services/i18nService";
 import type { EditorComponent } from "./Editor";
+import {
+  findMatches,
+  highlightMatches,
+  clearHighlights,
+  scrollToMatch,
+} from "../utils/domSearch";
 
 export class MobileSearchBarComponent {
   private element: HTMLElement;
@@ -12,8 +18,9 @@ export class MobileSearchBarComponent {
   private getActiveEditor: () => EditorComponent;
   private onCloseCallback: () => void;
   private visible = false;
-  private currentMatch = 0;
+  private currentMatchIndex = -1;
   private totalMatches = 0;
+  private matchRanges: Range[] = [];
 
   constructor(
     container: HTMLElement,
@@ -50,63 +57,91 @@ export class MobileSearchBarComponent {
   }
 
   private bindEvents(): void {
-    this.element.addEventListener("mousedown", (e) => e.stopPropagation());
+    // Prevent focus loss from input when touching search ribbon or nav buttons
+    const preventUnfocus = (e: Event) => {
+      if (e.target !== this.input) {
+        e.preventDefault();
+      }
+    };
+    this.element.addEventListener("mousedown", preventUnfocus);
+    this.element.addEventListener("pointerdown", preventUnfocus);
 
     this.input.addEventListener("input", () => this.handleQueryChange());
     this.input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        if (e.shiftKey) this.findPrevious(); else this.findNext();
+        if (e.shiftKey) this.findPrevious();
+        else this.findNext();
       } else if (e.key === "Escape") {
         e.preventDefault();
         this.hide();
       }
     });
 
-    this.btnPrev.addEventListener("click", (e) => { e.stopPropagation(); this.findPrevious(); });
-    this.btnNext.addEventListener("click", (e) => { e.stopPropagation(); this.findNext(); });
-    this.btnClose.addEventListener("click", (e) => { e.stopPropagation(); this.hide(); });
+    this.btnPrev.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.findPrevious();
+    });
+    this.btnNext.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.findNext();
+    });
+    this.btnClose.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.hide();
+    });
   }
 
   private handleQueryChange(): void {
     const q = this.input.value.trim();
     if (!q) {
+      this.matchRanges = [];
+      this.currentMatchIndex = -1;
       this.totalMatches = 0;
-      this.currentMatch = 0;
       this.counter.textContent = "0/0";
+      clearHighlights();
       return;
     }
 
-    const text = this.getActiveEditor().getText();
-    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-    const matches = text.match(regex);
-    this.totalMatches = matches ? matches.length : 0;
-    this.currentMatch = this.totalMatches > 0 ? 1 : 0;
-    this.counter.textContent = `${this.currentMatch}/${this.totalMatches}`;
+    const activeEditor = this.getActiveEditor();
+    const editorEl = activeEditor.getEditorEl();
+    const wrapperEl = activeEditor.getWrapperEl();
 
-    if (this.totalMatches > 0 && typeof (window as any).find === "function") {
-      (window as any).find(q, false, false, true);
+    const { ranges, total } = findMatches(editorEl, q);
+    this.matchRanges = ranges;
+    this.totalMatches = total;
+
+    if (ranges.length > 0) {
+      this.currentMatchIndex = 0;
+      this.counter.textContent = `1/${total}`;
+      highlightMatches(ranges, 0);
+      scrollToMatch(wrapperEl, ranges[0], false);
+    } else {
+      this.currentMatchIndex = -1;
+      this.counter.textContent = "0/0";
+      clearHighlights();
     }
   }
 
   findNext(): void {
-    const q = this.input.value.trim();
-    if (!q || typeof (window as any).find !== "function") return;
-    const found = (window as any).find(q, false, false, true);
-    if (found && this.totalMatches > 0) {
-      this.currentMatch = (this.currentMatch % this.totalMatches) + 1;
-      this.counter.textContent = `${this.currentMatch}/${this.totalMatches}`;
-    }
+    if (this.matchRanges.length === 0) return;
+    this.currentMatchIndex = (this.currentMatchIndex + 1) % this.matchRanges.length;
+    this.counter.textContent = `${this.currentMatchIndex + 1}/${this.totalMatches}`;
+    highlightMatches(this.matchRanges, this.currentMatchIndex);
+    const activeEditor = this.getActiveEditor();
+    scrollToMatch(activeEditor.getWrapperEl(), this.matchRanges[this.currentMatchIndex], true);
   }
 
   findPrevious(): void {
-    const q = this.input.value.trim();
-    if (!q || typeof (window as any).find !== "function") return;
-    const found = (window as any).find(q, false, true, true);
-    if (found && this.totalMatches > 0) {
-      this.currentMatch = this.currentMatch <= 1 ? this.totalMatches : this.currentMatch - 1;
-      this.counter.textContent = `${this.currentMatch}/${this.totalMatches}`;
-    }
+    if (this.matchRanges.length === 0) return;
+    this.currentMatchIndex =
+      this.currentMatchIndex <= 0
+        ? this.matchRanges.length - 1
+        : this.currentMatchIndex - 1;
+    this.counter.textContent = `${this.currentMatchIndex + 1}/${this.totalMatches}`;
+    highlightMatches(this.matchRanges, this.currentMatchIndex);
+    const activeEditor = this.getActiveEditor();
+    scrollToMatch(activeEditor.getWrapperEl(), this.matchRanges[this.currentMatchIndex], true);
   }
 
   show(): void {
@@ -124,6 +159,7 @@ export class MobileSearchBarComponent {
     this.visible = false;
     this.element.style.display = "none";
     this.input.blur();
+    clearHighlights();
     this.onCloseCallback();
   }
 
@@ -132,6 +168,7 @@ export class MobileSearchBarComponent {
   }
 
   destroy(): void {
+    clearHighlights();
     this.element.remove();
   }
 }
