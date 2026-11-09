@@ -194,6 +194,16 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-09: Eliminated Android Document Open Text Reflow Flash via Zero-Footprint Mobile Scrollbars
+- **Summary**:
+  - Eliminated the 0.1–0.3s layout reflow and text rearrangement flash when opening documents from Android Home or toggling Edit/Preview modes.
+  - Identified that desktop scrollbar rules (`.editor-wrapper::-webkit-scrollbar { width: 8px; }`) in `editor.css` leaked onto mobile Android WebView, causing Chromium to allocate a physical 8px non-overlay gutter once `ContainerTransform.expand` completed and removed `body.is-animating-transform` (which previously suppressed scrollbars to 0px).
+  - Enforced permanent zero-footprint overlay scrollbars on mobile via `body.is-mobile .editor-wrapper` and `body.is-mobile *::-webkit-scrollbar` (`scrollbar-width: none !important; -ms-overflow-style: none !important; width: 0 !important; height: 0 !important; display: none !important;`) in `src-ui/styles/mobile.css`.
+  - Guaranteed invariant text layout width ($W_{t=0} = W_{t=380\text{ms}}$) across pre-animation, in-flight expansion, resting edit mode, and markdown preview mode on Android while preserving polished 8px frosted glass scrollbars on Windows Desktop.
+- **Affected Files**:
+  - `src-ui/styles/mobile.css`: Added mobile scrollbar suppression rules on `.editor-wrapper` and mobile elements.
+  - `history.md`: Documented root cause and institutional fix.
+
 ### 2026-11-09: Overhauled In-Document Search with CSS Custom Highlight API & Direct Wrapper Scrolling
 - **Summary**:
   - Fixed soft keyboard disappearing on each typed word by eliminating `window.find()` in `MobileSearchBar.ts`. Replaced with `domSearch.ts` using the CSS Custom Highlight API (`::highlight(cathet-search-match)` and `::highlight(cathet-search-current)`). The search input maintains uninterrupted focus throughout typing and navigation.
