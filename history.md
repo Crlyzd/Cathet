@@ -11,6 +11,22 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-09: WSL Linux Bundle Packaging Selecting Stale Cached Artifacts via Alphabetical Glob (`build.ps1`)
+- **Context**: In `build.ps1` lines 400-406, `Invoke-LinuxBundle` copied the compiled Linux RPM/AppImage using `artifacts=(/root/.cache/cathet-target/release/bundle/__BUNDLE__/*.__EXT__)` followed by `cp -f "${artifacts[0]}" ./__OUTDIR__/__DEST_FILE__`.
+- **User Correction**: User shared a screenshot of package installer showing `cathet-v5.4.0-x86_64.rpm` with metadata `Version: 5.3.0-1`.
+- **Root Cause**: Bash glob array expansion sorts filenames alphabetically. When the persistent WSL target cache (`/root/.cache/cathet-target`) already contained older builds (such as `Cathet-5.3.0-1.x86_64.rpm`), `5.3.0` sorted before `5.4.0`. As a result, `build.ps1` silently copied the stale 5.3.0 artifact into the 5.4.0 release package. The user was installing a file named 5.4.0 that was internally 5.3.0.
+- **Corrective Guardrail**:
+  1. Always purge the bundle directory (`rm -rf /root/.cache/cathet-target/release/bundle/__BUNDLE__`) before running `tauri build`.
+  2. Select output artifacts by modification time (`ls -t ... | head -n 1`) rather than trusting raw bash glob array indices `${artifacts[0]}`.
+
+### [Mistake] 2026-11-09: Overlooking Window Background Disparity & Attributing Transparent Window to VM KWin Blur
+- **Context**: User provided screenshots of Cathet on Linux (Fedora KDE Plasma VM) asking what was wrong. The Settings window had an opaque solid/white background while the main editor window was 100% transparent.
+- **User Correction**: *"bruh cant you see the problem? in my first SS, the cathet is 100% transparent (setting is not)"*
+- **Root Cause**: The assistant focused on theorizing about VirtualBox VM OpenGL limitations and KWin Wayland blur shaders instead of noticing the glaring disparity between the two windows: the Settings window was properly opaque/solid, while the main editor window was completely transparent because `#app` has `data-theme` which caused `[data-theme="dark/light"]` in `main.css` to override `body.is-linux`'s `--col-bg-main` back to `transparent`.
+- **Corrective Guardrail**:
+  1. When visually inspecting multi-window or screenshot issues, compare the styling and backdrop behavior between co-existing windows (e.g. Settings vs Main window) before assuming OS/VM driver failure.
+  2. If one window achieves an opaque background and another does not under the same OS/compositor, trace CSS custom property inheritance and DOM scoping differences immediately.
+
 ### [Mistake] 2026-11-09: Relying on Archaic `window.find()` for In-Document Search Causing IME Dismissal & Scroll Failures
 - **Context**: In `MobileSearchBar.ts`, `handleQueryChange` invoked `(window as any).find(q, false, false, true)` on every `input` event to find matches in the document.
 - **User Correction**: *"search doesnt jump to the searche text, also, typing each word makes keyboard dissapeard each word typed"*
@@ -193,6 +209,24 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-09: Fixed Linux Main Window Transparency Override, Settings Clipping & Tutorial Title Extension
+- **Summary**:
+  - Resolved root cause of 100% transparent main window on Linux desktop: `<div id="app" data-theme="dark">` in `index.html` and `themeService.ts` was matching `[data-theme="dark"]` in `main.css` (`--col-bg-main: transparent;`), which shadowed and overrode `body.is-linux`'s solid slate background.
+  - Explicitly scoped Linux solid and translucent custom properties (`--col-bg-main`, `--col-bg-bar`) to `#app`, `.cathet-root`, and `.workspace-shell` in `linux.css`.
+  - Removed redundant `data-theme` attribute from `#app` in `index.html` and `themeService.ts`.
+  - Fixed tutorial document display title in `main.ts` from `"Cathet Tutorial.md"` to `"Cathet Tutorial"` to uphold Rule 4 (Extension-Free Display Names).
+  - Increased Settings window default inner size from 360x420 to 360x470 in `commands/window.rs` and added padding in `settings.css` to prevent bottom option clipping.
+  - Corrected architecture label in `SettingsTabs.ts` to output `(x86_64)` on Linux instead of hardcoded `(x64)`.
+- **Affected Files**:
+  - `src-ui/styles/linux.css`: Scoped solid/blur background variables to `#app`, `.cathet-root`, and `.workspace-shell`.
+  - `index.html`: Removed `data-theme="dark"` attribute from `#app`.
+  - `src-ui/src/services/themeService.ts`: Stopped setting `data-theme` on `#app`.
+  - `src-ui/src/main.ts`: Changed `Cathet Tutorial.md` to `Cathet Tutorial`.
+  - `src-tauri/src/commands/window.rs`: Increased settings window default size to 360x470.
+  - `src-ui/styles/settings.css`: Added bottom padding to `#pane-settings`.
+  - `src-ui/src/components/SettingsTabs.ts`: Set architecture tag to `x86_64` on Linux.
+  - `history.md`: Documented mistake and change log.
 
 ### 2026-11-09: Eliminated Android Document Open Text Reflow Flash via Zero-Footprint Mobile Scrollbars
 - **Summary**:
