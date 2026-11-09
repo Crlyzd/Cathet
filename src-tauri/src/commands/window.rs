@@ -81,7 +81,7 @@ pub async fn open_settings_window(app_handle: AppHandle) -> Result<(), String> {
             tauri::WebviewUrl::App("settings.html".into()),
         )
         .title("Cathet — Settings & About")
-        .inner_size(360.0, 420.0)
+        .inner_size(360.0, 470.0)
         .resizable(false)
         .maximizable(false)
         .decorations(false)

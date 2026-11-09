@@ -91,7 +91,8 @@ export class SettingsTabsComponent {
   }
 
   private render(): void {
-    const archLabel = PlatformService.getInstance().isMobile() ? "Android" : "x64";
+    const platform = PlatformService.getInstance();
+    const archLabel = platform.isMobile() ? "Android" : platform.isLinux() ? "x86_64" : "x64";
     this.container.innerHTML = `
       <div class="settings-window">
         <!-- Compact Draggable Header -->

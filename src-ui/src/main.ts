@@ -564,7 +564,7 @@ class CathetApp {
     this.editor.setWordWrap(true);
     this.dualPaneView?.setLeftPreviewActive(true);
     this.mobileCoord?.setMarkdownState(true);
-    this.topBar.setTitle("Cathet Tutorial.md");
+    this.topBar.setTitle("Cathet Tutorial");
   }
 }
 window.addEventListener("DOMContentLoaded", () => { new CathetApp(); });
