@@ -227,6 +227,17 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-09: Package Metadata Licensing & Author Attribution Configuration (GPL-3.0 & Crlyzd)
+- **Summary**:
+  - Configured project author attribution (`Crlyzd`) and SPDX standard license (`GPL-3.0-or-later`) across `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`.
+  - Resolved "Licenses: Unknown" in Linux package managers (KDE Discover / DNF) by embedding `License: GPL-3.0-or-later` and `copyright: Crlyzd` directly into package headers.
+  - Recompiled and re-signed the release RPM package (`release/cathet-v5.4.0-x86_64.rpm`) with verified RSA/SHA256 digital signature and updated metadata.
+- **Affected Files**:
+  - `package.json`
+  - `src-tauri/Cargo.toml`
+  - `src-tauri/tauri.conf.json`
+  - `history.md`
+
 ### 2026-11-09: Linux Release Cryptographic Signing Pipeline (OpenPGP / GPG & RPM Headers)
 - **Summary**:
   - Implemented automated cryptographic signing pipeline for all Linux release artifacts (`.AppImage`, `.rpm`, `.deb`).
