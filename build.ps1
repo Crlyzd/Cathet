@@ -395,15 +395,16 @@ set -e
 export PATH="/root/.cargo/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 export APPIMAGE_EXTRACT_AND_RUN=1
 export CARGO_TARGET_DIR=/root/.cache/cathet-target
+rm -rf /root/.cache/cathet-target/release/bundle/__BUNDLE__
 /root/.cache/cathet-tauri/node_modules/.bin/tauri build --bundles __BUNDLE__ --config '{"build":{"beforeBuildCommand":""}}'
 shopt -s nocaseglob nullglob
-artifacts=(/root/.cache/cathet-target/release/bundle/__BUNDLE__/*.__EXT__)
-if [ ${#artifacts[@]} -eq 0 ]; then
+artifact=$(ls -t /root/.cache/cathet-target/release/bundle/__BUNDLE__/*.__EXT__ 2>/dev/null | head -n 1)
+if [ -z "$artifact" ]; then
     echo "[ERROR] Bundle artifact (*.__EXT__) not found in /root/.cache/cathet-target/release/bundle/__BUNDLE__/"
     exit 1
 fi
 mkdir -p ./__OUTDIR__
-cp -f "${artifacts[0]}" ./__OUTDIR__/__DEST_FILE__
+cp -f "$artifact" ./__OUTDIR__/__DEST_FILE__
 '@
         $wslCmd = ($wslCmdTemplate -replace "__BUNDLE__", $bundleType -replace "__EXT__", $ext -replace "__OUTDIR__", $OutputDir -replace "__DEST_FILE__", $destFileName)
         Invoke-WslBashScript $distro $wslCmd
