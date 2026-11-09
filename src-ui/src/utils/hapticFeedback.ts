@@ -53,3 +53,4 @@ export function triggerHapticEngage(): void {
     }
   } catch (_) {}
 }
+
