@@ -2,6 +2,8 @@
   "name": "cathet",
   "private": true,
   "version": "5.4.0",
+  "author": "Crlyzd",
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "dev": "vite",

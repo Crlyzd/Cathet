@@ -2,7 +2,8 @@
 name = "cathet"
 version = "5.4.0"
 description = "Cathet — Lightweight text & markdown editor"
-authors = ["Cathet Team"]
+authors = ["Crlyzd"]
+license = "GPL-3.0-or-later"
 edition = "2021"
 
 [lib]
