@@ -210,6 +210,25 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-09: Repository Cache Purge, Linux RPM 5.4.0 Synchronization & Clean Automation Command
+- **Summary**:
+  - Investigated and resolved user-reported Linux package installer bug where `cathet-v5.4.0-x86_64.rpm` exhibited `Version: 5.3.0-1` in the package manager.
+  - Root Cause: In WSL, persistent target cache `/root/.cache/cathet-target/release/bundle/rpm` had retained older `Cathet-5.3.0-1.x86_64.rpm` alongside `Cathet-5.4.0-1.x86_64.rpm`. Prior to commit `4d1557a`, `build.ps1` used alphabetical bash glob array expansion (`${artifacts[0]}`) which prioritized `5.3.0` over `5.4.0`. While `build.ps1` was patched, `release/cathet-v5.4.0-x86_64.rpm` on Windows was not refreshed and stale target caches remained on disk.
+  - Synchronized genuine `Version: 5.4.0` RPM (MD5: `0b06a51d843b360e5f73dfdc13ae1c54`, length: 3,490,497 bytes) into `release/cathet-v5.4.0-x86_64.rpm`, verified via `rpm -qip`.
+  - Added first-class `Invoke-CleanBuildArtifacts` to `build.ps1` with CLI switch `-Clean` and menu option `[20] Clean Build Caches & Targets (Rust, Android, WSL, Dist)`.
+  - Fully purged all ephemeral build caches across Windows and WSL:
+    - `src-tauri/target/`: Purged 5,131.24 MB.
+    - `src-tauri/gen/android/app/build/`: Purged 2,281.16 MB.
+    - `src-tauri/gen/android/.gradle/`: Purged 10.88 MB.
+    - `dist/`: Purged 0.48 MB.
+    - WSL `/root/.cache/cathet-target`: Purged ~2.20 GB.
+    - **Total space reclaimed**: ~9.62 GB.
+- **Affected Files**:
+  - `build.ps1`: Added `-Clean` switch, `Invoke-CleanBuildArtifacts`, and interactive menu option `[20]`.
+  - `release/cathet-v5.4.0-x86_64.rpm`: Refreshed with genuine 5.4.0 build binary.
+  - `history.md`: Documented changes, cache purge statistics, and RPM version synchronization.
+
+
 ### 2026-11-09: Fixed Linux Main Window Transparency Override, Settings Clipping & Tutorial Title Extension
 - **Summary**:
   - Resolved root cause of 100% transparent main window on Linux desktop: `<div id="app" data-theme="dark">` in `index.html` and `themeService.ts` was matching `[data-theme="dark"]` in `main.css` (`--col-bg-main: transparent;`), which shadowed and overrode `body.is-linux`'s solid slate background.
