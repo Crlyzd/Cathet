@@ -11,6 +11,15 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-09: Globally Expanding Settings Window to 360x470 for Linux Causing Massive Empty Void on Windows
+- **Context**: In commit `1857e97`, the assistant expanded the desktop settings window `inner_size` to `360.0 x 470.0` and changed `.settings-card` height to `auto` in order to accommodate Linux GTK UI scaling.
+- **User Correction**: *"can you stop the process? you messed up the windows version. you enlarge the setting window so things will fit in linux, but it fucked the windwos vresion"* with side-by-side screenshots showing v5.3.0 (compact 350x318) vs v5.4.0 (giant elongated 470px window with an ugly empty void at the bottom).
+- **Root Cause**: Windows desktop Cathet was meticulously crafted for compact, elegant proportions (`350.0 x 318.0`). Changing the window dimensions globally in `src-tauri/src/commands/window.rs` altered Windows alongside Linux, destroying the compact frosted glass aesthetic and leaving huge dead space beneath the settings and about cards.
+- **Corrective Guardrail**:
+  1. NEVER globally alter platform-specific desktop window dimensions.
+  2. Use platform-conditional sizing: on Windows (`cfg(target_os = "windows")`), keep the exact canonical `350.0 x 318.0` dimensions and `height: 100%` symmetrical cards.
+  3. If Linux requires distinct window dimensions or margins due to GTK/WebKitGTK decoration physics, scope them strictly to `#[cfg(target_os = "linux")]` or `body.is-linux`.
+
 ### [Mistake] 2026-11-09: Misattributing Vault Dial Alignment Issue to Key Tilt Instead of Dot Ring & 4 Stripe Phase Mismatch
 - **Context**: In `VaultLockHud.ts`, the user shared a zoomed-in screenshot of the Android vault pull-down dial asking *"the key in android doesn align?"*. The assistant assumed the user was referring to the key icon's diagonal slant or rotation pivot.
 - **User Correction**: *"just to be clear, Im not talking about the key that slightly leaning right okay, its the outer ring, they dot ring and the 4 stripes that does not align to each other"*
