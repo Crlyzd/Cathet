@@ -75,13 +75,18 @@ pub async fn open_settings_window(app_handle: AppHandle) -> Result<(), String> {
             return Ok(());
         }
 
+        #[cfg(target_os = "windows")]
+        let (width, height) = (350.0, 318.0);
+        #[cfg(not(target_os = "windows"))]
+        let (width, height) = (360.0, 420.0);
+
         let win = tauri::WebviewWindowBuilder::new(
             &app_handle,
             "settings",
             tauri::WebviewUrl::App("settings.html".into()),
         )
         .title("Cathet — Settings & About")
-        .inner_size(360.0, 470.0)
+        .inner_size(width, height)
         .resizable(false)
         .maximizable(false)
         .decorations(false)
