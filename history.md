@@ -11,6 +11,14 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-09: Misattributing Vault Dial Alignment Issue to Key Tilt Instead of Dot Ring & 4 Stripe Phase Mismatch
+- **Context**: In `VaultLockHud.ts`, the user shared a zoomed-in screenshot of the Android vault pull-down dial asking *"the key in android doesn align?"*. The assistant assumed the user was referring to the key icon's diagonal slant or rotation pivot.
+- **User Correction**: *"just to be clear, Im not talking about the key that slightly leaning right okay, its the outer ring, they dot ring and the 4 stripes that does not align to each other"*
+- **Root Cause**: The assistant jumped to analyzing the Lucide key icon orientation rather than closely inspecting the outer dial ring geometry. In `VaultLockHud.ts`, `<circle cx="24" cy="24" r="21" ... stroke-dasharray="2 4" />` has a circumference of 131.95px, which is not divisible by the 6px period of `2 4` (`131.95 / 6 = 21.99`). Because an SVG circle stroke starts at 3 o'clock, the dashes drifted continuously across each 90° quadrant, landing on a dash at 3 o'clock, in a gap at 6 o'clock, on a partial boundary at 9 o'clock, and in an off-center gap at 12 o'clock. As a result, the 4 cardinal tick stripes were completely out of phase and asymmetric with the surrounding dot ring.
+- **Corrective Guardrail**:
+  1. When inspecting gauge, dial, or clock tick alignment, calculate circular symmetry, circumference divisibility, and rotational phase offset across quadrants before examining inner icons.
+  2. For 4-quadrant symmetric dial rings in SVG, use normalized angular coordinates with `pathLength="360"` and a 90° repeating `stroke-dasharray` calibrated with `stroke-dashoffset` so that every cardinal stripe sits in the exact mathematical center of an identical gap with equal clearance on both sides.
+
 ### [Mistake] 2026-11-09: WSL Linux Bundle Packaging Selecting Stale Cached Artifacts via Alphabetical Glob (`build.ps1`)
 - **Context**: In `build.ps1` lines 400-406, `Invoke-LinuxBundle` copied the compiled Linux RPM/AppImage using `artifacts=(/root/.cache/cathet-target/release/bundle/__BUNDLE__/*.__EXT__)` followed by `cp -f "${artifacts[0]}" ./__OUTDIR__/__DEST_FILE__`.
 - **User Correction**: User shared a screenshot of package installer showing `cathet-v5.4.0-x86_64.rpm` with metadata `Version: 5.3.0-1`.
@@ -209,6 +217,22 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-09: Android Rotary Safe Combination Dial HUD & Native Ratchet Haptics Integration
+- **Summary**:
+  - Replaced the static Lucide house key icon and misaligned outer ring in the Android Private Notes pull-down gesture with an authentic mechanical rotary safe combination tumbler dial.
+  - Implemented stationary top red index marker (`#ef4444`) at 12 o'clock, graduated number tumbler ring (0 to 90) with normalized `pathLength="360"` graduation marks, and knurled metallic center grip knob.
+  - Added Android hardware haptic feedback bridge via `MainActivity.kt` (`View.performHapticFeedback` with `HapticFeedbackConstants.CLOCK_TICK` and `CONFIRM`) with `android.permission.VIBRATE` permission and Web API fallback (`navigator.vibrate`).
+  - Added angular detent ratchet engine in `overscrollPullDown.ts` (`Math.floor(degrees / 9)`) to fire micro-haptic ticks as graduation lines rotate past the red marker, and latch confirmation vibration upon reaching 90° unlock.
+  - Updated `VaultLockHud.ts`, `hapticFeedback.ts`, and `styles/home.css` with 120fps GPU-composited rotation and emerald safe unlock illumination.
+- **Affected Files**:
+  - `src-tauri/gen/android/app/src/main/AndroidManifest.xml`
+  - `src-tauri/gen/android/app/src/main/java/com/cathet/app/MainActivity.kt`
+  - `src-ui/src/components/home/VaultLockHud.ts`
+  - `src-ui/src/utils/hapticFeedback.ts`
+  - `src-ui/src/utils/overscrollPullDown.ts`
+  - `src-ui/styles/home.css`
+  - `history.md`
 
 ### 2026-11-09: Repository Cache Purge, Linux RPM 5.4.0 Synchronization & Clean Automation Command
 - **Summary**:
