@@ -25,6 +25,11 @@ src-tauri/gen/schemas/
 **/gen/android/local.properties
 *.jks
 *.keystore
+*.priv.asc
+*.priv.gpg
+*.key
+*.p12
+*.pfx
 
 # ── Logs & Temporary Files ──────────────────────────────────────
 *.log

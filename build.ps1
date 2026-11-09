@@ -5,7 +5,7 @@
 param(
     [switch]$Dev, [switch]$Live, [switch]$Check, [switch]$Build, [switch]$BuildX64, [switch]$BuildArm64,
     [switch]$BuildMsix, [switch]$AllWindows,
-    [switch]$BuildAppImage, [switch]$BuildRpm, [switch]$BuildDeb, [switch]$BuildLinux, [switch]$AllLinux,
+    [switch]$BuildAppImage, [switch]$BuildRpm, [switch]$BuildDeb, [switch]$BuildLinux, [switch]$AllLinux, [switch]$SignLinux,
     [switch]$All, [switch]$Run, [switch]$AndroidDev, [switch]$AndroidBuild, [switch]$AndroidArm64, [switch]$AndroidUniversal, [switch]$AndroidAll,
     [switch]$AndroidPerf, [switch]$Patch, [switch]$Minor, [switch]$Major, [string]$TargetVersion,
     [string]$OutputDir = "release", [int]$Port = 0, [switch]$Clean, [switch]$PurgeBuildTools, [switch]$NoPause, [switch]$Help
@@ -31,7 +31,7 @@ function Get-AppVersion { (Get-Content -Raw (Join-Path $ProjectRoot "package.jso
 function Get-NativeArch { if ($env:PROCESSOR_ARCHITECTURE -match "ARM64" -or $env:PROCESSOR_ARCHITEW6432 -match "ARM64") { "arm64" } else { "x64" } }
 
 function Show-HelpGuide {
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Interactive Menu | -Dev / -Live -> Hot reload | -Check -> Tests`n  -BuildX64 / -BuildArm64 -> Release EXE | -BuildMsix -> Microsoft Store Package (.msixbundle)`n  -AllWindows -> All Windows targets (x64 + ARM64 + Store MSIX Bundle)`n  -AndroidDev -> Android Hot Reload | -AndroidBuild / -AndroidAll -> Phone ARM64 + Universal APKs`n  -AndroidArm64 -> Phone ARM64 APK only (~6.5 MB) | -AndroidUniversal -> Universal APK (~20.5 MB)`n  -BuildDeb -> Linux Debian/Ubuntu (.deb ~3.5 MB) | -BuildRpm -> Linux Fedora KDE (.rpm ~3.5 MB)`n  -BuildAppImage -> Universal Linux AppImage (~78 MB) | -AllLinux -> All Linux formats`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Clean -> Purge local & WSL build caches (~9.7 GB)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Interactive Menu | -Dev / -Live -> Hot reload | -Check -> Tests`n  -BuildX64 / -BuildArm64 -> Release EXE | -BuildMsix -> Microsoft Store Package (.msixbundle)`n  -AllWindows -> All Windows targets (x64 + ARM64 + Store MSIX Bundle)`n  -AndroidDev -> Android Hot Reload | -AndroidBuild / -AndroidAll -> Phone ARM64 + Universal APKs`n  -AndroidArm64 -> Phone ARM64 APK only (~6.5 MB) | -AndroidUniversal -> Universal APK (~20.5 MB)`n  -BuildDeb -> Linux Debian/Ubuntu (.deb ~3.5 MB) | -BuildRpm -> Linux Fedora KDE (.rpm ~3.5 MB)`n  -BuildAppImage -> Universal Linux AppImage (~78 MB) | -AllLinux -> All Linux formats`n  -SignLinux -> Digitally sign Linux artifacts via GPG`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Clean -> Purge local & WSL build caches (~9.7 GB)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -355,12 +355,136 @@ fi
     return $distro
 }
 
-function Invoke-LinuxBundle([string]$bundleType = "appimage") {
+function Ensure-LinuxGpgKey([string]$distro = $null) {
+    if ($IsLinux) {
+        if (-not (Get-Command gpg -ErrorAction SilentlyContinue)) {
+            Write-Host "[WARN] GPG not installed on host Linux. Skipping signing key verification." -ForegroundColor Yellow
+            return
+        }
+        $existing = & gpg --list-secret-keys "Cathet Release Signing Key" 2>$null
+        if (-not $existing) {
+            Write-Host ">>> Bootstrapping Cathet Release Signing Key (RSA 4096) in GPG..." -ForegroundColor Cyan
+            & gpg --batch --passphrase '' --quick-generate-key "Cathet Release Signing Key <release@cathet.app>" rsa4096 sign 0
+        }
+        if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force | Out-Null }
+        & gpg --armor --export "Cathet Release Signing Key" | Set-Content (Join-Path $ReleaseDir "cathet-release-key.asc")
+    }
+    else {
+        if (-not $distro) { $distro = "Shared-Linux-Build" }
+        $setupGpgScript = @"
+set -e
+export PATH="/root/.cargo/bin:/usr/local/bin:/usr/bin:/bin:`$PATH"
+mkdir -p /root/.gnupg
+chmod 700 /root/.gnupg
+echo "allow-loopback-pinentry" >> /root/.gnupg/gpg-agent.conf
+
+if ! gpg --list-secret-keys "Cathet Release Signing Key" >/dev/null 2>&1; then
+    echo ">>> Bootstrapping Cathet Release Signing Key (RSA 4096) in WSL GPG..."
+    gpg --batch --passphrase '' --quick-generate-key "Cathet Release Signing Key <release@cathet.app>" rsa4096 sign 0
+fi
+
+cat << 'EOF' > /root/.rpmmacros
+%_signature gpg
+%_gpg_path /root/.gnupg
+%_gpg_name Cathet Release Signing Key
+%_gpg_digest_algo sha256
+%__gpg /usr/bin/gpg
+%_gpg_sign_cmd_extra_args --batch --pinentry-mode loopback --passphrase ""
+EOF
+
+mkdir -p ./$OutputDir
+gpg --armor --export "Cathet Release Signing Key" > ./$OutputDir/cathet-release-key.asc
+"@
+        Invoke-WslBashScript $distro $setupGpgScript
+        if (Test-Path "D:\BuildTools") {
+            $keyBackupDir = "D:\BuildTools\Keys"
+            if (-not (Test-Path $keyBackupDir)) { New-Item -ItemType Directory -Path $keyBackupDir -Force | Out-Null }
+            $backupScript = "gpg --armor --export-secret-keys 'Cathet Release Signing Key' > /tmp/cathet-release-key.priv.asc && cp -f /tmp/cathet-release-key.priv.asc /mnt/d/BuildTools/Keys/ 2>/dev/null && rm -f /tmp/cathet-release-key.priv.asc || true"
+            wsl.exe -d $distro -u root -- bash -c $backupScript 2>$null | Out-Null
+        }
+    }
+}
+
+function Invoke-LinuxSigning([string]$distro = $null, [string]$specificFile = $null) {
+    if ($IsLinux) {
+        Ensure-LinuxGpgKey
+        Write-Host "`n>>> Digitally signing Linux release artifacts via native GPG..." -ForegroundColor Cyan
+        if (Get-Command rpmsign -ErrorAction SilentlyContinue) {
+            Get-ChildItem -Path $ReleaseDir -Filter "*.rpm" -File -ErrorAction SilentlyContinue | ForEach-Object {
+                Write-Host "Embedding GPG signature in RPM: $($_.Name)" -ForegroundColor Gray
+                & rpmsign --addsign $_.FullName
+            }
+        }
+        Get-ChildItem -Path $ReleaseDir -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in ".AppImage", ".deb" } | ForEach-Object {
+            Write-Host "Creating detached GPG signature: $($_.Name).asc" -ForegroundColor Gray
+            Remove-Item -Path "$($_.FullName).asc" -Force -ErrorAction SilentlyContinue
+            & gpg --batch --yes --armor --detach-sign $_.FullName
+        }
+        $artifacts = Get-ChildItem -Path $ReleaseDir -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in ".rpm", ".deb", ".AppImage", ".exe", ".apk", ".msixbundle" }
+        if ($artifacts.Count -gt 0) {
+            $manifestPath = Join-Path $ReleaseDir "SHA256SUMS"
+            $manifestSig = Join-Path $ReleaseDir "SHA256SUMS.asc"
+            Remove-Item -Path $manifestPath, $manifestSig -Force -ErrorAction SilentlyContinue
+            $lines = @()
+            foreach ($a in $artifacts) {
+                $hash = (Get-FileHash -Path $a.FullName -Algorithm SHA256).Hash.ToLower()
+                $lines += "$hash  $($a.Name)"
+            }
+            [System.IO.File]::WriteAllLines($manifestPath, $lines, [System.Text.Encoding]::ASCII)
+            & gpg --batch --yes --armor --detach-sign --output $manifestSig $manifestPath
+            Write-Host "Generated signed SHA256SUMS and SHA256SUMS.asc manifest." -ForegroundColor Green
+        }
+    }
+    else {
+        if (-not $distro) {
+            $distro = Initialize-LinuxWslEnvironment
+            if ($distro -is [array]) { $distro = ($distro | Where-Object { $_ -match "^[A-Za-z0-9\.\-_]+$" } | Select-Object -Last 1) }
+            $distro = "$distro".Trim()
+        }
+        Ensure-LinuxGpgKey $distro
+
+        Write-Host "`n>>> Digitally signing Linux release artifacts via GPG in WSL ($distro)..." -ForegroundColor Cyan
+        $signScript = @"
+set -e
+export PATH="/root/.cargo/bin:/usr/local/bin:/usr/bin:/bin:`$PATH"
+shopt -s nullglob
+
+# 1. Embed GPG signature header into RPM packages
+for f in ./$OutputDir/*.rpm; do
+    echo "Embedding GPG signature in RPM: `$f"
+    rpmsign --addsign "`$f"
+done
+
+# 2. Generate detached ASCII-armored signatures for bundles
+for f in ./$OutputDir/*.AppImage ./$OutputDir/*.deb; do
+    echo "Creating detached GPG signature: `$f.asc"
+    rm -f "`$f.asc"
+    gpg --batch --yes --armor --detach-sign "`$f"
+done
+
+# 3. Compute SHA256SUMS for release binaries and sign manifest
+cd ./$OutputDir
+rm -f SHA256SUMS SHA256SUMS.asc
+shopt -s nullglob
+artifacts=(*.rpm *.deb *.AppImage *.exe *.apk *.msixbundle)
+if [ `${#artifacts[@]} -gt 0 ]; then
+    echo "Generating signed SHA256SUMS manifest for `${#artifacts[@]} release artifact(s)..."
+    sha256sum "`${artifacts[@]}" > SHA256SUMS
+    gpg --batch --yes --armor --detach-sign --output SHA256SUMS.asc SHA256SUMS
+fi
+"@
+        Invoke-WslBashScript $distro $signScript
+        Write-Host "Linux releases digitally signed and SHA256SUMS.asc created in '$OutputDir/'." -ForegroundColor Green
+    }
+}
+
+function Invoke-LinuxBundle([string]$bundleType = "appimage", [bool]$autoSign = $true) {
     $ver = Get-AppVersion
     if ($bundleType -eq "all") {
-        Invoke-LinuxBundle "deb"
-        Invoke-LinuxBundle "rpm"
-        Invoke-LinuxBundle "appimage"
+        Invoke-LinuxBundle "deb" $false
+        Invoke-LinuxBundle "rpm" $false
+        Invoke-LinuxBundle "appimage" $false
+        Invoke-LinuxSigning
         return
     }
 
@@ -413,6 +537,9 @@ cp -f "$artifact" ./__OUTDIR__/__DEST_FILE__
     if (Test-Path $destFile) {
         $sizeMb = [math]::Round((Get-Item $destFile).Length / 1MB, 2)
         Write-Host "Linux $ext created: $destFile ($sizeMb MB)" -ForegroundColor Green
+        if ($autoSign) {
+            Invoke-LinuxSigning $distro $destFile
+        }
     }
     else {
         throw "Expected Linux bundle was not found at: $destFile"
@@ -918,19 +1045,20 @@ function Show-InteractiveMenu {
     Write-Host "  [12] Build All Android Targets (ARM64 + Universal) [Default]"
     Write-Host "  [13] Android Performance Monitor (Live RAM / CPU / 120Hz Jank)"
 
-    Write-Host "`nLinux Releases:" -ForegroundColor DarkCyan
+    Write-Host "`nLinux Releases (Digitally Signed via GPG):" -ForegroundColor DarkCyan
     Write-Host "  [14] Build Linux Debian / Ubuntu (.deb ~3.5 MB) -> $OutputDir/cathet-v$ver-amd64.deb"
     Write-Host "  [15] Build Linux Fedora KDE (.rpm ~3.5 MB) -> $OutputDir/cathet-v$ver-x86_64.rpm"
     Write-Host "  [16] Build Universal Linux AppImage (~78 MB) -> $OutputDir/cathet-v$ver-x86_64.AppImage"
-    Write-Host "  [17] Build All Linux Formats (.deb + .rpm + .AppImage)"
+    Write-Host "  [17] Build & Sign All Linux Formats (.deb + .rpm + .AppImage + GPG Signatures)"
 
     Write-Host "`nUtilities:" -ForegroundColor DarkCyan
     Write-Host "  [18] Bump Project Version (Current: v$ver)"
     Write-Host "  [19] Purge BuildTools Hub & WSL (Free up D:\ space)"
     Write-Host "  [20] Clean Build Caches & Targets (Rust, Android, WSL, Dist)"
+    Write-Host "  [21] Re-Sign Release Artifacts (GPG Detached Signatures & SHA256SUMS.asc)"
     Write-Host "  [Q]  Exit" -ForegroundColor Gray
 
-    $c = (Read-Host "`nEnter option [1-20, Q] (Default: 1)").Trim()
+    $c = (Read-Host "`nEnter option [1-21, Q] (Default: 1)").Trim()
     return $(if ($c) { $c } else { "1" })
 }
 
@@ -947,6 +1075,7 @@ function Invoke-Pipeline([hashtable]$opts) {
     if ($opts.BuildRpm) { Invoke-LinuxBundle "rpm"; return }
     if ($opts.BuildAppImage -or $opts.BuildLinux) { Invoke-LinuxBundle "appimage"; return }
     if ($opts.AllLinux) { Invoke-LinuxBundle "all"; return }
+    if ($opts.SignLinux) { Invoke-LinuxSigning; return }
     if ($opts.TargetVersion -or $opts.Patch -or $opts.Minor -or $opts.Major) {
         Invoke-VersionBump $opts.TargetVersion ([bool]$opts.Patch) ([bool]$opts.Minor) ([bool]$opts.Major); return
     }
@@ -1016,8 +1145,9 @@ try {
                 }
                 "19" { $runOpts.PurgeBuildTools = $true }
                 "20" { $runOpts.Clean = $true }
+                "21" { $runOpts.SignLinux = $true }
                 { $_ -in "q", "Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
-                default { Write-Host "Invalid option '$_'. Choose 1-20 or Q." -ForegroundColor Red; continue }
+                default { Write-Host "Invalid option '$_'. Choose 1-21 or Q." -ForegroundColor Red; continue }
             }
             Invoke-Pipeline $runOpts
             $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim(); if ($ans -in "q", "Q") { Invoke-Exit 0 }
@@ -1028,6 +1158,7 @@ try {
             Dev = $Dev; Live = $Live; Check = $Check; Build = $Build; BuildX64 = $BuildX64; BuildArm64 = $BuildArm64;
             BuildMsix = $BuildMsix; AllWindows = $AllWindows;
             BuildAppImage = $BuildAppImage; BuildRpm = $BuildRpm; BuildDeb = $BuildDeb; BuildLinux = $BuildLinux; AllLinux = $AllLinux;
+            SignLinux = $SignLinux;
             All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; AndroidArm64 = $AndroidArm64;
             AndroidUniversal = $AndroidUniversal; AndroidAll = $AndroidAll; AndroidPerf = $AndroidPerf;
             Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion;
