@@ -1831,3 +1831,20 @@ px tsc --noEmit and cargo check.
   - `LICENSE`: Added GNU GPLv3 license text with author copyright declaration.
   - `README.md`: Updated platform/arch/license badges and license footer.
   - `history.md`: Appended project changelog entry per Rule 13.
+
+### 2026-11-11: Restored Android System Text Selection Actions (Translate, Ask Gemini, Web Search)
+
+- **Summary**:
+  1. **Android 11+ Package Visibility Resolution**:
+     - Identified root cause of limited Android floating context menu: Android 11+ (API 30+) package visibility filtering hid third-party text action handlers from Chromium WebView's `SelectionPopupControllerImpl`.
+     - Added `<queries>` block to `src-tauri/gen/android/app/src/main/AndroidManifest.xml` declaring `android.intent.action.PROCESS_TEXT` (`text/plain`), `android.intent.action.WEB_SEARCH`, and `android.intent.action.SEND` (`text/plain`).
+     - Added explicit fallback package declarations for Google Translate (`com.google.android.apps.translate`) and Gemini / Google App (`com.google.android.googlequicksearchbox`, `com.google.android.apps.bard`).
+  2. **Native Gesture & Physics Integrity**:
+     - Preserved zero-overhead, 100% native Android WebView selection physics and floating `ActionMode.TYPE_FLOATING` toolbar without synthetic DOM or JavaScript wrappers, respecting `[Mistake] 2026-11-09`.
+  3. **Verification**:
+     - `npx tsc --noEmit` passed with 0 errors.
+     - `cargo check --manifest-path src-tauri/Cargo.toml` passed with 0 errors.
+     - `AndroidManifest.xml` line count is 79 lines (well under the 250-line target).
+- **Files Modified / Created**:
+  - `src-tauri/gen/android/app/src/main/AndroidManifest.xml`: Declared `<queries>` for text processing, web search, share, Google Translate, and Gemini (79 lines).
+  - `history.md`: Appended project changelog entry per Rule 13.
