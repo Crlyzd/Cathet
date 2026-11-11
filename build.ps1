@@ -203,7 +203,7 @@ function Invoke-WindowsMsixBundle {
             Version="$quadVer"
             ProcessorArchitecture="$a" />
   <Properties>
-    <DisplayName>Cathet</DisplayName>
+    <DisplayName>Cathet Note</DisplayName>
     <PublisherDisplayName>curlyzed</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
     <Description>Sleek, lightweight text and markdown editor</Description>
@@ -216,7 +216,7 @@ function Invoke-WindowsMsixBundle {
   </Resources>
   <Applications>
     <Application Id="App" Executable="cathet.exe" EntryPoint="Windows.FullTrustApplication">
-      <uap:VisualElements DisplayName="Cathet"
+      <uap:VisualElements DisplayName="Cathet Note"
                           Description="Sleek, lightweight text and markdown editor"
                           BackgroundColor="transparent"
                           Square150x150Logo="Assets\Square150x150Logo.png"

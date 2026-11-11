@@ -241,6 +241,15 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-11: Align Microsoft Store MSIX Manifest DisplayName with Reserved Partner Center App Name
+- **Summary**:
+  - Updated the generated `AppxManifest.xml` within `Invoke-WindowsMsixBundle` in `build.ps1` to use `<DisplayName>Cathet Note</DisplayName>` (both in `<Properties>` and `<uap:VisualElements>`) to strictly match the reserved product name in Microsoft Partner Center (`Cathet Note`).
+  - Resolved Partner Center package validation failure `Package/Properties/DisplayName uses a display name that you have not reserved: Cathet` without modifying internal app identities, repository configurations, or standalone Windows/Linux/Android binaries.
+  - Successfully compiled, packed, and signed the multi-arch `.msixbundle` (ARM64 + x64) under `release/cathet-v5.4.1.msixbundle` (~3.7 MB).
+- **Affected Files**:
+  - `build.ps1`
+  - `history.md`
+
 ### 2026-11-11: Comprehensive README Overhaul with Multi-Platform Screenshot Showcase & Blank Placeholders
 - **Summary**:
   - Re-architected [`README.md`](file:///e:/Default/Cleanpad/README.md) into a modern, magazine-grade visual showcase covering all three major supported ecosystems: Windows Desktop (x64/ARM64), Linux Desktop (GNOME/KDE Plasma), and Android Mobile (API 24+).
