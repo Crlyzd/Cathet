@@ -119,9 +119,11 @@ pub async fn show_save_dialog(
 
     let target_name = match default_name {
         Some(ref name) if !name.trim().is_empty() => {
-            if !name.contains('.') { format!("{}.txt", name.trim()) } else { name.trim().to_string() }
+            let p = std::path::Path::new(name.trim());
+            let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or(name.trim());
+            if stem.is_empty() { "Untitled".to_string() } else { stem.to_string() }
         }
-        _ => "Untitled.txt".to_string(),
+        _ => "Untitled".to_string(),
     };
 
     let builder = app_handle.dialog().file().set_file_name(&target_name);
@@ -141,8 +143,12 @@ pub async fn show_save_dialog(
     if let Some(path) = selected {
         let mut path_str = path.to_string();
         let path_obj = std::path::Path::new(&path_str);
-        if path_obj.extension().is_none() && !path_str.ends_with('/') && !path_str.ends_with('\\') {
-            path_str.push_str(".txt");
+        if !path_str.starts_with("content://")
+            && path_obj.extension().is_none()
+            && !path_str.ends_with('/')
+            && !path_str.ends_with('\\')
+        {
+            path_str.push_str(".md");
         }
         Ok(Some(path_str))
     } else {

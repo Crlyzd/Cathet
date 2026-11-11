@@ -73,11 +73,11 @@ export class FileService {
   /**
    * Saves text or HTML content to path. If path is empty, calls Save As dialog.
    */
-  async saveFile(currentPath: string | null, content: string): Promise<string | null> {
+  async saveFile(currentPath: string | null, content: string, defaultName?: string): Promise<string | null> {
     try {
       let targetPath = currentPath;
       if (!targetPath) {
-        targetPath = await invoke<string | null>("show_save_dialog");
+        targetPath = await invoke<string | null>("show_save_dialog", { defaultName });
         if (!targetPath) return null;
       }
       await invoke("write_text_file", { path: targetPath, content });

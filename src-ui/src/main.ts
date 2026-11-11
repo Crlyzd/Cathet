@@ -18,7 +18,7 @@ import { PlatformService } from "./services/platformService";
 import { NotesService } from "./services/notesService";
 import { HomeCoordinator } from "./services/homeCoordinator";
 import { globalEventBus } from "./utils/eventBus";
-import { formatDisplayTitle } from "./utils/pathUtils";
+import { formatDisplayTitle, stripFileExtension } from "./utils/pathUtils";
 import { registerShortcuts } from "./utils/shortcuts";
 import { applyMarkdownFormat } from "./utils/formatUtils";
 import { buildContextMenuItems } from "./utils/contextMenuItems";
@@ -540,8 +540,8 @@ class CathetApp {
       return;
     }
     const text = ed.getText();
-    const defaultName = (this.topBar.getTitle() || "Untitled").replace(/(\.txt|\.md)$/, "") + ".txt";
-    const saved = asNew ? await this.fileService.promptSaveAs(text, defaultName) : await this.fileService.saveFile(curPath, text);
+    const defaultName = stripFileExtension(this.topBar.getTitle() || "Untitled") || "Untitled";
+    const saved = asNew ? await this.fileService.promptSaveAs(text, defaultName) : await this.fileService.saveFile(curPath, text, defaultName);
     if (saved) {
       ed.markSaved();
       const name = saved.split(/[/\\]/).pop() || "Untitled";
