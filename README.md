@@ -2,17 +2,6 @@
 
 # Cathet
 
-</div>
-
-> **cath·et** `/tʃaˈʈət/` *(cha-thet / chah-tuht)* • **verb & noun**
->
-> *Origin:* Javanese (**ꦕꦛꦼꦠ꧀**, *basa Jawa*), cognate to Indonesian *catat*.
-> 1. **(Verb)** To write down, to jot down, to note, or to record.
-> 2. **(Noun)** A written note, record, or memorandum (*cathetan*).
-> 3. **(Computing)** A sleek, ultra-lightweight, cross-platform frosted-glass text and markdown editor that just gets out of your way.
-
-<div align="center">
-
 **A sleek, ultra-lightweight, cross-platform frosted-glass text & markdown editor for Windows, Linux, and Android that just gets out of your way.**
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?logo=linux&logoColor=white)](https://github.com/Crlyzd/Cathet)
@@ -37,6 +26,15 @@
 *Clean, distraction-free writing that looks right at home on your desktop and phone.*
 
 </div>
+
+---
+
+> **cath·et** `/tʃaˈʈət/` *(cha-thet / chah-tuht)* • **verb & noun**
+>
+> *Origin:* Javanese (**ꦕꦛꦼꦠ꧀**, *basa Jawa*), cognate to Indonesian *catat*.
+> 1. **(Verb)** To write down, to jot down, to note, or to record.
+> 2. **(Noun)** A written note, record, or memorandum (*cathetan*).
+> 3. **(Computing)** A sleek, ultra-lightweight, cross-platform frosted-glass text and markdown editor that just gets out of your way.
 
 ---
 

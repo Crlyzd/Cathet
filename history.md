@@ -252,11 +252,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
-### 2026-11-11: Correct Cathet Definition to Authentic Javanese Etymology in README
+### 2026-11-11: Relocate Cathet Javanese Definition Card Below Hero Showcase in README
 - **Summary**:
-  - Replaced hallucinated Greek etymology with authentic Javanese origin (*cathet* / ꦕꦛꦼꦠ꧀, *basa Jawa*, cognate to Indonesian *catat*).
-  - Defined pronunciation as `/tʃaˈʈət/` ("cha-thet" / "chah-tuht") with core meanings: verb (to write down, jot down, record) and noun (written note, memorandum / *cathetan*).
-  - Documented mistake entry in institutional memory.
+  - Moved the Javanese definition card (`/tʃaˈʈət/`, ꦕꦛꦼꦠ꧀) from between the `# Cathet` heading and tagline to beneath the hero cross-platform screenshot banner (Option B).
+  - Restored clean, symmetrical, and centered visual layout for the hero title, platform badges, and widescreen showcase image, positioning the definition card as a natural thematic introduction before "Why Cathet?".
 - **Affected Files**:
   - `README.md`
   - `history.md`
