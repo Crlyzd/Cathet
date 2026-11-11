@@ -11,8 +11,16 @@
 
 <br/>
 
+<!--
+📸 SCREENSHOT SPEC #01: HERO BANNER
+- Target File: docs/screenshots/hero-crossplatform-showcase.png
+- Platform: Multi-Platform Composite (Windows Desktop + Android Mobile + Linux)
+- Theme: Dark Glass / Acrylic
+- Aspect Ratio / Dimensions: 1920x800 or 1600x700 (Widescreen banner)
+- State to Capture: Layered visual showcase showing Windows Acrylic frosted window, Android phone running Cathet Home/Notes, and Linux desktop side-by-side over a vibrant, stylish backdrop.
+-->
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/4ca0cdb3-a83f-4275-b637-b18981adaf45" alt="Cathet Application Screenshot" width="800" style="max-width: 100%; border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.35);" />
+  <img src="docs/screenshots/hero-crossplatform-showcase.png" alt="Cathet Cross-Platform Showcase" width="900" style="max-width: 100%; border-radius: 12px; box-shadow: 0 16px 48px rgba(0,0,0,0.4);" />
 </p>
 
 *Clean, distraction-free writing that looks right at home on your desktop and phone.*
@@ -23,42 +31,339 @@
 
 ## ✨ Why Cathet?
 
-Standard Notepad feels plain and dated, while modern writing apps can feel heavy, slow to launch, and hog your device's memory.
+Standard Notepad feels plain, dated, and lacks formatting. Meanwhile, modern markdown and note-taking apps have become heavy electron beasts that hog gigabytes of RAM, take seconds to launch, and trap your thoughts in proprietary silos.
 
-**Cathet** gives you the best of all worlds:
+**Cathet** bridges the gap with a featherweight native footprint and premium frosted glass aesthetics:
 
-- 🪟 **Real Frosted Glass (Windows)**: Uses genuine Windows Acrylic and Mica system backdrops with hardware acceleration to blend smoothly with your desktop wallpaper.
-- 🐧 **Native Linux Desktop (Debian, Red Hat & AppImage)**: First-class GTK 3 & WebKitGTK 4.1 desktop runtime with solid slate canvas or KWin translucent glass, desktop environment auto-detection (GNOME, KDE Plasma, XFCE), and tiny native `.deb` (3.3 MB) and `.rpm` (3.3 MB) packages.
-- 📱 **Notes Dashboard & 120fps HyperOS Motion (Android)**: Full-featured mobile homepage with folder categorization, search, batch multi-select, and Xiaomi HyperOS-inspired container morph transitions with zero opacity fade.
-- 🔐 **Android Private Notes & Rotary Tumbler Safe Dial**: Secure private notes access via a 2D pull-down and turn-right gesture with an authentic mechanical rotary tumbler HUD and native clock-tick haptics.
-- 🔍 **Focus-Preserving In-Document Search**: High-performance text search powered by the CSS Custom Highlight API and DOM TreeWalker, keeping virtual keyboards (Gboard) open without dismissing focus.
-- ⚡ **120Hz+ Display Refresh Rate Unlock**: Automatically unlocks high refresh rates (120Hz/144Hz/165Hz) on Android for buttery-smooth scrolling and interactions.
-- 🍃 **Featherweight Multi-Architecture Footprint**: Standalone Windows executables (~3.6–3.9 MB) & Store bundle (~3.7 MB), Linux `.deb` (~3.3 MB) & `.rpm` (~3.3 MB), Android phone APK (~7.2 MB) & Universal APK (~20.9 MB).
-- 🎒 **100% Portable on Desktop**: Just a single `.exe` file on Windows or standalone `.AppImage` on Linux! No installer required, no registry clutter. Run it from your desktop or a USB drive.
-- 📝 **Everyday Scratchpad or Formatted Markdown**: Edit plain text with zero lag, or toggle formatted Markdown preview with headers, checklists, tables, links, and images.
-- 👥 **Dual-Pane Mode**: Horizontal side-by-side split on desktop (`Ctrl + D`) and responsive vertical stacked split on Android with 3-state bidirectional scroll synchronization.
-- 📷 **Smart In-Memory Images & Gboard Commit**: Automatically compresses large clips (>500 KB) to WebP while keeping small clips and GIFs 1:1 crisp. Massive Base64 strings collapse into tidy badges, and Android keyboard stickers/GIFs paste directly into notes.
-- 🛡️ **Verified Cryptographic Releases**: Digitally signed Red Hat packages, detached OpenPGP signatures, and signed `SHA256SUMS` manifests.
-- 📶 **Works 100% Offline & Private**: Zero cloud telemetry, no account creation, and no proprietary lock-in. Your notes and files stay strictly on your device.
+| Feature | Standard Notepad | Heavy Note Apps | Cathet |
+| :--- | :---: | :---: | :---: |
+| **Startup Speed** | Instant | 2–5 Seconds | **< 150ms Instant** |
+| **Binary Size** | ~3 MB | 120–250 MB | **~3.5–3.9 MB** |
+| **Memory Footprint** | Low | 150–500 MB RAM | **Ultra-low (~25–40 MB)** |
+| **Backdrop Vibrancy** | Flat / Boring | Flat CSS / Fake Blur | **Hardware Acrylic, Mica & Glass** |
+| **Markdown Preview** | ❌ No | ✅ Yes | **✅ Lossless Instant Toggle (`Ctrl+M`)** |
+| **Dual-Pane Mode** | ❌ No | Limited | **✅ Horizontal & Vertical Dual-Pane** |
+| **Cross-Platform Sync**| Windows only | Heavy Cloud Sync | **✅ Windows + Linux + Android (Local & Offline)** |
+| **Image Handling** | ❌ None | Uploads / Stored Blobs | **✅ In-Memory WebP Optimization & Base64 Pills** |
+| **High Refresh Rate** | Standard | Standard | **✅ 120Hz/144Hz/165Hz Android Unlock** |
+
+---
+
+## 🪟 Windows Desktop Showcase
+
+Cathet leverages native Windows Desktop Window Manager (DWM) APIs for hardware-accelerated **Acrylic** and **Mica** system backdrops. Your workspace seamlessly blurs and reflects your desktop wallpaper.
+
+### Edit Mode & Markdown Preview
+
+Switch seamlessly between raw distraction-free editing and rendered GitHub Flavored Markdown (GFM) with a single keystroke (`Ctrl + M`).
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="50%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #02: WINDOWS ACRYLIC DARK EDITOR
+        - Target File: docs/screenshots/windows-acrylic-dark-editor.png
+        - Platform: Windows 11 (x64 / ARM64)
+        - Theme: Dark Mode
+        - Aspect Ratio: 1280x720 window crop
+        - State to Capture: Main editor window in Edit Mode floating over a colorful wallpaper.
+        - Text Content: Markdown headings (`# Project Notes`), bullet lists, checklist items (`- [x] Done`, `- [ ] Next`), and a short code snippet. Frosted top bar and frameless window controls clearly visible.
+        -->
+        <img src="docs/screenshots/windows-acrylic-dark-editor.png" alt="Windows Dark Mode - Acrylic Scratchpad Editor" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);" /><br/>
+        <b>Dark Mode — Hardware-Accelerated Acrylic Editor</b>
+      </td>
+      <td width="50%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #03: WINDOWS PREVIEW LIGHT
+        - Target File: docs/screenshots/windows-preview-light.png
+        - Platform: Windows 11 (x64 / ARM64)
+        - Theme: Light Mode
+        - Aspect Ratio: 1280x720 window crop
+        - State to Capture: Markdown Preview Mode (`Ctrl+M`) active on translucent light frosted glass.
+        - Text Content: Rendered typography: styled headers, clickable links, formatted markdown table, blockquotes, and syntax-highlighted code block.
+        -->
+        <img src="docs/screenshots/windows-preview-light.png" alt="Windows Light Mode - Rendered Markdown Preview" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" /><br/>
+        <b>Light Mode — Rendered Markdown Preview (`Ctrl+M`)</b>
+      </td>
+    </tr>
+  </table>
+</div>
+
+### Side-by-Side Dual Pane (`Ctrl + D`)
+
+Split your window into two panes to draft and preview simultaneously, compare documents, or reference notes. Drag the frosted central splitter with proportional or snap scroll synchronization.
+
+<!--
+📸 SCREENSHOT SPEC #04: WINDOWS DUAL-PANE HORIZONTAL
+- Target File: docs/screenshots/windows-dualpane-horizontal.png
+- Platform: Windows 11 Desktop
+- Theme: Dark Mode
+- Aspect Ratio: 1440x810 or 1280x720 window crop
+- State to Capture: Dual-Pane mode active (`Ctrl+D`). Left pane in Edit mode with markdown syntax; Right pane in Preview mode with rendered output. Central frosted glass splitter with visible `Locked Standard` badge.
+-->
+<p align="center">
+  <img src="docs/screenshots/windows-dualpane-horizontal.png" alt="Windows Desktop Dual Pane Mode" width="850" style="max-width: 100%; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.35);" />
+</p>
+
+### Collapsible Image Pills & Frosted Context Menus
+
+Large pasted clipboard images are compressed to WebP in-memory and folded into compact, interactive frosted glass pill badges. Right-click anywhere for custom glass menus without clumsy native popups.
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="50%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #05: WINDOWS BASE64 PILL BADGE
+        - Target File: docs/screenshots/windows-base64-pill-badge.png
+        - Platform: Windows 11 Desktop
+        - Theme: Dark Mode
+        - Aspect Ratio: ~800x450 close-up crop
+        - State to Capture: Edit mode with several lines of text and an inline collapsible pill badge: `[ 📷 WEBP ~245 KB ▾ ]`.
+        -->
+        <img src="docs/screenshots/windows-base64-pill-badge.png" alt="Collapsible In-Memory Base64 Image Pill" width="430" style="border-radius: 8px;" /><br/>
+        <b>In-Memory Base64 Collapsible Image Badge</b>
+      </td>
+      <td width="50%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #07: WINDOWS CONTEXT MENU GLASS
+        - Target File: docs/screenshots/windows-context-menu-glass.png
+        - Platform: Windows 11 Desktop
+        - Theme: Dark Mode
+        - Aspect Ratio: ~800x450 close-up crop
+        - State to Capture: Frosted glass context menu open showing Cut, Copy, Paste, Format, Word Wrap, and static "Search in Web" options.
+        -->
+        <img src="docs/screenshots/windows-context-menu-glass.png" alt="Frosted Glass Context Menu" width="430" style="border-radius: 8px;" /><br/>
+        <b>Custom Frosted Glass Right-Click Context Menu</b>
+      </td>
+    </tr>
+  </table>
+</div>
+
+---
+
+## 🐧 Linux Desktop Showcase
+
+Cathet on Linux runs natively on **GTK 3 & WebKitGTK 4.1**—enjoying lightning-fast startup and tiny binary sizes without Electron or Chromium baggage.
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="50%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #08: LINUX GNOME SOLID SLATE
+        - Target File: docs/screenshots/linux-gnome-solid-slate.png
+        - Platform: Linux (Ubuntu / GNOME / Wayland)
+        - Theme: Dark Solid Slate (`#12141c`)
+        - Aspect Ratio: 1280x720 window crop
+        - State to Capture: Cathet running on GNOME desktop with default solid slate dark background. Native header styling and crisp typography with zero Wayland see-through bleed.
+        -->
+        <img src="docs/screenshots/linux-gnome-solid-slate.png" alt="Linux GNOME Solid Slate Canvas" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);" /><br/>
+        <b>Default Solid Slate Canvas (GNOME / Ubuntu / Fedora)</b>
+      </td>
+      <td width="50%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #09: LINUX KDE TRANSLUCENT BLUR
+        - Target File: docs/screenshots/linux-kde-translucent-blur.png
+        - Platform: Linux (KDE Plasma 6 / KWin)
+        - Theme: Dark Translucent Glass
+        - Aspect Ratio: 1280x720 window crop
+        - State to Capture: Translucent Glass mode enabled in Cathet settings, floating over a colorful KDE desktop with KWin force-blur effect active.
+        -->
+        <img src="docs/screenshots/linux-kde-translucent-blur.png" alt="Linux KDE Plasma Translucent Glass" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);" /><br/>
+        <b>Translucent Frosted Glass with KWin Force-Blur (KDE Plasma)</b>
+      </td>
+    </tr>
+  </table>
+</div>
+
+- **Auto-Detects Desktop Environments**: Recognizes KDE Plasma, GNOME, XFCE, Cinnamon, and MATE out of the box.
+- **Solid Slate by Default**: Avoids Wayland compositor transparency bugs with an opaque slate canvas (`#12141c` dark / `#f8fafc` light).
+- **Featherweight Packaging**: Tiny native `.deb` (3.3 MB) and `.rpm` (3.3 MB) packages, plus a standalone portable `.AppImage`.
+
+---
+
+## 📱 Android Mobile Showcase
+
+Cathet on Android brings desktop-class markdown editing to your phone with high-refresh-rate hardware acceleration and Xiaomi HyperOS-inspired motion physics.
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="33%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #10: ANDROID HOME DASHBOARD
+        - Target File: docs/screenshots/android-home-dashboard.png
+        - Platform: Android Phone (API 24+)
+        - Theme: Dark Mode
+        - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
+        - State to Capture: Android Notes Home view (`HomeView`). Folder category tabs (`All`, `Work`, `Personal`), search bar, note tiles with tag pills, and circular floating `+` action button.
+        -->
+        <img src="docs/screenshots/android-home-dashboard.png" alt="Android Notes Home Dashboard" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <b>1. Notes Home Dashboard</b>
+      </td>
+      <td width="33%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #11: ANDROID VAULT ROTARY DIAL
+        - Target File: docs/screenshots/android-vault-rotary-dial.png
+        - Platform: Android Phone
+        - Theme: Dark Mode
+        - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
+        - State to Capture: Private Notes unlock gesture in action. Pull-down and drag-right gesture revealing the mechanical safe tumbler HUD at top of screen with key dial rotated 90° and cardinal ticks aligned.
+        -->
+        <img src="docs/screenshots/android-vault-rotary-dial.png" alt="Android Rotary Safe Tumbler Dial HUD" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <b>2. Rotary Tumbler Vault HUD</b>
+      </td>
+      <td width="33%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #12: ANDROID HOME MULTISELECT
+        - Target File: docs/screenshots/android-home-multiselect.png
+        - Platform: Android Phone
+        - Theme: Dark Mode
+        - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
+        - State to Capture: Multi-select batch mode active on Notes Home. Top action bar showing item count, Pin, Hide, Move, Delete icons; multiple note tiles selected with checkmark badges.
+        -->
+        <img src="docs/screenshots/android-home-multiselect.png" alt="Android Notes Multi-Select Batch Bar" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <b>3. Multi-Select Batch Actions</b>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br/>
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="33%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #13: ANDROID EDITOR GBOARD IMAGE
+        - Target File: docs/screenshots/android-editor-gboard-image.png
+        - Platform: Android Phone
+        - Theme: Dark Mode
+        - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
+        - State to Capture: Editor active with Gboard keyboard open. User inserting a sticker/GIF via Gboard Commit Content API, showing image rendered directly inline with note markdown text.
+        -->
+        <img src="docs/screenshots/android-editor-gboard-image.png" alt="Android Gboard Commit Content Image Pasting" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <b>4. Gboard Sticker & Image Commit</b>
+      </td>
+      <td width="33%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #14: ANDROID IN-DOC SEARCH
+        - Target File: docs/screenshots/android-in-doc-search.png
+        - Platform: Android Phone
+        - Theme: Dark Mode
+        - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
+        - State to Capture: In-document search ribbon active at top of editor. Search query typed, matches highlighted with CSS Custom Highlight API, Gboard keyboard remaining smoothly focused.
+        -->
+        <img src="docs/screenshots/android-in-doc-search.png" alt="Android Focus-Preserving In-Doc Search" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <b>5. Focus-Preserving Search</b>
+      </td>
+      <td width="33%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #15: ANDROID DUAL-PANE VERTICAL
+        - Target File: docs/screenshots/android-dualpane-vertical.png
+        - Platform: Android Phone
+        - Theme: Dark Mode
+        - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
+        - State to Capture: Mobile Dual-Pane stacked view active. Top pane: Edit mode (43%); Bottom pane: Rendered Preview (57%); touch dock controls and central scroll-sync splitter clearly visible.
+        -->
+        <img src="docs/screenshots/android-dualpane-vertical.png" alt="Android Vertical Stacked Dual Pane" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <b>6. Mobile Stacked Dual-Pane</b>
+      </td>
+    </tr>
+  </table>
+</div>
+
+### Mobile Engineering Highlights
+- ⚡ **120Hz/144Hz/165Hz Display Unlock**: Dynamically unlocks your display's maximum refresh rate via `MainActivity.kt` on startup for fluid scrolling.
+- 🌊 **Zero-Opacity Container Morph**: Tapping a note card triggers a Xiaomi HyperOS-inspired 380ms scale and clip morph (`cubic-bezier(0.2, 0, 0, 1)`) directly into the full editor with solid `#workspace-shell` color and zero opacity flash.
+- 🔐 **Rotary Safe Tumbler Vault HUD**: Swipe down on your notes and steer right to rotate the authentic mechanical safe tumbler dial 90° with ratchet clock-tick haptics to reveal your hidden Private Notes.
+- ⌨️ **Gboard Commit Content Integration**: Native Android `InputConnectionCompat` patch in `RustWebView.kt` lets you paste images, stickers, and animated GIFs straight from your virtual keyboard.
+- 🔍 **DOM-Safe In-Document Search**: High-performance search powered by CSS Custom Highlight API (`::highlight(cathet-search-match)`), jumping smoothly to occurrences without dismissing Gboard or dropping caret focus.
+
+---
+
+## ⚙️ Settings & Customization Across Platforms
+
+Access Settings via `Ctrl + ,` (or the top-left `●` dot) on Desktop, or tap the settings gear in the mobile drawer on Android:
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="50%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #06: WINDOWS SETTINGS MODAL
+        - Target File: docs/screenshots/windows-settings-modal.png
+        - Platform: Windows 11 Desktop
+        - Theme: Dark Mode
+        - Aspect Ratio: 700x636 (2x scale of canonical 350x318 window)
+        - State to Capture: Dedicated frosted glass Settings window (`settings.html`) open to Personalization tab. Dark/Light theme toggle, font family select, backdrop options, and Always on Top toggle.
+        -->
+        <img src="docs/screenshots/windows-settings-modal.png" alt="Windows Desktop Settings Window" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);" /><br/>
+        <b>Desktop Settings Window (350x318 Frosted Glass)</b>
+      </td>
+      <td width="50%" align="center">
+        <!--
+        📸 SCREENSHOT SPEC #16: ANDROID SETTINGS BOTTOMSHEET
+        - Target File: docs/screenshots/android-settings-bottomsheet.png
+        - Platform: Android Phone
+        - Theme: Dark Mode
+        - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
+        - State to Capture: Android 120fps slide-up bottom sheet Settings view open. Displaying High Refresh Rate toggle (120Hz/144Hz unlock), font options, and appearance controls over dimmed backdrop scrim.
+        -->
+        <img src="docs/screenshots/android-settings-bottomsheet.png" alt="Android Slide-Up Settings Bottom Sheet" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <b>Android 120fps Slide-Up Settings Sheet</b>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br/>
+
+<div align="center">
+  <!--
+  📸 SCREENSHOT SPEC #17: ANDROID THEME CIRCULAR REVEAL
+  - Target File: docs/screenshots/android-theme-circular-reveal.png
+  - Platform: Android Phone / Desktop
+  - Theme: Theme Switching Transition (Dark to Light or Light to Dark)
+  - Aspect Ratio: 1080x2400 (Mobile Portrait) or 1280x720 (Desktop)
+  - State to Capture: Midway freeze of hardware-accelerated `document.startViewTransition` with a circular expanding clip mask revealing the opposite theme.
+  -->
+  <img src="docs/screenshots/android-theme-circular-reveal.png" alt="Circular Clip-Path Theme Reveal Transition" width="550" style="max-width: 100%; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);" /><br/>
+  <b>Hardware-Accelerated Circular Theme Reveal (`document.startViewTransition`)</b>
+</div>
+
+### Customization Options
+- **Appearance & Themes**: Toggle sleek Dark glass or bright Light glass with 420ms circular clip-path transition animations.
+- **Window Backdrop (Linux)**: Select between Solid Slate (default) and Translucent Glass for KWin force-blur compositors.
+- **High Refresh Rate (Android)**: Toggle hardware display refresh rate unlock (120Hz/144Hz/165Hz+) or 60Hz battery saver mode.
+- **Typography**: Choose your favorite typeface (*Inter, Roboto, Cascadia Code, JetBrains Mono, Fira Code, Consolas, Segoe UI, Noto Sans, Arial*).
+- **Window Controls (Desktop)**: Toggle persistent "Always on Top" floating window (`Ctrl+T`).
+- **Markdown Preview Default**: Choose whether saved `.md` files open directly in rendered preview while keeping blank scratchpads in edit mode.
+- **Dual-Pane Scroll Sync**: Select between Proportional offset lock, 1:1 Snap scroll alignment, or Independent scrolling.
+- **Interactive Offline Tutorial**: Click **"Open Tutorial"** inside Settings to explore markdown formatting and interactive examples directly in the editor.
+- **Default Application Integration**: Register Cathet as your system default text application with a single click.
 
 ---
 
 ## 🚀 How to Get It
 
-No complicated installation required! You can be up and running in under 10 seconds:
+You can be up and running in seconds with no complicated installation:
 
 ### Windows (Desktop & Laptop)
-1. Head over to the **[Latest Downloads](https://github.com/Crlyzd/Cathet/releases/latest)** page.
-2. Pick the download for your device architecture:
-   - **`cathet-v...-x64.exe`** (~3.9 MB): For standard Windows PCs and laptops (Intel or AMD).
-   - **`cathet-v...-arm64.exe`** (~3.6 MB): For modern ARM devices (such as Microsoft Surface Pro Copilot+ or Snapdragon laptops).
+1. Visit the **[Latest Downloads](https://github.com/Crlyzd/Cathet/releases/latest)** page.
+2. Choose the download for your architecture:
+   - **`cathet-v...-x64.exe`** (~3.9 MB): Standard Intel or AMD Windows PCs and laptops.
+   - **`cathet-v...-arm64.exe`** (~3.6 MB): Modern ARM devices (Microsoft Surface Pro Copilot+, Snapdragon laptops).
    - **`cathet-v....msixbundle`** (~3.7 MB): Microsoft Store multi-architecture bundle combining x64 and ARM64 packages.
-3. **Double-click to open and start typing!**
+3. Double-click the `.exe` to launch immediately! Portable, self-contained, no installer required.
 
-> 💡 **Quick Tip:** Right-click the `.exe` and pick **Pin to taskbar** or **Pin to Start** so your glass scratchpad is always just one click away.
+> 💡 **Quick Tip:** Right-click the executable and choose **Pin to taskbar** or **Pin to Start** for instant access.
 
 ### Linux (Desktop & Laptop)
-1. Download your preferred package format from the **[Latest Downloads](https://github.com/Crlyzd/Cathet/releases/latest)** page:
+1. Download your preferred package format from **[Latest Downloads](https://github.com/Crlyzd/Cathet/releases/latest)**:
    - **Debian / Ubuntu / Linux Mint / Pop!_OS** (`cathet-v...-amd64.deb` ~3.3 MB):
      ```bash
      sudo apt install ./cathet-v...-amd64.deb
@@ -72,7 +377,7 @@ No complicated installation required! You can be up and running in under 10 seco
      chmod +x cathet-v...-x86_64.AppImage
      ./cathet-v...-x86_64.AppImage
      ```
-2. **Cryptographic Verification**: You can verify release authenticity with our public signing key (`cathet-release-key.asc`) and signed checksum manifest (`SHA256SUMS` / `SHA256SUMS.asc`):
+2. **Cryptographic Release Verification**: Verify authenticity with our public signing key (`cathet-release-key.asc`):
    ```bash
    gpg --import cathet-release-key.asc
    gpg --verify SHA256SUMS.asc SHA256SUMS
@@ -80,110 +385,83 @@ No complicated installation required! You can be up and running in under 10 seco
    ```
 
 ### Android (Phone & Tablet)
-1. Download the package for your device from the **[Latest Downloads](https://github.com/Crlyzd/Cathet/releases/latest)** page:
-   - **`cathet-v...-android-arm64.apk`** (~7.2 MB): Tailored for modern 64-bit ARM phones and tablets.
+1. Download from **[Latest Downloads](https://github.com/Crlyzd/Cathet/releases/latest)**:
+   - **`cathet-v...-android-arm64.apk`** (~7.2 MB): Optimized for modern 64-bit ARM smartphones and tablets.
    - **`cathet-v...-android.apk`** (~20.9 MB): Universal APK containing all ABIs (`arm64-v8a`, `armeabi-v7a`, `x86_64`).
-2. Tap the APK to install on any device running Android 7.0+ (API 24 through 36).
-3. Open Cathet to enjoy high-refresh-rate note taking with folder organization and instant keyboard image support.
+2. Tap the APK to install on any device running Android 7.0+ (API levels 24 through 36).
 
 ---
 
-## 🌟 Fun Features You'll Actually Use
+## ⌨️ Desktop Shortcuts Reference
 
-### Desktop Highlights
-- 🪟 **Modern DWM Backdrops (Windows)**: Authentic hardware-accelerated Acrylic and Mica frosted glass with intelligent focus-state transitions.
-- 👥 **Side-by-Side Dual Pane (`Ctrl + D`)**: Split your window into two panes to compare notes, write drafts, or reference files simultaneously. Includes a draggable frosted glass splitter and independent preview toggles.
-- 📌 **Always on Top (`Ctrl + T`)**: Pin Cathet to float on top while watching videos, attending meetings, or browsing.
-- 🪟 **Frameless Controls**: Sleek built-in Minimize, Maximize, and Close buttons right in the header matching Windows 11.
-- 📂 **Multi-Target Drag & Drop**: Drag `.txt`, `.md`, or code files straight into the window. In Dual Pane mode, dual drop targets light up beneath your cursor to choose the receiving pane.
-- 🖱️ **Custom Frosted Menus**: Custom glass dropdowns and right-click context menus with quick shortcuts for Cut, Copy, Paste, and Word Wrap.
-- 🛡️ **Read-Only Protection**: Warns you if you attempt to save changes to a read-only file, safely guiding you to "Save As...".
-- 🔄 **One-Click Auto-Updater**: Checks for updates from GitHub releases and updates cleanly in-place (`--replace-old`). When running as a Microsoft Store package, updater controls gracefully yield to the Store's native update engine with a verified status badge.
-
-### Linux Desktop Highlights
-- 🐧 **WebKitGTK 4.1 & GTK 3 Runtime**: Lightweight native Linux execution without Chromium overhead.
-- 🖥️ **Desktop Environment Auto-Detection**: Dynamically recognizes KDE Plasma, GNOME, XFCE, Cinnamon, MATE, and other desktop environments.
-- 🎨 **Solid Slate Canvas by Default**: Default solid background (`#12141c` dark / `#f8fafc` light) prevents unblurred see-through bleed across Wayland and software-rasterized setups, with an optional Translucent Glass toggle for KWin Force-Blur environments.
-- 📁 **XDG MIME File Associations**: Seamless desktop registration via standard `.desktop` entries and `xdg-mime`.
-- 📦 **System Package Updater Handover**: In-app updater downloads updates and invokes your system's graphical package manager (`xdg-open` into Ubuntu Software, Discover, or DNF) with proper authorization.
-
-### Android Mobile Highlights
-- 📱 **Notes Dashboard**: Home view with instant note creation, search filtering, and custom folder categorization.
-- 🔐 **Rotary Safe Combination Dial HUD**: Pull down on Home notes and drag right to rotate the authentic mechanical safe tumbler dial 90° with native clock-tick haptics (`CLOCK_TICK`) to unlock Private Notes.
-- 🔍 **DOM-Safe In-Document Search**: High-speed search powered by the CSS Custom Highlight API (`::highlight(cathet-search-match)`), jumping smoothly to matched text while preserving continuous keyboard focus.
-- 🗂️ **Multi-Select Batch Management**: Long-press cards to batch pin, hide, move between folders, or delete notes.
-- 🌊 **Fluid Container Morph Transitions**: Tapping a note card triggers a Xiaomi HyperOS-inspired 380ms scale and clip-path morph into the full editor with zero opacity fade. Back navigation collapses smoothly back into the origin slot.
-- ⚡ **120Hz+ Display Unlock**: Hardware-level refresh rate unlock for 120Hz/144Hz/165Hz displays on startup.
-- ⌨️ **Gboard Commit Content API**: Paste images, stickers, and GIFs directly from Gboard or system clipboard into your notes.
-- 📱 **Vertical Dual-Pane Split**: Stacked split view tailored for mobile screens with touch-friendly dock controls and frozen scroll viewports during text selection.
-- 🎨 **Circular Theme Reveal**: Native `document.startViewTransition` circular clip-path mask animation when toggling light/dark themes.
-- 📋 **Slide-Up Mobile Settings**: 120fps bottom sheet with GPU-composited backdrop scrim for quick personalization.
-- 📏 **Zero-Footprint Scrollbars**: Eliminates layout reflow and text flashing when opening notes.
-
-### Markdown & Image Engine
-- 📝 **Lossless Instant Toggle (`Ctrl + M`)**: Switch seamlessly between raw text editing and rendered preview without DOM scraping or data loss.
-- 📷 **In-Memory Image Optimization**: Pasted clipboard images exceeding 500 KB are automatically downscaled (1920px max) and converted to WebP in memory. Small clips and animated GIFs bypass recompression to preserve 1:1 pixel sharpness.
-- 💊 **Collapsible Base64 Pills**: In Edit mode, massive Base64 image strings fold into compact, clickable frosted glass pill badges (`[ 📷 WEBP ~245 KB ▾ ]`).
-- 🖼️ **Local & Remote Image Streaming**: Preview relative (`./assets/...`), absolute (`C:/...`), and web (`https://...`) images with automatic broken-image fallbacks.
-- 📋 **Smart Clipboard Pasting**: Paste formatted HTML from browsers directly as clean Markdown, or paste spreadsheet cells from Excel/Google Sheets as Markdown tables.
-
----
-
-## ⌨️ Desktop Shortcuts
-
-| What you want to do | Press |
-| :--- | :--- |
-| **Toggle Markdown Preview** | `Ctrl + M` |
-| **Toggle Dual Pane (side-by-side) mode** | `Ctrl + D` |
-| **Find in Document** | `Ctrl + F` |
-| **Pin / Unpin window to stay on top** | `Ctrl + T` |
-| **Open Settings & Personalization** | `Ctrl + ,` *(or click the `●` dot in the top-left)* |
-| **New document / window** | `Ctrl + N` |
-| **Open a file** | `Ctrl + O` |
-| **Save your document** | `Ctrl + S` |
-| **Save as a new file** | `Ctrl + Shift + S` |
-| **Paste text, tables, or auto-optimized images** | `Ctrl + V` |
-| **Bold** / *Italic* / <u>Underline</u> | `Ctrl + B` / `Ctrl + I` / `Ctrl + U` |
-| **Quick Google search on selected text** | `Ctrl + E` |
-| **Toggle Word Wrap on / off** | `Alt + W` |
-| **Zoom text in / out** | `Ctrl + Mouse Wheel` |
-| **Close window** | `Esc` |
+| Command | Keystroke | Description |
+| :--- | :---: | :--- |
+| **Toggle Markdown Preview** | `Ctrl + M` | Instant lossless toggle between raw plain text and rendered markdown |
+| **Toggle Dual-Pane Mode** | `Ctrl + D` | Split window horizontally with draggable frosted glass splitter |
+| **Find in Document** | `Ctrl + F` | High-speed DOM search with CSS custom highlights |
+| **Always on Top** | `Ctrl + T` | Pin Cathet floating above all other desktop windows |
+| **Open Settings** | `Ctrl + ,` | Launch native frosted glass personalization dialog |
+| **New Document** | `Ctrl + N` | Open fresh scratchpad document |
+| **Open File** | `Ctrl + O` | Native file picker dialog |
+| **Save Document** | `Ctrl + S` | Save current file to disk |
+| **Save As** | `Ctrl + Shift + S` | Save document under a new name/location |
+| **Paste Content** | `Ctrl + V` | Paste text, markdown tables, or auto-compressed WebP images |
+| **Format Styles** | `Ctrl + B` / `I` / `U` | Apply **Bold**, *Italic*, or <u>Underline</u> formatting |
+| **Search in Web** | `Ctrl + E` | Look up highlighted text in default web browser |
+| **Toggle Word Wrap** | `Alt + W` | Toggle between line wrapping and horizontal code scroll |
+| **Zoom Viewport** | `Ctrl + Wheel` | Dynamically scale document text size |
+| **Close Window** | `Esc` | Dismiss menus or exit application |
 
 ---
 
 ## 👆 Mobile Touch Gestures & Navigation
 
-| What you want to do | Action |
+| Action | Gesture / Tap |
 | :--- | :--- |
-| **Open note from Home** | Tap any note card (smooth 120fps container morph into editor) |
-| **Return to Home / Close note** | Tap the `<` back arrow in the top bar (dual-layer collapse) |
-| **Unlock Private Notes** | Pull down on notes list and drag right (rotary safe combination dial with ratchet haptics) |
-| **Find in note** | Tap search icon in mobile ribbon (non-mutating highlight with keyboard focus) |
-| **Create new note** | Tap the floating `+` action button |
-| **Enter multi-select mode** | Long press any note card |
-| **Batch manage notes** | Select cards in multi-select mode to Pin, Hide, Move, or Delete |
-| **Toggle Mobile Dual-Pane** | Tap the Dual-Pane icon in the mobile action bar |
-| **Switch Scroll Sync Mode** | Tap or long-press the scroll sync badge on the splitter (Standard, Snap 1:1, Paused) |
-| **Open Mobile Settings** | Tap the settings gear in the mobile drawer |
-| **Switch Light / Dark Theme** | Tap theme button (circular clip-path reveal) |
+| **Open Note** | Tap any note tile on Home (380ms Xiaomi HyperOS container morph into editor) |
+| **Return to Home** | Tap `<` back arrow in top bar (dual-layer collapse into origin tile or `+` FAB) |
+| **Unlock Private Notes** | Pull down on notes list and drag right (mechanical rotary safe tumbler with clock-tick haptics) |
+| **Search Note Text** | Tap search icon in mobile ribbon (highlight matches without dismissing Gboard) |
+| **New Quick Note** | Tap floating circular `+` button |
+| **Multi-Select Mode** | Long-press any note card to activate top batch management bar |
+| **Batch Note Actions** | Select multiple cards to Pin, Hide, Move between folders, or Delete |
+| **Mobile Dual-Pane** | Tap Dual-Pane icon in mobile action bar (vertical stacked split) |
+| **Scroll Sync Mode** | Tap splitter badge to cycle: Standard Offset Lock, Snap 1:1, or Paused |
+| **Mobile Settings** | Tap gear icon in slide-out drawer (120fps bottom sheet) |
+| **Circular Theme Switch** | Tap theme button (hardware-accelerated `startViewTransition` circular reveal) |
 
 ---
 
-## ⚙️ Customizing to Your Liking
+## 📸 Complete Screenshot Guide & Asset Directory
 
-Access **Settings** on Desktop via `Ctrl + ,` (or the top-left `●` dot), or on Android via the mobile menu drawer:
+For contributors or when refreshing screenshots, all image assets live in `docs/screenshots/`:
 
-- **Appearance**: Switch between sleek Dark glass and bright Light glass.
-- **Window Backdrop (Linux)**: Select between Solid Slate (default) and Translucent Glass for KWin blur compositors.
-- **High Refresh Rate**: Toggle hardware display refresh rate unlock (120Hz/144Hz/165Hz+) or 60Hz battery saver mode.
-- **Typography**: Choose your favorite font family (*Inter, Roboto, Cascadia Code, JetBrains Mono, Fira Code, Consolas, Segoe UI, Noto Sans, Arial*).
-- **Window Controls (Desktop)**: Toggle persistent "Always on Top" pinning.
-- **Markdown Preview Default**: Choose whether documents open directly in formatted preview while keeping blank scratchpads in edit mode.
-- **Dual Pane Scroll Sync**: Toggle between proportional scroll synchronization and exact 1:1 snap scroll.
-- **Offline Tutorial**: Click **"Open Tutorial"** to explore markdown formatting and interactive examples directly in the editor.
-- **Default Application (Windows & Linux)**: Register Cathet as your default text app with one click.
-- **Auto-Updater**: Check for new releases with one click or monitor Microsoft Store package status.
-- **About**: View version information, meet the creator, or send feedback.
+<details>
+<summary><b>View All 17 Screenshot Specifications</b></summary>
+
+<br/>
+
+| # | Asset Filename | Platform | Theme | Captures What |
+|---|---|---|---|---|
+| 01 | `hero-crossplatform-showcase.png` | Composite | Dark | Wide banner showing Windows, Android, and Linux running Cathet |
+| 02 | `windows-acrylic-dark-editor.png` | Windows 11 | Dark | Main editor in Edit mode over wallpaper with frosted Acrylic backdrop |
+| 03 | `windows-preview-light.png` | Windows 11 | Light | Rendered Markdown preview mode on light frosted glass |
+| 04 | `windows-dualpane-horizontal.png` | Windows 11 | Dark | Side-by-side Dual-Pane mode (`Ctrl+D`) with splitter badge |
+| 05 | `windows-base64-pill-badge.png` | Windows 11 | Dark | Collapsible `[ 📷 WEBP ~245 KB ▾ ]` pill badge inline with text |
+| 06 | `windows-settings-modal.png` | Windows 11 | Dark | Dedicated 350x318 frosted glass desktop Settings window |
+| 07 | `windows-context-menu-glass.png` | Windows 11 | Dark | Custom frosted glass right-click context menu |
+| 08 | `linux-gnome-solid-slate.png` | Linux (GNOME) | Dark | WebKitGTK solid slate canvas (`#12141c`) default mode |
+| 09 | `linux-kde-translucent-blur.png` | Linux (KDE) | Dark | Translucent glass mode with KWin force-blur effect |
+| 10 | `android-home-dashboard.png` | Android | Dark | Notes Home dashboard with category tabs, search, and note cards |
+| 11 | `android-vault-rotary-dial.png` | Android | Dark | Mechanical rotary safe tumbler dial HUD during unlock gesture |
+| 12 | `android-home-multiselect.png` | Android | Dark | Notes Home multi-select mode with top action bar and selected cards |
+| 13 | `android-editor-gboard-image.png` | Android | Dark | Gboard open pasting stickers/GIFs via Commit Content API |
+| 14 | `android-in-doc-search.png` | Android | Dark | In-document search ribbon with CSS highlighted matches and keyboard open |
+| 15 | `android-dualpane-vertical.png` | Android | Dark | Mobile vertical stacked dual-pane with touch dock controls |
+| 16 | `android-settings-bottomsheet.png`| Android | Dark | 120fps slide-up bottom sheet settings view |
+| 17 | `android-theme-circular-reveal.png`| Android/PC | Trans | Expanding circular clip-path transition mask between themes |
+
+</details>
 
 ---
 
@@ -193,25 +471,9 @@ Access **Settings** on Desktop via `Ctrl + ,` (or the top-left `●` dot), or on
 <summary><b>What operating systems does Cathet support?</b></summary>
 <br/>
 Cathet is cross-platform across three major ecosystems:
-- <b>Windows</b>: Windows 10 and Windows 11 (native x64 and ARM64 executables, plus Microsoft Store MSIX bundles).
+- <b>Windows</b>: Windows 10 and Windows 11 (native x64 and ARM64 executables under 4 MB, plus Microsoft Store MSIX bundles).
 - <b>Linux</b>: Modern Linux distributions including Debian, Ubuntu, Fedora, openSUSE, and Arch via native <code>.deb</code>, <code>.rpm</code>, and standalone <code>.AppImage</code> packages.
 - <b>Android</b>: Android 7.0 through Android 15+ (API levels 24 to 36) supporting Phone ARM64 and Universal APK packages.
-</details>
-
-<details>
-<summary><b>How do I verify the authenticity of Cathet release downloads?</b></summary>
-<br/>
-All Cathet releases are cryptographically signed. You can import our public OpenPGP key (<code>release/cathet-release-key.asc</code>) and verify the signed checksum manifest:
-<pre><code>gpg --import cathet-release-key.asc
-gpg --verify SHA256SUMS.asc SHA256SUMS
-sha256sum --check SHA256SUMS</code></pre>
-Red Hat (<code>.rpm</code>) packages also include direct embedded GPG header signatures verifiable via <code>rpm -K</code>.
-</details>
-
-<details>
-<summary><b>Does Cathet need an internet connection to work?</b></summary>
-<br/>
-No! Cathet is 100% self-contained. All styles, fonts, and the interactive tutorial guide are built directly into the app. It works completely offline and never transmits telemetry or tracks your notes.
 </details>
 
 <details>
@@ -221,42 +483,24 @@ Cathet features a built-in in-memory image engine. When you paste an image (<cod
 </details>
 
 <details>
-<summary><b>Where are my files and notes saved?</b></summary>
+<summary><b>Does Cathet require an internet connection?</b></summary>
 <br/>
-On desktop (Windows and Linux), Cathet saves standard text and Markdown files (<code>.txt</code>, <code>.md</code>, etc.) directly wherever you choose. On Android, notes are saved locally with instant folder categorization and can also be exported or opened from external files.
+No! Cathet is 100% self-contained and operates completely offline. All styles, fonts, and the interactive tutorial guide are built directly into the app binary. It never transmits telemetry, collects analytics, or tracks your notes.
 </details>
 
 <details>
 <summary><b>Can I take Cathet with me on a flash drive?</b></summary>
 <br/>
-Yes! On Windows, Cathet is packaged as a single portable executable under 4 MB. On Linux, it is available as a standalone AppImage. You can copy either to a USB thumb drive and run it immediately without installation.
-</details>
-
-<details>
-<summary><b>How do I uninstall or remove Cathet?</b></summary>
-<br/>
-On Windows, open Settings, click "Unregister Default App" (if enabled), and delete the <code>.exe</code> file. On Linux, uninstall via <code>sudo apt remove cathet</code> or <code>sudo dnf remove Cathet</code>. On Android, uninstall Cathet like any standard app from your device settings.
+Yes! On Windows, Cathet is packaged as a single portable executable under 4 MB. On Linux, it is available as a standalone AppImage. You can copy either to a USB thumb drive and run it immediately without installation or registry writes.
 </details>
 
 ---
 
-<details>
-<summary><b>🛠️ For Developers & Builders (Compiling from Source)</b></summary>
+## 🛠️ For Developers & Builders
 
-<br/>
-
-If you would like to build Cathet locally from source:
-
-### Requirements
-- [Node.js](https://nodejs.org/) (v18+) & `npm`
-- [Rust](https://www.rust-lang.org/) (latest stable)
-- **Windows Builds**: Windows PowerShell and Visual Studio C++ Build Tools
-- **Android Builds**: Android Studio / SDK (API 24–36), Android NDK (r25+), JDK 17, and Rust Android targets (`rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`)
-- **Linux Builds**: WSL2 or native Linux with GTK 3, WebKitGTK 4.1 (`libwebkit2gtk-4.1-dev`), and packaging utilities (`rpm`, `rpmsign`)
+Cathet uses a unified, authoritative automation pipeline located in the repository root: `build.ps1`.
 
 ### Single-Script Automation (`build.ps1`)
-
-The repository root includes `build.ps1`, the single authoritative automation pipeline:
 
 ```powershell
 # 1. Clone repository & install frontend modules
@@ -292,22 +536,20 @@ npm install
 .\build.ps1 -Clean        # Purge local and WSL build caches (~9.6 GB reclaimed)
 ```
 
-All compiled binaries are placed into `release/` with optimized footprint (`opt-level = "z"`, stripped symbols, native Windows Schannel TLS on Windows and Rustls on Android/Linux).
-
-</details>
+All compiled binaries are placed into `release/` with minimal size profiles (`opt-level = "z"`, stripped symbols, native Windows Schannel TLS on Windows and Rustls on Android/Linux).
 
 ---
 
 ## ❤️ Support & Feedback
 
-Cathet is free, open-source, and made with love.
-- ⭐ If you like Cathet, please give the repo a star on GitHub!
-- 🐛 Found a bug or have an idea? [Open an issue](https://github.com/Crlyzd/Cathet/issues).
+Cathet is free, open-source, and crafted with care.
+- ⭐ If you enjoy Cathet, give the repository a star on GitHub!
+- 🐛 Found a bug or have a suggestion? [Open an issue](https://github.com/Crlyzd/Cathet/issues).
 - ☕ Support the creator via [Saweria](https://saweria.co/crlyzd) or [PayPal](https://paypal.me/crlyzd).
 
 ---
 
 ## 📄 License
 
-Cathet is open-source software licensed under the [GNU General Public License v3.0](LICENSE) (GPL-3.0-or-later).
+Cathet is open-source software licensed under the [GNU General Public License v3.0](LICENSE) (GPL-3.0-or-later).  
 Copyright © 2026 Crlyzd.

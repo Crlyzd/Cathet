@@ -241,6 +241,34 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-11: Comprehensive README Overhaul with Multi-Platform Screenshot Showcase & Blank Placeholders
+- **Summary**:
+  - Re-architected [`README.md`](file:///e:/Default/Cleanpad/README.md) into a modern, magazine-grade visual showcase covering all three major supported ecosystems: Windows Desktop (x64/ARM64), Linux Desktop (GNOME/KDE Plasma), and Android Mobile (API 24+).
+  - Generated 17 solid black blank PNG placeholder images (`docs/screenshots/*.png`, ~723–1894 bytes each), with modern phone portrait aspect ratio (270x585, ~9:19.5) for all Android mobile screenshots and 16:9 widescreen for desktop, eliminating distorted horizontal letterboxes in markdown viewers.
+  - Formatted responsive, side-by-side comparison tables and cards for Desktop Edit vs Preview mode, Horizontal Dual-Pane, Base64 image pills, Context menu, Linux Slate vs KWin blur, Android Notes Home, Rotary Vault Dial HUD, Multi-Select Batch Actions, Gboard sticker commit, and Desktop vs Mobile Settings.
+  - Inserted granular inline screenshot specification comments (`<!-- 📸 SCREENSHOT SPEC: ... -->`) above each embedded image tag detailing target file, OS platform, theme, resolution/aspect ratio, active UI state, and sample text content.
+  - Added an expandable "Complete Screenshot Guide & Asset Directory" summary table for quick contributor reference.
+- **Affected Files**:
+  - `README.md`
+  - `docs/screenshots/hero-crossplatform-showcase.png`
+  - `docs/screenshots/windows-acrylic-dark-editor.png`
+  - `docs/screenshots/windows-preview-light.png`
+  - `docs/screenshots/windows-dualpane-horizontal.png`
+  - `docs/screenshots/windows-base64-pill-badge.png`
+  - `docs/screenshots/windows-settings-modal.png`
+  - `docs/screenshots/windows-context-menu-glass.png`
+  - `docs/screenshots/linux-gnome-solid-slate.png`
+  - `docs/screenshots/linux-kde-translucent-blur.png`
+  - `docs/screenshots/android-home-dashboard.png`
+  - `docs/screenshots/android-vault-rotary-dial.png`
+  - `docs/screenshots/android-home-multiselect.png`
+  - `docs/screenshots/android-editor-gboard-image.png`
+  - `docs/screenshots/android-in-doc-search.png`
+  - `docs/screenshots/android-dualpane-vertical.png`
+  - `docs/screenshots/android-settings-bottomsheet.png`
+  - `docs/screenshots/android-theme-circular-reveal.png`
+  - `history.md`
+
 ### 2026-11-11: Fix Dual-Pane Splitter Sync Button State Desynchronization (Desktop: Windows & Linux)
 - **Summary**:
   - Resolved desktop center splitter sync badge desynchronization across Windows and Linux where turning off Blue Galaxy Snap Sync visually left `scrollSync` active in Standard Proportional Lock, requiring a redundant second click to achieve independent scrolling.
