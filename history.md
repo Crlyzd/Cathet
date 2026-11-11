@@ -241,6 +241,14 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-11: Add Cathet Definition and Pronunciation Guide to README
+- **Summary**:
+  - Added a dictionary definition card and phonetic pronunciation guide (`/ˈkæθ.ɪt/` / `/kəˈθɛt/`) to [`README.md`](file:///e:/Default/Cleanpad/README.md) directly beneath the hero header.
+  - Documented etymology (from Ancient Greek *κάθετος* / *káthetos* — perpendicular, plumb line) and its mathematical/architectural meaning representing true alignment, precision, and zero-bloat focus.
+- **Affected Files**:
+  - `README.md`
+  - `history.md`
+
 ### 2026-11-11: Align Microsoft Store MSIX Manifest DisplayName with Reserved Partner Center App Name
 - **Summary**:
   - Updated the generated `AppxManifest.xml` within `Invoke-WindowsMsixBundle` in `build.ps1` to use `<DisplayName>Cathet Note</DisplayName>` (both in `<Properties>` and `<uap:VisualElements>`) to strictly match the reserved product name in Microsoft Partner Center (`Cathet Note`).

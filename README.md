@@ -2,6 +2,16 @@
 
 # Cathet
 
+</div>
+
+> **cath·et** `/ˈkæθ.ɪt/` *(or /kəˈθɛt/)* • **noun**
+>
+> *Etymology:* From Ancient Greek **κάθετος** (*káthetos*, "perpendicular", "plumb line").
+> 1. **(Geometry & Drafting)** A straight perpendicular line meeting at a true right angle; the vertical axis of balance, directness, and precision.
+> 2. **(Computing)** An ultra-lightweight, distraction-free text and markdown editor engineered with clean lines, native frosted glass aesthetics, and zero bloat.
+
+<div align="center">
+
 **A sleek, ultra-lightweight, cross-platform frosted-glass text & markdown editor for Windows, Linux, and Android that just gets out of your way.**
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20Linux-0078D6?logo=linux&logoColor=white)](https://github.com/Crlyzd/Cathet)
