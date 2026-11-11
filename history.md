@@ -11,6 +11,17 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-11: Confabulating Greek Geometry Etymology for Cathet Instead of Javanese Meaning (To Note / Write Down)
+- **Context**: When asked to add the definition and pronunciation of "Cathet" to `README.md`, the assistant assumed a Western Greek geometry etymology (*káthetos* / cathetus) instead of recognizing the app's true Javanese origin (*cathet* / ꦕꦛꦼꦠ꧀, meaning to note, write down, or record).
+- **User Correction**: *"bruh what, its not fucking greek, its javanese"*
+- **Root Cause**:
+  1. Jumped to Western classical dictionary assumptions without considering the author's cultural context and the direct purpose of the app as a notepad.
+  2. Overlooked that in Javanese (Basa Jawa), *cathet* (Hanacaraka: ꦕꦛꦼꦠ꧀; Indonesian cognate: *catat*) literally means "to note down", "to write", or "to record" (with derivatives like *nyathet* = taking notes, *cathetan* = notes/records).
+- **Corrective Guardrail**:
+  1. Never hallucinate or assume Western/Greek origins for project names without verifying the creator's context and native linguistic origin.
+  2. For Cathet, the authentic etymology is Javanese *cathet* (ꦕꦛꦼꦠ꧀), pronounced `/tʃaˈʈət/` ("cha-thet"), literally meaning "to note down" or "to write down".
+
+
 ### [Mistake] 2026-11-11: Premature Code Implementation in /architect Mode Without Explicit Permission or Platform Breakdown
 - **Context**: In response to the user saying *"that sounds good"* regarding design clarifications for extension-free filenames, the assistant immediately began modifying source files (`main.ts`, `fileService.ts`, `file.rs`) without asking for explicit permission to begin implementation, without announcing a role transition from `/architect` to implementation, and without explicitly articulating the exact platform breakdown of the applied edits.
 - **User Correction**: *"you didnt mention anything about what change and which fucking platform you appplied those change, and you dont even tell me are you running the plan or just editing the code out of reflect. you didnt even ask my permission before making any change"*
@@ -241,10 +252,11 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
-### 2026-11-11: Add Cathet Definition and Pronunciation Guide to README
+### 2026-11-11: Correct Cathet Definition to Authentic Javanese Etymology in README
 - **Summary**:
-  - Added a dictionary definition card and phonetic pronunciation guide (`/ˈkæθ.ɪt/` / `/kəˈθɛt/`) to [`README.md`](file:///e:/Default/Cleanpad/README.md) directly beneath the hero header.
-  - Documented etymology (from Ancient Greek *κάθετος* / *káthetos* — perpendicular, plumb line) and its mathematical/architectural meaning representing true alignment, precision, and zero-bloat focus.
+  - Replaced hallucinated Greek etymology with authentic Javanese origin (*cathet* / ꦕꦛꦼꦠ꧀, *basa Jawa*, cognate to Indonesian *catat*).
+  - Defined pronunciation as `/tʃaˈʈət/` ("cha-thet" / "chah-tuht") with core meanings: verb (to write down, jot down, record) and noun (written note, memorandum / *cathetan*).
+  - Documented mistake entry in institutional memory.
 - **Affected Files**:
   - `README.md`
   - `history.md`

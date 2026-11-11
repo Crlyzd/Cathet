@@ -4,11 +4,12 @@
 
 </div>
 
-> **cath·et** `/ˈkæθ.ɪt/` *(or /kəˈθɛt/)* • **noun**
+> **cath·et** `/tʃaˈʈət/` *(cha-thet / chah-tuht)* • **verb & noun**
 >
-> *Etymology:* From Ancient Greek **κάθετος** (*káthetos*, "perpendicular", "plumb line").
-> 1. **(Geometry & Drafting)** A straight perpendicular line meeting at a true right angle; the vertical axis of balance, directness, and precision.
-> 2. **(Computing)** An ultra-lightweight, distraction-free text and markdown editor engineered with clean lines, native frosted glass aesthetics, and zero bloat.
+> *Origin:* Javanese (**ꦕꦛꦼꦠ꧀**, *basa Jawa*), cognate to Indonesian *catat*.
+> 1. **(Verb)** To write down, to jot down, to note, or to record.
+> 2. **(Noun)** A written note, record, or memorandum (*cathetan*).
+> 3. **(Computing)** A sleek, ultra-lightweight, cross-platform frosted-glass text and markdown editor that just gets out of your way.
 
 <div align="center">
 
