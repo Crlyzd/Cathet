@@ -227,6 +227,19 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-11: Fix Dual-Pane Splitter Sync Button State Desynchronization (Desktop: Windows & Linux)
+- **Summary**:
+  - Resolved desktop center splitter sync badge desynchronization across Windows and Linux where turning off Blue Galaxy Snap Sync visually left `scrollSync` active in Standard Proportional Lock, requiring a redundant second click to achieve independent scrolling.
+  - Resolved off-state long-press/right-click defect where activating Blue Galaxy Snap Sync visually updated the badge but left `scrollSync` unlocked (`isLocked() === false`), causing panes to continue scrolling independently.
+  - Extended `DualPaneSplitter` with an `onSetSyncLocked` callback to guarantee atomic 2-way lock synchronization between UI badge clicks/gestures and the underlying `SyncScrollController`.
+  - Refactored `DualPaneView.setSyncLocked()` to use direct, idempotent controller assignment (`this.scrollSync.setLocked(locked)`).
+  - Preserved Android mobile architecture isolation with zero regressions: Android continues to use `#mobile-btn-sync` via `MobileActionBar.ts` while `.dualpane-sync-badge` remains hidden (`display: none !important`).
+- **Affected Files**:
+  - `src-ui/src/components/dualpane/DualPaneSplitter.ts` (187 lines)
+  - `src-ui/src/components/dualpane/DualPaneView.ts` (223 lines)
+  - `history.md`
+
+
 ### 2026-11-10: Cross-Platform Documentation Parity & v5.4.0 README.md Overhaul
 - **Summary**:
   - Overhauled `README.md` to reflect full cross-platform capabilities across Windows, Linux, and Android for Cathet v5.4.0.
