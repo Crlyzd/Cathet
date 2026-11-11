@@ -66,7 +66,8 @@ export class DualPaneView {
       this.rootEl, (pct) => this.setSplitRatio(pct),
       () => { const l = this.scrollSync.toggleLock(); this.callbacks.onSyncChange?.(l); return l; },
       this.scrollSync.isLocked(),
-      (snap) => { this.setSnapScroll(snap); this.callbacks.onSnapChange?.(snap); }
+      (snap) => { this.setSnapScroll(snap); this.callbacks.onSnapChange?.(snap); },
+      (locked) => { this.setSyncLocked(locked); }
     );
 
     this.rightPaneEl = document.createElement("div");
@@ -125,7 +126,7 @@ export class DualPaneView {
   setLeftPreviewActive(a: boolean): void { this.headerLeft.setPreviewActive(a); }
   setSnapScroll(enabled: boolean): void { this.scrollSync.setSnapScroll(enabled); this.splitter.setSnapScroll(enabled); }
   toggleLock(): boolean { const l = this.scrollSync.toggleLock(); this.splitter.setSyncLocked(l); this.callbacks.onSyncChange?.(l); return l; }
-  setSyncLocked(locked: boolean): void { if (this.scrollSync.isLocked() !== locked) this.scrollSync.toggleLock(); this.splitter.setSyncLocked(locked); this.callbacks.onSyncChange?.(locked); }
+  setSyncLocked(locked: boolean): void { this.scrollSync.setLocked(locked); this.splitter.setSyncLocked(locked); this.callbacks.onSyncChange?.(locked); }
   isSyncLocked(): boolean { return this.scrollSync.isLocked(); }
   toggleLeftPreview(): void { this.headerLeft.setPreviewActive(this.editorLeft.toggleMarkdownPreview()); this.scrollSync.resync("left"); }
   toggleRightPreview(): void { if (!this.editorRight) return; this.headerRight.setPreviewActive(this.editorRight.toggleMarkdownPreview()); this.scrollSync.resync("right"); }

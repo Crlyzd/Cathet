@@ -15,6 +15,7 @@ export class DualPaneSplitter {
   private container: HTMLElement;
   private isLocked: boolean;
   private snapScroll: boolean = false;
+  private onSetSyncLocked?: (locked: boolean) => void;
   private longPressCleanup: (() => void) | null = null;
 
   constructor(
@@ -22,12 +23,14 @@ export class DualPaneSplitter {
     onResize: (leftPercent: number) => void,
     onToggleSync: () => boolean,
     initialSyncLocked: boolean = true,
-    onToggleSnap?: (enabled: boolean) => void
+    onToggleSnap?: (enabled: boolean) => void,
+    onSetSyncLocked?: (locked: boolean) => void
   ) {
     this.container = container;
     this.onResize = onResize;
     this.onToggleSync = onToggleSync;
     this.onToggleSnap = onToggleSnap;
+    this.onSetSyncLocked = onSetSyncLocked;
     this.isLocked = initialSyncLocked;
 
     this.element = document.createElement("div");
@@ -70,6 +73,11 @@ export class DualPaneSplitter {
     this.snapScroll = nextSnap;
     if (nextSnap && !this.isLocked) {
       this.isLocked = true;
+      if (this.onSetSyncLocked) {
+        this.onSetSyncLocked(true);
+      } else {
+        this.setSyncLocked(true);
+      }
     }
     this.updateVisualState();
     try { if ("vibrate" in navigator) navigator.vibrate(30); } catch (_) {}
@@ -83,8 +91,14 @@ export class DualPaneSplitter {
         e.stopPropagation();
         if (this.snapScroll) {
           this.snapScroll = false;
+          this.isLocked = false;
           this.onToggleSnap?.(false);
-          this.setSyncLocked(false);
+          if (this.onSetSyncLocked) {
+            this.onSetSyncLocked(false);
+          } else {
+            this.setSyncLocked(false);
+          }
+          this.updateVisualState();
           return;
         }
         const newState = this.onToggleSync();
