@@ -348,6 +348,7 @@ body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] {
 }
 
 body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"],
+html:not(.is-mobile):not(.is-linux)[data-backdrop="solid"],
 body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] #app,
 body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] #workspace-shell,
 body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] .settings-window {
@@ -355,6 +356,11 @@ body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] .settings-window {
 }
 
 body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"],
+html:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"],
+[data-theme="light"] body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"],
+[data-theme="light"] body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] #app,
+[data-theme="light"] body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] #workspace-shell,
+[data-theme="light"] body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] .settings-window,
 body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] #app,
 body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] #workspace-shell,
 body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] .settings-window {

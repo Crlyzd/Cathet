@@ -1104,22 +1104,45 @@ body.is-linux .about-box {
 }
 
 /* Settings Window Readability Guardrails */
+/* Pure Transparent Setting Window readability (50% translucent with blur) */
 body[data-backdrop="transparent"] .settings-window,
-body[data-backdrop="transparent"] .settings-card,
+body[data-backdrop="transparent"] #settings-root,
+html[data-backdrop="transparent"] .settings-window,
 body.is-linux.de-blur .settings-window,
-body.is-linux.de-blur .settings-card {
-  background: rgba(20, 22, 28, 0.88) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+body.is-linux.de-blur #settings-root {
+  background: rgba(15, 17, 23, 0.50) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 [data-theme="light"] body[data-backdrop="transparent"] .settings-window,
-[data-theme="light"] body[data-backdrop="transparent"] .settings-card,
+[data-theme="light"] body[data-backdrop="transparent"] #settings-root,
+html[data-theme="light"][data-backdrop="transparent"] .settings-window,
+body[data-theme="light"][data-backdrop="transparent"] .settings-window,
 [data-theme="light"] body.is-linux.de-blur .settings-window,
-[data-theme="light"] body.is-linux.de-blur .settings-card {
-  background: rgba(248, 250, 252, 0.92) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+[data-theme="light"] body.is-linux.de-blur #settings-root {
+  background: rgba(248, 250, 252, 0.50) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Solid Opaque Backdrop Support for Settings Window */
+html[data-backdrop="solid"],
+body[data-backdrop="solid"],
+body[data-backdrop="solid"] #settings-root,
+body[data-backdrop="solid"] .settings-window,
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] .settings-window {
+  background-color: var(--col-solid-bg, #0f1117) !important;
+}
+
+[data-theme="light"] html[data-backdrop="solid"],
+[data-theme="light"] body[data-backdrop="solid"],
+[data-theme="light"] body[data-backdrop="solid"] #settings-root,
+[data-theme="light"] body[data-backdrop="solid"] .settings-window,
+html[data-theme="light"][data-backdrop="solid"] .settings-window,
+body[data-theme="light"][data-backdrop="solid"] .settings-window,
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] .settings-window {
+  background-color: var(--col-solid-bg, #f8fafc) !important;
 }
 
 /* Glass Range Slider Refined */
@@ -1239,51 +1262,133 @@ body.is-linux.de-blur .settings-card {
   gap: 5px;
 }
 
-.solid-sys-btn {
+.solid-color-actions .glass-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  padding: 2px 7px;
+  padding: 2.5px 7px;
 }
 
-.solid-sys-btn svg {
+.solid-color-actions .glass-btn svg {
   width: 11px;
   height: 11px;
 }
 
-.solid-picker-label {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 5px;
-  cursor: pointer;
-  position: relative;
-}
-
-.picker-swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  display: inline-block;
-}
-
-.visually-hidden-color {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
 .solid-reset-btn {
-  padding: 2px 5px;
+  padding: 2.5px 6px;
   font-size: 10px;
 }
 
 .solid-reset-btn svg {
   width: 10px;
   height: 10px;
+}
+
+/* Glass In-Window Custom Color Picker */
+.glass-inwindow-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px 10px;
+  background: var(--col-card-bg);
+  border: 1px solid var(--col-card-border);
+  border-radius: 6px;
+  margin-top: 6px;
+}
+
+.glass-sv-box {
+  width: 100%;
+  height: 105px;
+  position: relative;
+  border-radius: 5px;
+  cursor: crosshair;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.glass-sv-white {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #ffffff, transparent);
+}
+
+.glass-sv-black {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, #000000, transparent);
+}
+
+.glass-sv-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.glass-picker-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.glass-hue-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+  outline: none;
+  cursor: pointer;
+}
+
+.glass-hue-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  background: transparent;
+  cursor: pointer;
+}
+
+.glass-picker-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.glass-picker-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid var(--col-card-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.glass-picker-hex-input {
+  flex: 1;
+  background: var(--col-card-bg);
+  border: 1px solid var(--col-card-border);
+  color: var(--col-text);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  outline: none;
+  text-transform: uppercase;
+}
+
+.glass-picker-hex-input:focus {
+  border-color: var(--col-accent);
 }
 
 /* Store Badge */
