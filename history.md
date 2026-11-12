@@ -261,6 +261,29 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-12: Refine Backdrops & Opacity Slider, Solid Opaque Customization, Pure Transparent Guardrail & Fix Settings Layout
+- **Summary**:
+  - Refined the opacity drag slider layout with 160px width, flex-shrink protection, and fixed badge alignment so percentage values (0%–100%) never clip.
+  - Implemented per-backdrop opacity defaults: Acrylic defaults to 0% (raw frosted glass), while Mica, Mica Alt, Pure Transparent, and Linux Translucent default to 50%.
+  - Added Pure Transparent Settings readability guardrail: Settings window enforces a darkened semi-opaque frosted glass card (88% dark / 92% light with blur) to prevent background text bleed-through while keeping main editor transparent.
+  - Fixed Solid Opaque transparency leak: enforced explicit solid background (`var(--col-solid-bg) !important`) across HTML, body, shell, and Settings window to guarantee 100% solid opacity with zero glass bleed.
+  - Implemented Solid Opaque customization: added `SolidColorPickerComponent` with 5 curated presets per theme, "Follow Windows/System Color" via `DwmGetColorizationColor` in Rust (`get_windows_accent_color`), and custom native color picker.
+  - Fixed broken translations, layout, and event listeners for Default Application (`settings.unregister` / `settings.setAsDefault`) and Application Updates (`settings.appUpdates` with proper status text and right-side button / Store badge).
+  - Maintained strict Anti-Monolith line counts (<250 lines across all files: `vibrancy.rs` 236 lines, `backdropService.ts` 191 lines, `SolidColorPicker.ts` 123 lines, `SettingsAccordions.ts` 220 lines, `SettingsPane.ts` 248 lines, `SettingsTabs.ts` 210 lines).
+- **Affected Files**:
+  - `src-tauri/src/commands/vibrancy.rs`
+  - `src-tauri/src/lib.rs`
+  - `src-ui/src/services/backdropService.ts`
+  - `src-ui/src/components/settings/SolidColorPicker.ts`
+  - `src-ui/src/components/settings/SettingsAccordions.ts`
+  - `src-ui/src/components/settings/SettingsPane.ts`
+  - `src-ui/src/components/SettingsTabs.ts`
+  - `src-ui/src/settingsMain.ts`
+  - `src-ui/styles/main.css`
+  - `src-ui/styles/linux.css`
+  - `src-ui/styles/settings.css`
+  - `history.md`
+
 ### 2026-11-12: Full Windows DWM Backdrops, Linux Translucent Support & Interactive Transparency Slider with Accordion Settings
 - **Summary**:
   - Implemented dynamic runtime switching across all Windows 11 DWM backdrops: Acrylic (`DWMSBT_TRANSIENTWINDOW`), Mica (`DWMSBT_MAINWINDOW`), Mica Alt (`DWMSBT_TABBEDWINDOW`), Pure Transparent (`DWMSBT_NONE`), and Solid Opaque (`DWMSBT_AUTO`).
