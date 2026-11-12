@@ -67,21 +67,19 @@ class SettingsApp {
         onSnapScrollChange: (enabled) => this.handleSnapScrollChange(enabled),
         onWindowsBackdropChange: async (mode) => {
           await this.backdropService.setWindowsBackdrop(mode);
-          const newOpacity = this.backdropService.getOpacityPercent(mode);
-          this.tabsComponent.updateState({ windowsBackdrop: mode, backdropOpacity: newOpacity });
+          this.tabsComponent.updateState({ windowsBackdrop: mode, backdropOpacity: this.backdropService.getOpacityPercent(mode) });
         },
         onBackdropOpacityChange: (percent) => {
           this.backdropService.setOpacityPercent(percent);
           this.tabsComponent.updateState({ backdropOpacity: percent });
         },
         onSolidColorChange: async (color) => {
-          await this.backdropService.setSolidColor(color);
+          await this.backdropService.setSolidColor(color, this.themeService.getTheme());
           this.tabsComponent.updateState({ solidColor: color });
         },
         onLinuxBackdropChange: async (mode) => {
           await this.backdropService.setLinuxBackdrop(mode);
-          const newOpacity = this.backdropService.getOpacityPercent(mode);
-          this.tabsComponent.updateState({ linuxBackdrop: mode, backdropOpacity: newOpacity });
+          this.tabsComponent.updateState({ linuxBackdrop: mode, backdropOpacity: this.backdropService.getOpacityPercent(mode) });
           if (mode === "blur") {
             await showGlassDialog({
               title: "Translucent Backdrop",
@@ -118,40 +116,17 @@ class SettingsApp {
   private async handleThemeChange(theme: "dark" | "light"): Promise<void> {
     if (this.themeService.getTheme() !== theme) this.themeService.toggleTheme();
     this.applyTheme(theme);
-    this.tabsComponent.updateState({ theme });
+    this.backdropService.applyAll(theme);
+    this.tabsComponent.updateState({ theme, solidColor: this.backdropService.getSolidColor(theme) });
     await invoke("sync_window_theme", { theme }).catch(console.error);
     await emit("cathet:theme-change", theme);
   }
 
-  private async handleFontChange(fontId: string): Promise<void> {
-    this.fontService.setFont(fontId);
-    this.tabsComponent.updateState({ fontId });
-    await emit("cathet:font-change", fontId);
-  }
-
-  private async handleLanguageChange(locale: string): Promise<void> {
-    this.i18n.setLocale(locale);
-    this.tabsComponent.updateState({ locale });
-  }
-
-  private async handleAlwaysOnTopChange(enabled: boolean): Promise<void> {
-    this.isAlwaysOnTop = enabled;
-    this.tabsComponent.updateState({ isAlwaysOnTop: enabled });
-    await invoke("set_always_on_top", { enabled }).catch(console.error);
-    await emit("cathet:ontop-change", enabled);
-  }
-
-  private async handleAlwaysPreviewChange(enabled: boolean): Promise<void> {
-    this.previewService.setAlwaysPreview(enabled);
-    this.tabsComponent.updateState({ alwaysPreview: enabled });
-    await emit("cathet:always-preview-change", enabled);
-  }
-
-  private async handleSnapScrollChange(enabled: boolean): Promise<void> {
-    this.dualPaneService.setSnapScroll(enabled);
-    this.tabsComponent.updateState({ snapScroll: enabled });
-    await emit("cathet:snap-scroll-change", enabled);
-  }
+  private async handleFontChange(id: string): Promise<void> { this.fontService.setFont(id); this.tabsComponent.updateState({ fontId: id }); await emit("cathet:font-change", id); }
+  private async handleLanguageChange(loc: string): Promise<void> { this.i18n.setLocale(loc); this.tabsComponent.updateState({ locale: loc }); }
+  private async handleAlwaysOnTopChange(en: boolean): Promise<void> { this.tabsComponent.updateState({ isAlwaysOnTop: (this.isAlwaysOnTop = en) }); await invoke("set_always_on_top", { enabled: en }).catch(console.error); await emit("cathet:ontop-change", en); }
+  private async handleAlwaysPreviewChange(en: boolean): Promise<void> { this.previewService.setAlwaysPreview(en); this.tabsComponent.updateState({ alwaysPreview: en }); await emit("cathet:always-preview-change", en); }
+  private async handleSnapScrollChange(en: boolean): Promise<void> { this.dualPaneService.setSnapScroll(en); this.tabsComponent.updateState({ snapScroll: en }); await emit("cathet:snap-scroll-change", en); }
 
   private async syncAlwaysOnTop(): Promise<void> {
     try {
@@ -178,7 +153,7 @@ class SettingsApp {
   private async handleStartDownload(): Promise<void> {
     try {
       this.tabsComponent.setDownloadProgress(0);
-      await this.updateService.startDownload((progress) => this.tabsComponent.setDownloadProgress(progress.percent));
+      await this.updateService.startDownload((p) => this.tabsComponent.setDownloadProgress(p.percent));
       this.tabsComponent.setDownloadProgress(100);
     } catch (err) {
       await showGlassDialog({ title: "Update Error", message: `Download failed: ${err}`, type: "error" });
@@ -187,9 +162,7 @@ class SettingsApp {
   }
 
   private async handleInstallAndRestart(): Promise<void> {
-    try {
-      await this.updateService.installAndRestart();
-    } catch (err) {
+    try { await this.updateService.installAndRestart(); } catch (err) {
       await showGlassDialog({ title: "Update Error", message: `Install failed: ${err}`, type: "error" });
     }
   }
@@ -203,13 +176,15 @@ class SettingsApp {
       await emit("cathet:load-tutorial");
       await invoke("focus_main_window").catch(console.error);
       await this.handleClose();
-    } catch (err) {
-      console.error("Failed to trigger tutorial:", err);
-    }
+    } catch (err) { console.error("Failed to trigger tutorial:", err); }
   }
 
   private async initListeners(): Promise<void> {
-    await listen<"dark" | "light">("cathet:theme-change", (e) => { this.applyTheme(e.payload); this.tabsComponent.updateState({ theme: e.payload }); });
+    await listen<"dark" | "light">("cathet:theme-change", (e) => {
+      this.applyTheme(e.payload);
+      this.backdropService.applyAll(e.payload);
+      this.tabsComponent.updateState({ theme: e.payload, solidColor: this.backdropService.getSolidColor(e.payload) });
+    });
     await listen<string>("cathet:font-change", (e) => { this.fontService.setFont(e.payload); this.tabsComponent.updateState({ fontId: e.payload }); });
     await listen<string>("cathet:language-change", (e) => { this.i18n.setLocale(e.payload, false); this.tabsComponent.updateState({ locale: e.payload }); });
     await listen<boolean>("cathet:ontop-change", (e) => { this.tabsComponent.updateState({ isAlwaysOnTop: (this.isAlwaysOnTop = e.payload) }); });
@@ -244,11 +219,10 @@ class SettingsApp {
       const status = await this.associationService.configureDefaultApp();
       if (status) {
         this.applyAssociationStatus(status);
-        const exeName = status.currentExePath.split(/[/\\]/).pop() || "Cathet";
+        const name = status.currentExePath.split(/[/\\]/).pop() || "Cathet";
         await showGlassDialog({
-          type: "success",
-          title: "Default App Registered",
-          message: `Cathet has been registered at:\n"${status.currentExePath}"\n\nWindows Settings has opened—choose ${exeName} for your .txt and .md files.`,
+          type: "success", title: "Default App Registered",
+          message: `Cathet has been registered at:\n"${status.currentExePath}"\n\nWindows Settings has opened—choose ${name} for your .txt and .md files.`,
         });
       }
     } catch (err: any) {

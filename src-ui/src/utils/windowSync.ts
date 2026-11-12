@@ -5,6 +5,7 @@ import { FontService } from "../services/fontService";
 import { UpdateService } from "../services/updateService";
 import { PreviewService } from "../services/previewService";
 import { I18nService } from "../services/i18nService";
+import { BackdropService } from "../services/backdropService";
 
 export interface WindowSyncContext {
   themeService: ThemeService;
@@ -25,6 +26,7 @@ export interface WindowSyncContext {
 export function registerWindowSyncListeners(ctx: WindowSyncContext): void {
   listen<"dark" | "light">("cathet:theme-change", (e) => {
     if (ctx.themeService.getTheme() !== e.payload) ctx.themeService.setTheme(e.payload);
+    BackdropService.getInstance().applyAll(e.payload);
     invoke("sync_window_theme", { theme: e.payload }).catch(console.error);
   });
 

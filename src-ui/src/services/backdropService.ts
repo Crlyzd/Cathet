@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
 import { PlatformService } from "./platformService";
+import { globalEventBus } from "../utils/eventBus";
 
 export type WindowsBackdropType = "acrylic" | "mica" | "mica_alt" | "transparent" | "solid";
 export type LinuxBackdropType = "blur" | "solid";
@@ -10,11 +11,13 @@ export interface BackdropPayload {
   linuxBackdrop?: LinuxBackdropType;
   opacity?: number;
   solidColor?: string | null;
+  solidTheme?: "dark" | "light";
+  matchOsColor?: boolean;
 }
 
 const STORAGE_KEY_WIN_BACKDROP = "cathet_windows_backdrop";
 const STORAGE_KEY_LINUX_BACKDROP = "cathet_linux_backdrop";
-const STORAGE_KEY_SOLID_COLOR = "cathet_solid_color";
+const STORAGE_KEY_MATCH_OS_COLOR = "cathet_match_os_color";
 
 export class BackdropService {
   private static instance: BackdropService | null = null;
@@ -25,6 +28,10 @@ export class BackdropService {
       BackdropService.instance = new BackdropService();
     }
     return BackdropService.instance;
+  }
+
+  getCurrentTheme(): "dark" | "light" {
+    return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
   }
 
   getWindowsBackdrop(): WindowsBackdropType {
@@ -49,12 +56,16 @@ export class BackdropService {
         return parsed;
       }
     }
-    // Acrylic defaults to 0% tint (pure raw frosted glass); others default to 50%
     return mode === "acrylic" ? 0 : 50;
   }
 
-  getSolidColor(): string | null {
-    return localStorage.getItem(STORAGE_KEY_SOLID_COLOR);
+  getMatchOsColor(): boolean {
+    return localStorage.getItem(STORAGE_KEY_MATCH_OS_COLOR) === "true";
+  }
+
+  getSolidColor(forTheme?: "dark" | "light"): string | null {
+    const theme = forTheme || this.getCurrentTheme();
+    return localStorage.getItem(`cathet_solid_color_${theme}`);
   }
 
   async init(): Promise<void> {
@@ -65,6 +76,10 @@ export class BackdropService {
     if (platform.isMobile()) return;
 
     this.applyAll();
+
+    globalEventBus.on("theme:changed", (theme: any) => {
+      this.applyAll(theme);
+    });
 
     listen<BackdropPayload>("cathet:backdrop-update", (event) => {
       const payload = event.payload;
@@ -78,11 +93,15 @@ export class BackdropService {
         const mode = platform.isLinux() ? this.getLinuxBackdrop() : this.getWindowsBackdrop();
         localStorage.setItem(`cathet_opacity_${mode}`, String(payload.opacity));
       }
-      if (payload.solidColor !== undefined) {
+      if (payload.matchOsColor !== undefined) {
+        localStorage.setItem(STORAGE_KEY_MATCH_OS_COLOR, String(payload.matchOsColor));
+      }
+      if (payload.solidColor !== undefined && payload.solidTheme) {
+        const key = `cathet_solid_color_${payload.solidTheme}`;
         if (payload.solidColor) {
-          localStorage.setItem(STORAGE_KEY_SOLID_COLOR, payload.solidColor);
+          localStorage.setItem(key, payload.solidColor);
         } else {
-          localStorage.removeItem(STORAGE_KEY_SOLID_COLOR);
+          localStorage.removeItem(key);
         }
       }
       this.applyAll();
@@ -97,18 +116,25 @@ export class BackdropService {
     }
   }
 
-  applyAll(): void {
+  applyAll(themeOverride?: "dark" | "light"): void {
     const platform = PlatformService.getInstance();
     if (platform.isMobile()) return;
 
+    const theme = themeOverride || this.getCurrentTheme();
     const opacityPercent = this.getOpacityPercent();
     const opacityFraction = (opacityPercent / 100).toFixed(2);
-    const customSolidColor = this.getSolidColor();
 
-    if (customSolidColor) {
-      document.documentElement.style.setProperty("--col-solid-bg", customSolidColor);
+    if (this.getMatchOsColor()) {
+      this.getWindowsAccentColor().then((accent) => {
+        document.documentElement.style.setProperty("--col-solid-bg", accent);
+      }).catch(console.error);
     } else {
-      document.documentElement.style.removeProperty("--col-solid-bg");
+      const customSolidColor = this.getSolidColor(theme);
+      if (customSolidColor) {
+        document.documentElement.style.setProperty("--col-solid-bg", customSolidColor);
+      } else {
+        document.documentElement.style.removeProperty("--col-solid-bg");
+      }
     }
 
     if (platform.isLinux()) {
@@ -119,6 +145,7 @@ export class BackdropService {
     } else {
       const winMode = this.getWindowsBackdrop();
       document.body.setAttribute("data-backdrop", winMode);
+      document.documentElement.setAttribute("data-backdrop", winMode);
       document.documentElement.style.setProperty("--backdrop-tint-opacity", opacityFraction);
     }
   }
@@ -129,14 +156,9 @@ export class BackdropService {
 
     try {
       await invoke("set_window_backdrop", { backdrop: mode });
-    } catch (err) {
-      console.warn("Failed to set window backdrop in backend:", err);
-    }
-
-    try {
       await emit("cathet:backdrop-update", { windowsBackdrop: mode });
     } catch (err) {
-      console.warn("Failed to emit backdrop update:", err);
+      console.warn("Failed to set window backdrop:", err);
     }
   }
 
@@ -165,16 +187,29 @@ export class BackdropService {
     }
   }
 
-  async setSolidColor(color: string | null): Promise<void> {
-    if (color) {
-      localStorage.setItem(STORAGE_KEY_SOLID_COLOR, color);
-    } else {
-      localStorage.removeItem(STORAGE_KEY_SOLID_COLOR);
-    }
+  async setMatchOsColor(enabled: boolean): Promise<void> {
+    localStorage.setItem(STORAGE_KEY_MATCH_OS_COLOR, String(enabled));
     this.applyAll();
 
     try {
-      await emit("cathet:backdrop-update", { solidColor: color });
+      await emit("cathet:backdrop-update", { matchOsColor: enabled });
+    } catch (err) {
+      console.warn("Failed to emit match OS color update:", err);
+    }
+  }
+
+  async setSolidColor(color: string | null, forTheme?: "dark" | "light"): Promise<void> {
+    const theme = forTheme || this.getCurrentTheme();
+    const key = `cathet_solid_color_${theme}`;
+    if (color) {
+      localStorage.setItem(key, color);
+    } else {
+      localStorage.removeItem(key);
+    }
+    this.applyAll(theme);
+
+    try {
+      await emit("cathet:backdrop-update", { solidColor: color, solidTheme: theme });
     } catch (err) {
       console.warn("Failed to emit solid color update:", err);
     }
