@@ -72,7 +72,7 @@ class CathetApp {
 
     globalEventBus.on("topbar:toggleMenu", (pos: { x: number; y: number }) => this.openMainMenu(pos.x, pos.y));
     globalEventBus.on("search:open", (data?: { query?: string }) => {
-      if (this.mobileCoord) {
+      if (this.mobileCoord?.isMobile()) {
         this.mobileCoord.toggleSearchBar();
       } else if (this.desktopSearchBar) {
         this.desktopSearchBar.show(data?.query);
@@ -225,7 +225,7 @@ class CathetApp {
       onFormat: (a) => applyMarkdownFormat(this.getActiveEditor(), a),
       onSelectAll: () => this.getActiveEditor().selectAllClean(), onToggleWordWrap: () => this.getActiveEditor().toggleWordWrap(),
       onFind: () => {
-        if (this.mobileCoord) {
+        if (this.mobileCoord?.isMobile()) {
           this.mobileCoord.toggleSearchBar();
         } else if (this.desktopSearchBar) {
           const sel = this.getActiveEditor().getSelectedText().trim();

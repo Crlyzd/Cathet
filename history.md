@@ -11,6 +11,15 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-12: Checking `if (this.mobileCoord)` Instead of `isMobile()` Causing Desktop Search Bar to Silently Fail
+- **Context**: When implementing the on-demand desktop search bar in `main.ts`, the dispatch for `globalEventBus.on("search:open")` and `shortcuts.onFind` checked `if (this.mobileCoord) { this.mobileCoord.toggleSearchBar(); } else if (this.desktopSearchBar) { ... }`.
+- **User Correction**: User uploaded screenshot of context menu with "Find... Ctrl+F" and noted: *"the search bar dowsnt shows up"*.
+- **Root Cause**: In `CathetApp.init()`, `this.mobileCoord = new MobileCoordinator(...)` is unconditionally instantiated on all platforms (even desktop), but internally `this.actionBar` is only initialized if `platform.isMobile()`. Because `this.mobileCoord` was not null on desktop, the condition `if (this.mobileCoord)` always evaluated to true and invoked `this.mobileCoord.toggleSearchBar()`, which silently called `this.actionBar?.toggleSearchMode()` on a null action bar, completely bypassing the desktop search bar.
+- **Corrective Guardrail**:
+  1. Never check `if (this.mobileCoord)` alone for mobile platform features.
+  2. Always explicitly verify mobile execution using `if (this.mobileCoord?.isMobile())` or `if (PlatformService.getInstance().isMobile())`.
+  3. Ensure fallback branches for desktop (`else if (this.desktopSearchBar)`) execute unimpeded on Windows and Linux.
+
 ### [Mistake] 2026-11-11: Confabulating Greek Geometry Etymology for Cathet Instead of Javanese Meaning (To Note / Write Down)
 - **Context**: When asked to add the definition and pronunciation of "Cathet" to `README.md`, the assistant assumed a Western Greek geometry etymology (*káthetos* / cathetus) instead of recognizing the app's true Javanese origin (*cathet* / ꦕꦛꦼꦠ꧀, meaning to note, write down, or record).
 - **User Correction**: *"bruh what, its not fucking greek, its javanese"*

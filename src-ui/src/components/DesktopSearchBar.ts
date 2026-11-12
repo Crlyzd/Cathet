@@ -149,8 +149,10 @@ export class DesktopSearchBarComponent {
     if (initialQuery !== undefined) {
       this.input.value = initialQuery;
     }
-    this.input.focus();
-    this.input.select();
+    requestAnimationFrame(() => {
+      this.input.focus();
+      this.input.select();
+    });
     if (this.input.value.trim()) {
       this.handleQueryChange();
     }
