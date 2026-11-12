@@ -77,10 +77,11 @@ export class FontSelectComponent {
 
         const rect = trigger.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
-        const isDropUp = spaceBelow < 160;
+        const spaceAbove = rect.top;
+        const isDropUp = spaceBelow < 115 && spaceAbove > spaceBelow;
 
         menu.classList.toggle("drop-up", isDropUp);
-        const available = isDropUp ? rect.top - 12 : spaceBelow - 12;
+        const available = isDropUp ? spaceAbove - 12 : spaceBelow - 12;
         menu.style.maxHeight = `${Math.max(80, Math.min(170, available))}px`;
 
         menu.classList.add("open");
