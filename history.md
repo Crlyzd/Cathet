@@ -298,6 +298,21 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-12: Settings Focus State Persistence, Opacity Badge Clearance & Dual-Pane Scrollbar Separation
+- **Summary**:
+  - Fixed Settings slider reverting on blur/focus: kept `this.state.backdropOpacity` synchronized in memory on `input` events and added an idempotency guard to `applyAssociationStatus()` in `settingsMain.ts` to eliminate redundant `updateState()` and full-DOM `this.render()` calls when the Settings window regains focus.
+  - Added fallback in `SettingsPane.render()` to `BackdropService.getInstance().getOpacityPercent()` if `this.state.backdropOpacity` is undefined, ensuring re-renders always reflect the true persisted backdrop opacity.
+  - Eliminated right-side slider badge clipping (`75%`, `100%` cut off): calibrated `.slider-control-wrap` width from 160px down to 130px, reduced `.setting-item` gap from 12px to 8px, and set `.slider-val-badge` width to 32px with 2px right padding, guaranteeing ample margin inside the 350px compact window card.
+  - Separated Dual-Pane left scrollbar from middle splitter: tightened `.dualpane-splitter` geometry from 10px to 6px (`margin: 0 -3px; z-index: 20`) with `:after` margins at -2px, and added 6px right padding to `body:not(.is-mobile) .dualpane-pane-left .dualpane-editor-host` so users can grab and scroll the left pane without triggering the splitter `col-resize` cursor.
+  - Preserved strict Anti-Monolith line counts (<250 lines/file: `SettingsTabs.ts` 215 lines, `SettingsPane.ts` 246 lines, `settingsMain.ts` 248 lines).
+- **Affected Files**:
+  - `src-ui/src/components/SettingsTabs.ts` (215 lines)
+  - `src-ui/src/components/settings/SettingsPane.ts` (246 lines)
+  - `src-ui/src/settingsMain.ts` (248 lines)
+  - `src-ui/styles/settings.css` (1409 lines)
+  - `src-ui/styles/dualpane.css` (796 lines)
+
+
 ### 2026-11-12: Smooth Opacity Slider Dragging, Dedicated In-Window Glass Color Picker, Theme-Scoped Canvas Presets & Solid/Transparent Guardrails
 - **Summary**:
   - Resolved slider drag interruption: bypassed full component `this.render()` during continuous `backdropOpacity` updates in `SettingsPane.updateState()`, mutating slider and value badge in-place to preserve active pointer capture.
