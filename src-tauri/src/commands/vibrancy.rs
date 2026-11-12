@@ -1,4 +1,4 @@
-use tauri::WebviewWindow;
+use tauri::{AppHandle, Manager, WebviewWindow};
 
 #[cfg(target_os = "windows")]
 use window_vibrancy::{apply_acrylic, apply_blur, apply_mica};
@@ -13,9 +13,15 @@ const DWMWA_USE_IMMERSIVE_DARK_MODE: u32 = 20;
 #[cfg(target_os = "windows")]
 const DWMWA_SYSTEMBACKDROP_TYPE: u32 = 38;
 #[cfg(target_os = "windows")]
-const DWMSBT_TRANSIENTWINDOW: u32 = 3; // Acrylic
+const DWMSBT_AUTO: u32 = 0;
+#[cfg(target_os = "windows")]
+const DWMSBT_NONE: u32 = 1;
 #[cfg(target_os = "windows")]
 const DWMSBT_MAINWINDOW: u32 = 2; // Mica
+#[cfg(target_os = "windows")]
+const DWMSBT_TRANSIENTWINDOW: u32 = 3; // Acrylic
+#[cfg(target_os = "windows")]
+const DWMSBT_TABBEDWINDOW: u32 = 4; // Mica Alt
 #[cfg(target_os = "windows")]
 const DWMWA_MICA_EFFECT: u32 = 1029;
 
@@ -160,4 +166,53 @@ pub fn update_window_theme(window: &WebviewWindow, is_dark: bool) {
 /// No-op placeholder to preserve compatibility with existing focus events if called.
 pub fn refresh_vibrancy_on_focus(_window: &WebviewWindow, _focused: bool) {
     // Windows DWM handles active/inactive backdrop composition natively.
+}
+
+/// Dynamically sets Windows 11 DWM backdrop material (Acrylic, Mica, Mica Alt, Pure Transparent, Solid).
+#[tauri::command]
+pub fn set_window_backdrop(app_handle: AppHandle, backdrop: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        let build = get_windows_build_number();
+        let backdrop_type: u32 = match backdrop.as_str() {
+            "none" | "transparent" => DWMSBT_NONE,
+            "mica" => DWMSBT_MAINWINDOW,
+            "acrylic" => DWMSBT_TRANSIENTWINDOW,
+            "mica_alt" => DWMSBT_TABBEDWINDOW,
+            _ => DWMSBT_AUTO,
+        };
+
+        for label in &["main", "settings"] {
+            if let Some(win) = app_handle.get_webview_window(label) {
+                if let Ok(hwnd_raw) = win.hwnd() {
+                    let hwnd = hwnd_raw.0 as HWND;
+                    if build >= 22621 {
+                        unsafe {
+                            let _ = DwmSetWindowAttribute(
+                                hwnd,
+                                DWMWA_SYSTEMBACKDROP_TYPE,
+                                &backdrop_type as *const _ as *const _,
+                                std::mem::size_of::<u32>() as u32,
+                            );
+                        }
+                    } else if build >= 22000 {
+                        let mica_val: u32 = if backdrop == "mica" || backdrop == "mica_alt" || backdrop == "acrylic" { 1 } else { 0 };
+                        unsafe {
+                            let _ = DwmSetWindowAttribute(
+                                hwnd,
+                                DWMWA_MICA_EFFECT,
+                                &mica_val as *const _ as *const _,
+                                std::mem::size_of::<u32>() as u32,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (app_handle, backdrop);
+    }
+    Ok(())
 }

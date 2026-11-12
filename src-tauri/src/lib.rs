@@ -22,7 +22,9 @@ use commands::updater::{
     check_for_updates, download_and_install_update, download_update_payload, install_and_restart,
 };
 #[cfg(desktop)]
-use commands::vibrancy::apply_frosted_glass;
+use commands::vibrancy::{apply_frosted_glass, set_window_backdrop};
+#[cfg(not(desktop))]
+use commands::vibrancy::set_window_backdrop;
 use commands::window::{
     focus_main_window, get_always_on_top, open_new_instance, open_settings_window,
     set_always_on_top, set_refresh_rate, set_window_min_size, sync_window_theme,
@@ -122,7 +124,8 @@ pub fn run() {
             set_note_hidden,
             create_folder,
             import_external_file,
-            authenticate_biometric
+            authenticate_biometric,
+            set_window_backdrop
         ])
         .run(tauri::generate_context!())
         .expect("error while running cathet application");
