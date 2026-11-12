@@ -3,6 +3,7 @@ import { PopupMenuComponent } from "./components/PopupMenu";
 import { ContextMenuComponent } from "./components/ContextMenu";
 import { EditorComponent } from "./components/Editor";
 import { DropOverlayComponent } from "./components/DropOverlay";
+import { DesktopSearchBarComponent } from "./components/DesktopSearchBar";
 import { DualPaneView } from "./components/dualpane/DualPaneView";
 import { showGlassDialog } from "./components/GlassDialog";
 import { FileService, FilePayload } from "./services/fileService";
@@ -40,6 +41,7 @@ class CathetApp {
   private contextMenu = new ContextMenuComponent("contextmenu-container");
   private editor = new EditorComponent("editor-container");
   private dropOverlay = new DropOverlayComponent("app");
+  private desktopSearchBar: DesktopSearchBarComponent | null = null;
   private dualPaneView: DualPaneView | null = null;
   private mobileCoord: MobileCoordinator | null = null;
   private notesService = new NotesService();
@@ -57,6 +59,11 @@ class CathetApp {
     invoke("sync_window_theme", { theme: this.themeService.getTheme() }).catch(console.error);
     if (this.updateService.hasUpdate()) this.topBar.setUpdateAvailable(true);
 
+    if (!PlatformService.getInstance().isMobile()) {
+      const shell = document.getElementById("workspace-shell") || document.body;
+      this.desktopSearchBar = new DesktopSearchBarComponent(shell, () => this.getActiveEditor());
+    }
+
     setupKeyboardCommitListener(
       () => this.getActiveEditor().getEditorEl(),
       () => this.getActiveEditor().getIsMarkdownPreview(),
@@ -64,6 +71,13 @@ class CathetApp {
     );
 
     globalEventBus.on("topbar:toggleMenu", (pos: { x: number; y: number }) => this.openMainMenu(pos.x, pos.y));
+    globalEventBus.on("search:open", (data?: { query?: string }) => {
+      if (this.mobileCoord) {
+        this.mobileCoord.toggleSearchBar();
+      } else if (this.desktopSearchBar) {
+        this.desktopSearchBar.show(data?.query);
+      }
+    });
     globalEventBus.on("editor:toggleMarkdown", () => this.toggleMarkdown());
     globalEventBus.on("window:toggleAlwaysOnTop", async () => {
       await emit("cathet:ontop-change", (this.isAlwaysOnTop = await this.windowService.toggleAlwaysOnTop()));
@@ -211,10 +225,27 @@ class CathetApp {
       onFormat: (a) => applyMarkdownFormat(this.getActiveEditor(), a),
       onSelectAll: () => this.getActiveEditor().selectAllClean(), onToggleWordWrap: () => this.getActiveEditor().toggleWordWrap(),
       onFind: () => {
-        if (this.mobileCoord) this.mobileCoord.toggleSearchBar();
+        if (this.mobileCoord) {
+          this.mobileCoord.toggleSearchBar();
+        } else if (this.desktopSearchBar) {
+          const sel = this.getActiveEditor().getSelectedText().trim();
+          this.desktopSearchBar.show(sel || undefined);
+        }
+      },
+      onFindNext: () => {
+        if (this.desktopSearchBar?.isOpen()) this.desktopSearchBar.findNext();
+      },
+      onFindPrevious: () => {
+        if (this.desktopSearchBar?.isOpen()) this.desktopSearchBar.findPrevious();
       },
       onSearchWeb: () => { const t = this.getActiveEditor().getSelectedText().trim(); if (t) openUrl(`https://www.google.com/search?q=${encodeURIComponent(t)}`).catch(console.error); },
-      onQuit: () => this.windowService.close(),
+      onQuit: () => {
+        if (this.desktopSearchBar?.isOpen()) {
+          this.desktopSearchBar.hide();
+          return;
+        }
+        this.windowService.close();
+      },
     });
 
     window.addEventListener("contextmenu", (e) => {
@@ -278,6 +309,7 @@ class CathetApp {
       hasUpdate: this.updateService.hasUpdate(), isUpToDate: !ed.isModified(),
       onNewWindow: () => this.windowService.openNewInstance(), onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
       onSave: () => this.saveDocument(false), onSaveAs: () => this.saveDocument(true),
+      onFind: () => this.desktopSearchBar?.show(ed.getSelectedText().trim() || undefined),
       onToggleDualPane: () => this.toggleDualPane(), onToggleMarkdown: () => this.toggleMarkdown(),
       onOpenSettings: () => this.windowService.openSettingsWindow(), onQuit: () => this.windowService.close(),
     }));
