@@ -252,6 +252,23 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-12: Implement On-Demand Desktop In-Document Text Search (Windows & Linux)
+- **Summary**:
+  - Implemented an on-demand, floating frosted glass desktop search bar (`DesktopSearchBarComponent`) for Windows and Linux without adding any buttons to the pristine titlebar or window chrome.
+  - Powered by the focus-safe `domSearch.ts` CSS Custom Highlight API (`::highlight(cathet-search-match)` & `cathet-search-current`) with relative container scrolling and zero DOM mutation.
+  - Added seamless summoning entry points: `Ctrl+F` shortcut, editor right-click context menu ("Find..."), and top-left dot menu (`[●]`), automatically pre-populating with highlighted text if selected.
+  - Added match navigation via `Enter` / `F3` (next) and `Shift+Enter` / `Shift+F3` (previous) with non-defocusing pointer interactions and `Escape` dismissal returning focus to the active editor.
+  - Strictly preserved Android mobile isolation (`isMobile()` check) with zero modifications to Android mobile search or touch bar mechanisms.
+- **Affected Files**:
+  - `src-ui/src/components/DesktopSearchBar.ts` (179 lines)
+  - `src-ui/src/utils/shortcuts.ts` (114 lines)
+  - `src-ui/src/utils/contextMenuItems.ts` (141 lines)
+  - `src-ui/src/utils/mainMenuItems.ts` (51 lines)
+  - `src-ui/src/main.ts` (602 lines)
+  - `src-ui/styles/topbar.css` (283 lines)
+  - `src-ui/src/locales/en.json`, `id.json`, `jv-krama.json`, `jv-malang.json`, `jv-ngoko.json`
+  - `history.md`
+
 ### 2026-11-11: Relocate Cathet Javanese Definition Card Below Hero Showcase in README
 - **Summary**:
   - Moved the Javanese definition card (`/tʃaˈʈət/`, ꦕꦛꦼꦠ꧀) from between the `# Cathet` heading and tagline to beneath the hero cross-platform screenshot banner (Option B).
