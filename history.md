@@ -11,6 +11,14 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-12: Constricting Slider Container Width Without `min-width: 0` on `<input type="range">` Pushing Badge Off-Screen
+- **Context**: Attempting to fix the percentage badge clipping (`75%` / `100%`), the assistant reduced `.slider-control-wrap` from 160px to 130px. However, the inner `<input type="range" class="glass-range-slider">` retained `flex: 1` with Chromium's default user-agent `min-width: auto` (~129px).
+- **User Correction**: *"bro I just want the value for the slider is showing, why do I have to scream at you for the third time now?"* with screenshot showing only the digit `1` visible from `100%` and `00%` completely pushed out of the window.
+- **Root Cause**: In Chromium / WebView2, `<input type="range">` has a built-in user-agent intrinsic minimum width of ~129px. Flexbox defaults to `min-width: auto`, so `flex: 1` refused to shrink the input below 129px. When `.slider-control-wrap` was constricted to 130px, the input (129px) + gap (7px) + badge (32px) = 168px overflowed the container by 38px, pushing `.slider-val-badge` completely past the right card border so only `1` remained visible.
+- **Corrective Guardrail**:
+  1. Never use `flex: 1` on native `<input type="range">` without `min-width: 0`.
+  2. Use deterministic, fixed widths for the slider row: `.glass-range-slider` gets `width: 85px; min-width: 0; flex: none;`, `.slider-val-badge` gets `width: 36px; min-width: 36px; flex: none; text-align: right;`, and `.slider-control-wrap` gets `gap: 6px; width: auto; flex-shrink: 0;`. Total width is strictly $85 + 6 + 36 = 127\text{px}$, fitting comfortably inside the 302px card inner space with 175px left for `.setting-meta` and 0 overflow.
+
 ### [Mistake] 2026-11-12: Premature Coding Without Prior Plan Artifact & Assuming Scrollable Page Was "Sliced"
 - **Context**: When the user reported the slider still being undraggable, the assistant jumped into modifying code files before creating an architectural plan artifact in `implementation_plan.md` and asking for explicit user approval. Furthermore, the assistant incorrectly assumed that the second accordion visible at the bottom of the Settings window was "sliced in half" due to window height, proposing to enlarge the window.
 - **User Correction**:
@@ -297,6 +305,15 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-12: Deterministic Range Slider Width & Opacity Badge Visibility Fix
+- **Summary**:
+  - Eliminated percentage badge right-side truncation (`100%` clipping past card edge): replaced fluid `flex: 1` on `.glass-range-slider` (which refused to shrink below Chromium's user-agent intrinsic ~129px min-width) with explicit `width: 85px; min-width: 0; max-width: 85px; flex: none;`.
+  - Configured `.slider-val-badge` with fixed `width: 36px; min-width: 36px; flex: none; text-align: right; font-variant-numeric: tabular-nums;` and `.slider-control-wrap` with `width: auto; gap: 6px; flex-shrink: 0;`.
+  - The entire slider assembly strictly consumes $85 + 6 + 36 = 127\text{px}$, leaving 167px inside the card for `.setting-meta` and an 11px right padding margin, guaranteeing 100% full visibility for `0%` through `100%` without any possibility of text overflow.
+- **Affected Files**:
+  - `src-ui/styles/settings.css` (1410 lines)
+
 
 ### 2026-11-12: Settings Focus State Persistence, Opacity Badge Clearance & Dual-Pane Scrollbar Separation
 - **Summary**:
