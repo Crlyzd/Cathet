@@ -306,6 +306,15 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-12: Directional Dropup Flip Threshold Calibration (Prevent Ceiling Collision)
+- **Summary**:
+  - Calibrated dropdown auto-flip condition across `BackdropSelect.ts`, `FontSelect.ts`, and `LanguageSelect.ts`: replaced static `spaceBelow < 160` (which forced any dropdown below the 159px vertical midpoint to flip upward into the window titlebar) with directional clearance comparison `spaceBelow < 115 && spaceAbove > spaceBelow`.
+  - Ensures dropdowns in the upper and middle sections of the Settings window open downwards naturally without colliding with the top window ceiling, flipping upward only when scrolled tightly against the bottom border where upward room is strictly greater.
+- **Affected Files**:
+  - `src-ui/src/components/settings/BackdropSelect.ts` (158 lines)
+  - `src-ui/src/components/settings/FontSelect.ts` (156 lines)
+  - `src-ui/src/components/settings/LanguageSelect.ts` (163 lines)
+
 ### 2026-11-12: Backdrop Select Dropup Auto-Flip & Persistent Dropdowns on Page Scroll
 - **Summary**:
   - Implemented smart auto-flipping dropup (`.drop-up`) for `BackdropSelect.ts`: measures vertical space below the trigger and flips upward if `spaceBelow < 160px` with dynamic `max-height` clamping and internal `menu.scrollTop` centering.
