@@ -261,7 +261,7 @@ body.is-linux #pane-about .settings-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   padding: 7px 11px;
   border-bottom: 1px solid var(--col-divider-subtle);
   min-width: 0;
@@ -1149,9 +1149,9 @@ body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] .
 .slider-control-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 160px;
-  min-width: 160px;
+  gap: 7px;
+  width: 130px;
+  min-width: 130px;
   flex-shrink: 0;
 }
 
@@ -1192,10 +1192,11 @@ body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] .
   font-size: 11px;
   font-weight: 600;
   color: var(--col-text);
-  width: 36px;
-  min-width: 36px;
+  width: 32px;
+  min-width: 32px;
   flex-shrink: 0;
   text-align: right;
+  padding-right: 2px;
   font-variant-numeric: tabular-nums;
 }
 

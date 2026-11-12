@@ -212,6 +212,11 @@
   position: relative;
 }
 
+body:not(.is-mobile) .dualpane-pane-left .dualpane-editor-host {
+  padding-right: 6px;
+  box-sizing: border-box;
+}
+
 .dualpane-editor-host .editor-wrapper {
   height: 100%;
   width: 100%;
@@ -222,15 +227,15 @@
 
 /* Frosted Draggable Splitter */
 .dualpane-splitter {
-  width: 10px;
-  margin: 0 -4px;
+  width: 6px;
+  margin: 0 -3px;
   cursor: col-resize;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
-  z-index: 50;
+  z-index: 20;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
@@ -241,8 +246,8 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -4px;
-  right: -4px;
+  left: -2px;
+  right: -2px;
   z-index: 1;
 }
 
