@@ -76,6 +76,33 @@ pub fn run() {
                         });
                     }
                 }
+                tauri::WindowEvent::Resized(..) => {
+                    if window.label() == "main" {
+                        let app_state = window.state::<AppState>();
+                        let is_max = window.is_maximized().unwrap_or(false);
+                        let is_full = window.is_fullscreen().unwrap_or(false);
+                        let was_max = app_state.was_maximized.load(std::sync::atomic::Ordering::Relaxed);
+
+                        if was_max && !is_max && !is_full {
+                            app_state.was_maximized.store(false, std::sync::atomic::Ordering::Relaxed);
+                            if let Ok(target_guard) = app_state.target_min_size.lock() {
+                                if let Some((width, height)) = *target_guard {
+                                    let _ = window.set_min_size(Some(tauri::LogicalSize::new(width, height)));
+                                    if let (Ok(current_size), Ok(scale_factor)) = (window.inner_size(), window.scale_factor()) {
+                                        let logical_current = current_size.to_logical::<f64>(scale_factor);
+                                        if logical_current.width < width || logical_current.height < height {
+                                            let new_w = logical_current.width.max(width);
+                                            let new_h = logical_current.height.max(height);
+                                            let _ = window.set_size(tauri::LogicalSize::new(new_w, new_h));
+                                        }
+                                    }
+                                }
+                            }
+                        } else if is_max || is_full {
+                            app_state.was_maximized.store(true, std::sync::atomic::Ordering::Relaxed);
+                        }
+                    }
+                }
                 #[cfg(target_os = "windows")]
                 tauri::WindowEvent::Focused(false) => {
                     trim_memory();

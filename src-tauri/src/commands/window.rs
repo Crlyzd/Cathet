@@ -129,12 +129,28 @@ pub async fn focus_main_window(app_handle: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn set_window_min_size(
+    app_state: State<'_, AppState>,
     window: WebviewWindow,
     width: f64,
     height: f64,
 ) -> Result<(), String> {
     #[cfg(desktop)]
     {
+        if let Ok(mut target) = app_state.target_min_size.lock() {
+            *target = Some((width, height));
+        }
+
+        let is_max = window.is_maximized().unwrap_or(false);
+        let is_full = window.is_fullscreen().unwrap_or(false);
+        app_state.was_maximized.store(is_max || is_full, Ordering::Relaxed);
+
+        // On Windows, tao's set_min_inner_size calls set_inner_size, which clears
+        // WindowFlags::MAXIMIZED and unmaximizes the window. If currently maximized
+        // or fullscreen, defer applying min_size until the window is restored.
+        if is_max || is_full {
+            return Ok(());
+        }
+
         window
             .set_min_size(Some(tauri::LogicalSize::new(width, height)))
             .map_err(|e| e.to_string())?;
@@ -150,7 +166,7 @@ pub async fn set_window_min_size(
     }
     #[cfg(not(desktop))]
     {
-        let _ = (window, width, height);
+        let _ = (app_state, window, width, height);
     }
     Ok(())
 }

@@ -5,6 +5,8 @@ use std::path::PathBuf;
 pub struct AppState {
     pub current_file_path: Mutex<Option<PathBuf>>,
     pub is_always_on_top: AtomicBool,
+    pub target_min_size: Mutex<Option<(f64, f64)>>,
+    pub was_maximized: AtomicBool,
 }
 
 impl Default for AppState {
@@ -12,6 +14,8 @@ impl Default for AppState {
         Self {
             current_file_path: Mutex::new(None),
             is_always_on_top: AtomicBool::new(false),
+            target_min_size: Mutex::new(Some((200.0, 300.0))),
+            was_maximized: AtomicBool::new(false),
         }
     }
 }
