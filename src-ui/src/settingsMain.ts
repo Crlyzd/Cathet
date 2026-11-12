@@ -71,7 +71,6 @@ class SettingsApp {
         },
         onBackdropOpacityChange: (percent) => {
           this.backdropService.setOpacityPercent(percent);
-          this.tabsComponent.updateState({ backdropOpacity: percent });
         },
         onSolidColorChange: async (color) => {
           await this.backdropService.setSolidColor(color, this.themeService.getTheme());

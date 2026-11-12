@@ -63,11 +63,7 @@ export class SettingsTabsComponent {
 
   public updateState(partial: Partial<SettingsInitialState>): void {
     this.state = { ...this.state, ...partial };
-    this.settingsPane?.updateState({
-      ...partial,
-      downloadState: this.downloadState,
-      downloadPercent: this.downloadPercent,
-    });
+    this.settingsPane?.updateState(partial);
   }
 
   public setDownloadProgress(percent: number): void {

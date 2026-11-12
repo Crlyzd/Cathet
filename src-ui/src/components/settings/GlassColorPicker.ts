@@ -156,3 +156,4 @@ export class GlassColorPickerComponent {
     if (preview) preview.style.backgroundColor = hex;
   }
 }
+

@@ -19,16 +19,20 @@ This document serves as the living project documentation and institutional memor
   - *"3. instead of shit default css color picker. wrote dedicated color picker within the window"*
   - *"okay, picking the presets, then swicthing to dark mode or vice versa, will fucked the whole app"*
   - *"you fuck the text for update and default app"*
+  - *"bruh the slider still undraggable what the fuck? how are these UI component actually work? you're supposed to click, then hold and fucking drag it left and right, no?"*
 - **Root Cause**:
-  1. `SettingsPane.updateState()` invoked full `this.render()` on every single percentage change of `backdropOpacity` and `solidColor`, destroying and replacing the `<input type="range">` DOM node mid-drag and aborting active pointer capture.
-  2. Solid color was saved into a single global key `cathet_solid_color`. When light cream (`#fefce8`) was picked in Light mode and user switched to Dark mode, text color became `#ffffff` while background remained light cream, yielding zero contrast.
-  3. Tauri desktop windows have `"transparent": true` by default. Selecting `solid` set Windows DWM to `DWMSBT_AUTO`, but `.settings-window` CSS had `background-color: transparent`, so WebView2 rendered transparency directly to desktop.
-  4. Old translation keys `settings.removeDefault` and `settings.updateTitle` were hardcoded in `SettingsAccordions.ts` instead of `settings.unregister`, `settings.setAsDefault`, and `settings.appUpdates`.
+  1. `SettingsTabsComponent.updateState()` unconditionally spread `downloadState` and `downloadPercent` into every `partial` update sent to `SettingsPaneComponent.updateState()`. Because `partial` always contained 3 keys, the guard `Object.keys(partial).length === 1` permanently failed, triggering `this.render()` on every single percentage change of `backdropOpacity`. This destroyed and recreated the `<input type="range">` DOM node mid-drag, immediately aborting active browser pointer capture.
+  2. `settingsMain.ts` invoked `this.tabsComponent.updateState({ backdropOpacity })` inside `onBackdropOpacityChange`, creating an unnecessary roundtrip re-evaluation while the user was actively holding and dragging the slider.
+  3. Solid color was saved into a single global key `cathet_solid_color`. When light cream (`#fefce8`) was picked in Light mode and user switched to Dark mode, text color became `#ffffff` while background remained light cream, yielding zero contrast.
+  4. Tauri desktop windows have `"transparent": true` by default. Selecting `solid` set Windows DWM to `DWMSBT_AUTO`, but `.settings-window` CSS had `background-color: transparent`, so WebView2 rendered transparency directly to desktop.
+  5. Old translation keys `settings.removeDefault` and `settings.updateTitle` were hardcoded in `SettingsAccordions.ts` instead of `settings.unregister`, `settings.setAsDefault`, and `settings.appUpdates`.
 - **Corrective Guardrail**:
-  1. In reactive components with continuous slider or pointer tracking, `updateState()` must bypass DOM reconstruction for single-property continuous updates (`partial.backdropOpacity` and `partial.solidColor`), mutating DOM properties in place without calling `this.render()`.
-  2. Canvas and solid colors must ALWAYS be theme-scoped (`cathet_solid_color_dark` vs `cathet_solid_color_light`). Theme switching must dynamically re-evaluate and apply the theme-calibrated solid color.
-  3. Solid opaque and pure transparent modes must have explicit CSS guardrails: solid backdrop sets 100% solid background (`--col-solid-bg` / `#0f1117` / `#f8fafc`) on `html`, `body`, and `.settings-window`; pure transparent sets 50% opacity with 16px blur (`rgba(15, 17, 23, 0.50)` / `rgba(248, 250, 252, 0.50)`) so the settings window remains readable.
-  4. Always verify i18n keys against `src-ui/src/locales/en.json` before rendering.
+  1. Never inject unrelated ambient state (`downloadState`, `downloadPercent`) into partial updates in parent tab components (`SettingsTabs.updateState(partial)` must pass `partial` directly).
+  2. In reactive slider and drag inputs, never round-trip `updateState()` back into the active dragging component during its own `input` callback (`onBackdropOpacityChange` should only apply backend and CSS variable changes).
+  3. Update guards in `updateState()` must check for specific property changes (e.g., `partial.backdropOpacity !== undefined && !partial.windowsBackdrop && !partial.theme`) rather than fragile `Object.keys(partial).length === 1` checks.
+  4. Canvas and solid colors must ALWAYS be theme-scoped (`cathet_solid_color_dark` vs `cathet_solid_color_light`). Theme switching must dynamically re-evaluate and apply the theme-calibrated solid color.
+  5. Solid opaque and pure transparent modes must have explicit CSS guardrails: solid backdrop sets 100% solid background (`--col-solid-bg` / `#0f1117` / `#f8fafc`) on `html`, `body`, and `.settings-window`; pure transparent sets 50% opacity with 16px blur (`rgba(15, 17, 23, 0.50)` / `rgba(248, 250, 252, 0.50)`) so the settings window remains readable.
+  6. Always verify i18n keys against `src-ui/src/locales/en.json` before rendering.
 
 ### [Mistake] 2026-11-12: Checking `if (this.mobileCoord)` Instead of `isMobile()` Causing Desktop Search Bar to Silently Fail
 - **Context**: When implementing the on-demand desktop search bar in `main.ts`, the dispatch for `globalEventBus.on("search:open")` and `shortcuts.onFind` checked `if (this.mobileCoord) { this.mobileCoord.toggleSearchBar(); } else if (this.desktopSearchBar) { ... }`.

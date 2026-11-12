@@ -79,17 +79,17 @@ export class SettingsPaneComponent {
 
   public updateState(partial: Partial<SettingsPaneState>): void {
     this.state = { ...this.state, ...partial };
-    if (partial.backdropOpacity !== undefined && Object.keys(partial).length === 1) {
+    if (partial.backdropOpacity !== undefined && !partial.windowsBackdrop && !partial.theme) {
       const slider = this.container.querySelector("#backdrop-opacity-slider") as HTMLInputElement | null;
       const badge = this.container.querySelector("#backdrop-opacity-val");
       if (slider && parseInt(slider.value, 10) !== partial.backdropOpacity) slider.value = String(partial.backdropOpacity);
       if (badge) badge.textContent = `${partial.backdropOpacity}%`;
       return;
     }
-    if (partial.solidColor !== undefined && Object.keys(partial).length === 1) return;
-    if (partial.fontId !== undefined && Object.keys(partial).length === 1) return this.updateFontUI(partial.fontId);
-    if (partial.locale !== undefined && Object.keys(partial).length === 1) return this.updateLanguageUI(partial.locale);
-    if (partial.windowsBackdrop !== undefined && Object.keys(partial).length === 1) return this.updateBackdropUI(partial.windowsBackdrop);
+    if (partial.solidColor !== undefined && !partial.windowsBackdrop && !partial.theme) return;
+    if (partial.fontId !== undefined && !partial.theme) return this.updateFontUI(partial.fontId);
+    if (partial.locale !== undefined && !partial.theme) return this.updateLanguageUI(partial.locale);
+    if (partial.windowsBackdrop !== undefined && !partial.theme) return this.updateBackdropUI(partial.windowsBackdrop);
     this.render();
   }
 
