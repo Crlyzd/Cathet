@@ -36,8 +36,8 @@ body.is-linux.de-solid[data-theme="dark"] .workspace-shell,
 [data-theme="dark"] body.is-linux.de-solid #app,
 [data-theme="dark"] body.is-linux.de-solid .cathet-root,
 [data-theme="dark"] body.is-linux.de-solid .workspace-shell {
-  --col-bg-main: #12141c;
-  --col-bg-bar: #161821;
+  --col-bg-main: var(--col-solid-bg, #12141c);
+  --col-bg-bar: var(--col-solid-bg, #161821);
   --col-accent: #3daee9;
   --col-quote-border: #3daee9;
   --col-border: rgba(255, 255, 255, 0.12);
@@ -59,8 +59,8 @@ body.is-linux.de-solid[data-theme="light"] .workspace-shell,
 [data-theme="light"] body.is-linux.de-solid #app,
 [data-theme="light"] body.is-linux.de-solid .cathet-root,
 [data-theme="light"] body.is-linux.de-solid .workspace-shell {
-  --col-bg-main: #f8fafc;
-  --col-bg-bar: #ffffff;
+  --col-bg-main: var(--col-solid-bg, #f8fafc);
+  --col-bg-bar: var(--col-solid-bg, #ffffff);
   --col-accent: #1d99f3;
   --col-quote-border: #1d99f3;
   --col-border: rgba(15, 23, 42, 0.10);

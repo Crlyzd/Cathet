@@ -338,11 +338,25 @@ body:not(.is-mobile):not(.is-linux)[data-backdrop="transparent"][data-theme="lig
 }
 
 body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="dark"] {
-  --col-bg-main: #0f1117;
-  --col-bg-bar: #161822;
+  --col-bg-main: var(--col-solid-bg, #0f1117);
+  --col-bg-bar: var(--col-solid-bg, #161822);
 }
 
 body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] {
-  --col-bg-main: #f8fafc;
-  --col-bg-bar: #ffffff;
+  --col-bg-main: var(--col-solid-bg, #f8fafc);
+  --col-bg-bar: var(--col-solid-bg, #ffffff);
+}
+
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"],
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] #app,
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] #workspace-shell,
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"] .settings-window {
+  background-color: var(--col-solid-bg, #0f1117) !important;
+}
+
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"],
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] #app,
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] #workspace-shell,
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] .settings-window {
+  background-color: var(--col-solid-bg, #f8fafc) !important;
 }

@@ -8,12 +8,13 @@ export type LinuxBackdropType = "blur" | "solid";
 export interface BackdropPayload {
   windowsBackdrop?: WindowsBackdropType;
   linuxBackdrop?: LinuxBackdropType;
-  opacity?: number; // 15 to 100 percent
+  opacity?: number;
+  solidColor?: string | null;
 }
 
 const STORAGE_KEY_WIN_BACKDROP = "cathet_windows_backdrop";
-const STORAGE_KEY_OPACITY = "cathet_backdrop_opacity";
 const STORAGE_KEY_LINUX_BACKDROP = "cathet_linux_backdrop";
+const STORAGE_KEY_SOLID_COLOR = "cathet_solid_color";
 
 export class BackdropService {
   private static instance: BackdropService | null = null;
@@ -39,16 +40,21 @@ export class BackdropService {
     return saved === "blur" ? "blur" : "solid";
   }
 
-  getOpacityPercent(): number {
-    const saved = localStorage.getItem(STORAGE_KEY_OPACITY);
+  getOpacityPercent(forMode?: WindowsBackdropType | LinuxBackdropType): number {
+    const mode = forMode || (PlatformService.getInstance().isLinux() ? this.getLinuxBackdrop() : this.getWindowsBackdrop());
+    const saved = localStorage.getItem(`cathet_opacity_${mode}`);
     if (saved !== null) {
       const parsed = parseInt(saved, 10);
-      if (!isNaN(parsed) && parsed >= 15 && parsed <= 100) {
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
         return parsed;
       }
     }
-    // Default 65% for balanced glass visibility and text contrast
-    return 65;
+    // Acrylic defaults to 0% tint (pure raw frosted glass); others default to 50%
+    return mode === "acrylic" ? 0 : 50;
+  }
+
+  getSolidColor(): string | null {
+    return localStorage.getItem(STORAGE_KEY_SOLID_COLOR);
   }
 
   async init(): Promise<void> {
@@ -69,7 +75,15 @@ export class BackdropService {
         localStorage.setItem(STORAGE_KEY_LINUX_BACKDROP, payload.linuxBackdrop);
       }
       if (payload.opacity !== undefined) {
-        localStorage.setItem(STORAGE_KEY_OPACITY, String(payload.opacity));
+        const mode = platform.isLinux() ? this.getLinuxBackdrop() : this.getWindowsBackdrop();
+        localStorage.setItem(`cathet_opacity_${mode}`, String(payload.opacity));
+      }
+      if (payload.solidColor !== undefined) {
+        if (payload.solidColor) {
+          localStorage.setItem(STORAGE_KEY_SOLID_COLOR, payload.solidColor);
+        } else {
+          localStorage.removeItem(STORAGE_KEY_SOLID_COLOR);
+        }
       }
       this.applyAll();
     }).catch(console.error);
@@ -89,6 +103,13 @@ export class BackdropService {
 
     const opacityPercent = this.getOpacityPercent();
     const opacityFraction = (opacityPercent / 100).toFixed(2);
+    const customSolidColor = this.getSolidColor();
+
+    if (customSolidColor) {
+      document.documentElement.style.setProperty("--col-solid-bg", customSolidColor);
+    } else {
+      document.documentElement.style.removeProperty("--col-solid-bg");
+    }
 
     if (platform.isLinux()) {
       const linuxMode = this.getLinuxBackdrop();
@@ -98,9 +119,6 @@ export class BackdropService {
     } else {
       const winMode = this.getWindowsBackdrop();
       document.body.setAttribute("data-backdrop", winMode);
-      // For Acrylic/Mica, tint is subtle overlay (1 - opacity)
-      // When opacity is 100%, background is fully solid
-      // When opacity is 15%, background has 0.15 tint so glass shines through
       document.documentElement.style.setProperty("--backdrop-tint-opacity", opacityFraction);
     }
   }
@@ -134,14 +152,40 @@ export class BackdropService {
   }
 
   async setOpacityPercent(percent: number): Promise<void> {
-    const clamped = Math.max(15, Math.min(100, Math.round(percent)));
-    localStorage.setItem(STORAGE_KEY_OPACITY, String(clamped));
+    const platform = PlatformService.getInstance();
+    const mode = platform.isLinux() ? this.getLinuxBackdrop() : this.getWindowsBackdrop();
+    const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+    localStorage.setItem(`cathet_opacity_${mode}`, String(clamped));
     this.applyAll();
 
     try {
       await emit("cathet:backdrop-update", { opacity: clamped });
     } catch (err) {
       console.warn("Failed to emit opacity update:", err);
+    }
+  }
+
+  async setSolidColor(color: string | null): Promise<void> {
+    if (color) {
+      localStorage.setItem(STORAGE_KEY_SOLID_COLOR, color);
+    } else {
+      localStorage.removeItem(STORAGE_KEY_SOLID_COLOR);
+    }
+    this.applyAll();
+
+    try {
+      await emit("cathet:backdrop-update", { solidColor: color });
+    } catch (err) {
+      console.warn("Failed to emit solid color update:", err);
+    }
+  }
+
+  async getWindowsAccentColor(): Promise<string> {
+    try {
+      return await invoke<string>("get_windows_accent_color");
+    } catch (err) {
+      console.warn("Failed to query Windows accent color:", err);
+      return "#0078d4";
     }
   }
 }

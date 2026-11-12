@@ -28,6 +28,7 @@ export interface SettingsInitialState {
   linuxBackdrop?: "solid" | "blur";
   windowsBackdrop?: WindowsBackdropType;
   backdropOpacity?: number;
+  solidColor?: string | null;
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;

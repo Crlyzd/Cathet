@@ -1103,51 +1103,201 @@ body.is-linux .about-box {
   display: block;
 }
 
-/* Glass Range Slider */
+/* Settings Window Readability Guardrails */
+body[data-backdrop="transparent"] .settings-window,
+body[data-backdrop="transparent"] .settings-card,
+body.is-linux.de-blur .settings-window,
+body.is-linux.de-blur .settings-card {
+  background: rgba(20, 22, 28, 0.88) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+[data-theme="light"] body[data-backdrop="transparent"] .settings-window,
+[data-theme="light"] body[data-backdrop="transparent"] .settings-card,
+[data-theme="light"] body.is-linux.de-blur .settings-window,
+[data-theme="light"] body.is-linux.de-blur .settings-card {
+  background: rgba(248, 250, 252, 0.92) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Glass Range Slider Refined */
 .slider-control-wrap {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 140px;
+  width: 160px;
+  min-width: 160px;
+  flex-shrink: 0;
 }
 
 .glass-range-slider {
   flex: 1;
   -webkit-appearance: none;
   appearance: none;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.2);
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
   outline: none;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 [data-theme="light"] .glass-range-slider {
-  background: rgba(15, 23, 42, 0.15);
+  background: rgba(15, 23, 42, 0.16);
 }
 
 .glass-range-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--col-accent);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   cursor: pointer;
-  transition: transform 0.1s ease;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .glass-range-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
+  transform: scale(1.18);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2);
 }
 
 .slider-val-badge {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--col-text-muted);
-  min-width: 28px;
+  color: var(--col-text);
+  width: 36px;
+  min-width: 36px;
+  flex-shrink: 0;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+/* Solid Color Swatches & Custom Palette */
+.solid-custom-palette-item {
+  border-top: 1px solid var(--col-card-border);
+}
+
+.solid-palette-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.solid-color-swatches {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.solid-color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .solid-color-swatch {
+  border-color: rgba(15, 23, 42, 0.20);
+}
+
+.solid-color-swatch:hover {
+  transform: scale(1.15);
+}
+
+.solid-color-swatch.selected {
+  border: 2px solid var(--col-accent);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
+}
+
+.solid-color-swatch .swatch-check {
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.solid-color-swatch .swatch-check svg {
+  width: 10px;
+  height: 10px;
+}
+
+.solid-color-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.solid-sys-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  padding: 2px 7px;
+}
+
+.solid-sys-btn svg {
+  width: 11px;
+  height: 11px;
+}
+
+.solid-picker-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 5px;
+  cursor: pointer;
+  position: relative;
+}
+
+.picker-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: inline-block;
+}
+
+.visually-hidden-color {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.solid-reset-btn {
+  padding: 2px 5px;
+  font-size: 10px;
+}
+
+.solid-reset-btn svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Store Badge */
+.update-store-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2.5px 8px;
+  font-size: 10.5px;
+  font-weight: 500;
+  border-radius: 4px;
+  background: var(--col-card-bg);
+  border: 1px solid var(--col-card-border);
+  color: var(--col-text-dim);
+  white-space: nowrap;
+  user-select: none;
 }
 

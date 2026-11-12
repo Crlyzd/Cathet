@@ -1,11 +1,13 @@
 import { FontSelectComponent, FontOption } from "./FontSelect";
 import { LanguageSelectComponent } from "./LanguageSelect";
 import { BackdropSelectComponent } from "./BackdropSelect";
+import { SolidColorPickerComponent } from "./SolidColorPicker";
 import { PlatformService } from "../../services/platformService";
 import { SUPPORTED_LOCALES } from "../../locales";
 import { t } from "../../services/i18nService";
 import { initAutoScroll } from "../../utils/autoScroll";
 import { WindowsBackdropType } from "../../services/backdropService";
+import { APP_VERSION } from "../../version";
 import {
   renderAppearanceAccordion,
   renderEditorAccordion,
@@ -24,6 +26,7 @@ export interface SettingsPaneCallbacks {
   onLinuxBackdropChange?: (mode: "solid" | "blur") => void;
   onWindowsBackdropChange?: (mode: WindowsBackdropType) => void;
   onBackdropOpacityChange?: (percent: number) => void;
+  onSolidColorChange?: (color: string | null) => void;
   onConfigureDefaultApp: () => Promise<void>;
   onUnregisterDefaultApp: () => Promise<void>;
   onCheckUpdates: () => Promise<void>;
@@ -40,7 +43,8 @@ export interface SettingsPaneState {
   snapScroll: boolean;
   linuxBackdrop?: "solid" | "blur";
   windowsBackdrop?: WindowsBackdropType;
-  backdropOpacity?: number; // 15 to 100
+  backdropOpacity?: number;
+  solidColor?: string | null;
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;
@@ -59,6 +63,7 @@ export class SettingsPaneComponent {
   private fontSelect: FontSelectComponent | null = null;
   private languageSelect: LanguageSelectComponent | null = null;
   private backdropSelect: BackdropSelectComponent | null = null;
+  private solidColorPicker: SolidColorPickerComponent | null = null;
   private autoScrollCleanup: (() => void) | null = null;
 
   constructor(container: HTMLElement, state: SettingsPaneState, callbacks: SettingsPaneCallbacks) {
@@ -74,11 +79,9 @@ export class SettingsPaneComponent {
 
   public updateState(partial: Partial<SettingsPaneState>): void {
     this.state = { ...this.state, ...partial };
-    if (Object.keys(partial).length === 1) {
-      if (partial.fontId !== undefined) return this.updateFontUI(partial.fontId);
-      if (partial.locale !== undefined) return this.updateLanguageUI(partial.locale);
-      if (partial.windowsBackdrop !== undefined) return this.updateBackdropUI(partial.windowsBackdrop);
-    }
+    if (partial.fontId !== undefined && Object.keys(partial).length === 1) return this.updateFontUI(partial.fontId);
+    if (partial.locale !== undefined && Object.keys(partial).length === 1) return this.updateLanguageUI(partial.locale);
+    if (partial.windowsBackdrop !== undefined && Object.keys(partial).length === 1) return this.updateBackdropUI(partial.windowsBackdrop);
     this.render();
   }
 
@@ -98,6 +101,16 @@ export class SettingsPaneComponent {
     this.autoScrollCleanup?.();
 
     const isLinux = PlatformService.getInstance().isLinux();
+    const updateText = this.state.isStorePackage
+      ? "Installed via Microsoft Store (Auto-Updated)"
+      : this.state.downloadState === "downloading"
+      ? "Downloading..."
+      : this.state.downloadState === "ready"
+      ? "Ready!"
+      : this.state.updateAvailable
+      ? `v${this.state.latestVersion || "3.0"} ready`
+      : `Up to date (v${APP_VERSION})`;
+
     const accordionState: AccordionRenderState = {
       theme: this.state.theme,
       fontId: this.state.fontId,
@@ -107,10 +120,11 @@ export class SettingsPaneComponent {
       snapScroll: this.state.snapScroll,
       linuxBackdrop: this.state.linuxBackdrop,
       windowsBackdrop: this.state.windowsBackdrop,
-      backdropOpacity: this.state.backdropOpacity || 65,
+      backdropOpacity: this.state.backdropOpacity !== undefined ? this.state.backdropOpacity : 50,
       isRegistered: this.state.isRegistered,
       registeredExePath: this.state.registeredExePath,
       currentExePath: this.state.currentExePath,
+      updateText,
       updateHtml: this.getUpdateHtml(),
     };
 
@@ -145,12 +159,25 @@ export class SettingsPaneComponent {
           backdropMount,
           this.state.windowsBackdrop || "acrylic",
           (mode) => {
+            const isSolid = mode === "solid";
             const opacityItem = this.container.querySelector("#backdrop-opacity-item") as HTMLElement | null;
-            if (opacityItem) opacityItem.style.display = mode === "solid" ? "none" : "";
+            const solidMount = this.container.querySelector("#solid-color-mount") as HTMLElement | null;
+            if (opacityItem) opacityItem.style.display = isSolid ? "none" : "";
+            if (solidMount) solidMount.style.display = isSolid ? "" : "none";
             this.callbacks.onWindowsBackdropChange?.(mode);
           }
         );
       }
+    }
+
+    const solidColorMount = this.container.querySelector("#solid-color-mount") as HTMLElement | null;
+    if (solidColorMount) {
+      this.solidColorPicker = new SolidColorPickerComponent(
+        solidColorMount,
+        this.state.theme === "dark",
+        this.state.solidColor || null,
+        (color) => this.callbacks.onSolidColorChange?.(color)
+      );
     }
 
     this.bindEvents();
@@ -159,37 +186,28 @@ export class SettingsPaneComponent {
   }
 
   private bindEvents(): void {
-    this.container.querySelector("#btn-theme-dark")?.addEventListener("click", () => {
-      if (this.state.theme !== "dark") this.callbacks.onThemeChange("dark");
-    });
-    this.container.querySelector("#btn-theme-light")?.addEventListener("click", () => {
-      if (this.state.theme !== "light") this.callbacks.onThemeChange("light");
-    });
-    this.container.querySelector("#btn-backdrop-solid")?.addEventListener("click", () => {
-      const opacityItem = this.container.querySelector("#backdrop-opacity-item") as HTMLElement | null;
-      if (opacityItem) opacityItem.style.display = "none";
+    const onClk = (id: string, fn: () => void) => this.container.querySelector(id)?.addEventListener("click", fn);
+    onClk("#btn-theme-dark", () => this.state.theme !== "dark" && this.callbacks.onThemeChange("dark"));
+    onClk("#btn-theme-light", () => this.state.theme !== "light" && this.callbacks.onThemeChange("light"));
+    onClk("#btn-backdrop-solid", () => {
+      this.toggleSolidUI(true);
       this.callbacks.onLinuxBackdropChange?.("solid");
     });
-    this.container.querySelector("#btn-backdrop-blur")?.addEventListener("click", () => {
-      const opacityItem = this.container.querySelector("#backdrop-opacity-item") as HTMLElement | null;
-      if (opacityItem) opacityItem.style.display = "";
+    onClk("#btn-backdrop-blur", () => {
+      this.toggleSolidUI(false);
       this.callbacks.onLinuxBackdropChange?.("blur");
     });
 
     const slider = this.container.querySelector("#backdrop-opacity-slider") as HTMLInputElement | null;
     const valBadge = this.container.querySelector("#backdrop-opacity-val");
-    if (slider) {
-      slider.addEventListener("input", () => {
-        const val = parseInt(slider.value, 10);
-        if (valBadge) valBadge.textContent = `${val}%`;
-        this.callbacks.onBackdropOpacityChange?.(val);
-      });
-    }
+    slider?.addEventListener("input", () => {
+      const val = parseInt(slider.value, 10);
+      if (valBadge) valBadge.textContent = `${val}%`;
+      this.callbacks.onBackdropOpacityChange?.(val);
+    });
 
     const bind = (id: string, cb: (v: boolean) => void) => {
-      (this.container.querySelector(id) as HTMLInputElement | null)?.addEventListener("change", (e) => {
-        cb((e.target as HTMLInputElement).checked);
-      });
+      (this.container.querySelector(id) as HTMLInputElement | null)?.addEventListener("change", (e) => cb((e.target as HTMLInputElement).checked));
     };
     bind("#ontop-checkbox", this.callbacks.onAlwaysOnTopChange);
     bind("#always-preview-checkbox", this.callbacks.onAlwaysPreviewChange);
@@ -202,16 +220,25 @@ export class SettingsPaneComponent {
         try { await action(); } finally { if (btn) btn.disabled = false; }
       });
     };
-    bindBtn("#btn-default-app", this.callbacks.onConfigureDefaultApp);
+    bindBtn("#btn-set-default-app", this.callbacks.onConfigureDefaultApp);
+    bindBtn("#btn-unregister-default-app", this.callbacks.onUnregisterDefaultApp);
     bindBtn("#btn-check-updates", this.callbacks.onCheckUpdates);
-    this.container.querySelector("#btn-start-download")?.addEventListener("click", () => this.callbacks.onStartDownload());
-    this.container.querySelector("#btn-restart-install")?.addEventListener("click", () => this.callbacks.onInstallAndRestart());
+    onClk("#btn-start-download", () => this.callbacks.onStartDownload());
+    onClk("#btn-restart-install", () => this.callbacks.onInstallAndRestart());
+  }
+
+  private toggleSolidUI(isSolid: boolean): void {
+    const opacityItem = this.container.querySelector("#backdrop-opacity-item") as HTMLElement | null;
+    const solidMount = this.container.querySelector("#solid-color-mount") as HTMLElement | null;
+    if (opacityItem) opacityItem.style.display = isSolid ? "none" : "";
+    if (solidMount) solidMount.style.display = isSolid ? "" : "none";
   }
 
   private destroySelects(): void {
     this.fontSelect?.destroy(); this.fontSelect = null;
     this.languageSelect?.destroy(); this.languageSelect = null;
     this.backdropSelect?.destroy(); this.backdropSelect = null;
+    this.solidColorPicker = null;
   }
 
   public destroy(): void {

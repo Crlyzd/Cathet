@@ -14,10 +14,11 @@ export interface AccordionRenderState {
   snapScroll: boolean;
   linuxBackdrop?: "solid" | "blur";
   windowsBackdrop?: WindowsBackdropType;
-  backdropOpacity: number; // 15 to 100
+  backdropOpacity: number;
   isRegistered?: boolean;
   registeredExePath?: string | null;
   currentExePath?: string;
+  updateText: string;
   updateHtml: string;
 }
 
@@ -38,9 +39,6 @@ export function bindAccordionToggles(container: HTMLElement): void {
       if (!group) return;
       const groupId = group.dataset.accordionId || "";
       const isOpen = group.classList.contains("is-open");
-
-      // Optional: accordion mode (close others or multi-open)
-      // Toggle current
       group.classList.toggle("is-open", !isOpen);
       if (!isOpen && groupId) {
         setOpenAccordionId(groupId);
@@ -53,9 +51,7 @@ export function renderAppearanceAccordion(state: AccordionRenderState): string {
   const isLinux = PlatformService.getInstance().isLinux();
   const openId = getOpenAccordionId();
   const isOpen = openId === "appearance";
-  const isSolid = isLinux
-    ? state.linuxBackdrop !== "blur"
-    : state.windowsBackdrop === "solid";
+  const isSolid = isLinux ? state.linuxBackdrop !== "blur" : state.windowsBackdrop === "solid";
 
   return `
     <div class="accordion-group ${isOpen ? "is-open" : ""}" data-accordion-id="appearance">
@@ -97,10 +93,12 @@ export function renderAppearanceAccordion(state: AccordionRenderState): string {
             <span class="setting-subtext"><span class="subtext-content">Adjust glass clarity & tint</span></span>
           </div>
           <div class="slider-control-wrap">
-            <input type="range" class="glass-range-slider" min="15" max="100" value="${state.backdropOpacity}" id="backdrop-opacity-slider" />
+            <input type="range" class="glass-range-slider" min="0" max="100" value="${state.backdropOpacity}" id="backdrop-opacity-slider" />
             <span class="slider-val-badge" id="backdrop-opacity-val">${state.backdropOpacity}%</span>
           </div>
         </div>
+
+        <div id="solid-color-mount" style="${!isSolid ? "display: none;" : ""}"></div>
 
         <div class="setting-item">
           <div class="setting-meta">
@@ -196,23 +194,25 @@ export function renderSystemAccordion(state: AccordionRenderState): string {
         <div class="setting-item">
           <div class="setting-meta">
             <span class="setting-title">${t("settings.defaultApp")}</span>
-            <span class="setting-subtext default-app-path" title="${activePath}">
+            <span class="setting-subtext" id="default-app-subtext" title="${activePath}">
               <span class="subtext-content">${defaultAppSubtext}</span>
             </span>
           </div>
-          <button class="glass-btn ${state.isRegistered ? "registered" : ""}" id="btn-default-app" style="white-space: nowrap;">
-            ${state.isRegistered ? t("settings.removeDefault") : t("settings.setDefault")}
-          </button>
+          <div class="default-app-actions">
+            ${state.isRegistered
+              ? `<button class="glass-btn" id="btn-unregister-default-app">${t("settings.unregister")}</button>`
+              : `<button class="glass-btn" id="btn-set-default-app">${t("settings.setAsDefault")}</button>`}
+          </div>
         </div>` : ""}
 
         <div class="setting-item">
           <div class="setting-meta">
-            <span class="setting-title">${t("settings.updateTitle")}</span>
-            <span class="setting-subtext update-status-text">
-              <span class="subtext-content">${state.updateHtml}</span>
+            <span class="setting-title">${t("settings.appUpdates")}</span>
+            <span class="setting-subtext" id="update-status-text">
+              <span class="subtext-content">${state.updateText}</span>
             </span>
           </div>
-          <div id="update-action-mount"></div>
+          ${state.updateHtml}
         </div>
       </div>
     </div>

@@ -56,6 +56,7 @@ class SettingsApp {
         linuxBackdrop: this.backdropService.getLinuxBackdrop(),
         windowsBackdrop: this.backdropService.getWindowsBackdrop(),
         backdropOpacity: this.backdropService.getOpacityPercent(),
+        solidColor: this.backdropService.getSolidColor(),
       },
       {
         onThemeChange: (theme) => this.handleThemeChange(theme),
@@ -66,15 +67,21 @@ class SettingsApp {
         onSnapScrollChange: (enabled) => this.handleSnapScrollChange(enabled),
         onWindowsBackdropChange: async (mode) => {
           await this.backdropService.setWindowsBackdrop(mode);
-          this.tabsComponent.updateState({ windowsBackdrop: mode });
+          const newOpacity = this.backdropService.getOpacityPercent(mode);
+          this.tabsComponent.updateState({ windowsBackdrop: mode, backdropOpacity: newOpacity });
         },
         onBackdropOpacityChange: (percent) => {
           this.backdropService.setOpacityPercent(percent);
           this.tabsComponent.updateState({ backdropOpacity: percent });
         },
+        onSolidColorChange: async (color) => {
+          await this.backdropService.setSolidColor(color);
+          this.tabsComponent.updateState({ solidColor: color });
+        },
         onLinuxBackdropChange: async (mode) => {
           await this.backdropService.setLinuxBackdrop(mode);
-          this.tabsComponent.updateState({ linuxBackdrop: mode });
+          const newOpacity = this.backdropService.getOpacityPercent(mode);
+          this.tabsComponent.updateState({ linuxBackdrop: mode, backdropOpacity: newOpacity });
           if (mode === "blur") {
             await showGlassDialog({
               title: "Translucent Backdrop",
