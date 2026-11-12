@@ -11,7 +11,6 @@ export class FontSelectComponent {
   private currentFontId: string;
   private onSelect: (fontId: string) => void;
   private outsideClickHandler: ((e: MouseEvent) => void) | null = null;
-  private scrollCloseHandler: ((e: Event) => void) | null = null;
 
   constructor(
     container: HTMLElement,
@@ -109,17 +108,6 @@ export class FontSelectComponent {
     };
     document.addEventListener("click", this.outsideClickHandler);
 
-    this.scrollCloseHandler = (e: Event) => {
-      if (menu && (e.target === menu || menu.contains(e.target as Node))) {
-        return;
-      }
-      if (menu?.classList.contains("open")) {
-        menu.classList.remove("open", "drop-up");
-        trigger?.classList.remove("open");
-      }
-    };
-    window.addEventListener("scroll", this.scrollCloseHandler, true);
-
     const options = this.container.querySelectorAll(".glass-select-option");
     options.forEach((opt) => {
       opt.addEventListener("click", (e) => {
@@ -162,10 +150,6 @@ export class FontSelectComponent {
     if (this.outsideClickHandler) {
       document.removeEventListener("click", this.outsideClickHandler);
       this.outsideClickHandler = null;
-    }
-    if (this.scrollCloseHandler) {
-      window.removeEventListener("scroll", this.scrollCloseHandler, true);
-      this.scrollCloseHandler = null;
     }
   }
 }

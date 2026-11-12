@@ -19,7 +19,6 @@ export class BackdropSelectComponent {
   private currentMode: WindowsBackdropType;
   private onSelect: (mode: WindowsBackdropType) => void;
   private outsideClickHandler: ((e: MouseEvent) => void) | null = null;
-  private scrollCloseHandler: ((e: Event) => void) | null = null;
 
   constructor(
     container: HTMLElement,
@@ -73,10 +72,33 @@ export class BackdropSelectComponent {
     trigger.addEventListener("click", (e) => {
       e.stopPropagation();
       const isOpen = menu.classList.contains("open");
-      document.querySelectorAll(".glass-select-menu.open").forEach((m) => {
-        if (m !== menu) m.classList.remove("open");
-      });
-      menu.classList.toggle("open", !isOpen);
+      if (isOpen) {
+        menu.classList.remove("open", "drop-up");
+        trigger.classList.remove("active");
+      } else {
+        document.querySelectorAll(".glass-select-menu.open").forEach((m) => {
+          if (m !== menu) {
+            m.classList.remove("open", "drop-up");
+            m.parentElement?.querySelector(".glass-select-trigger")?.classList.remove("active", "open");
+          }
+        });
+
+        const rect = trigger.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const isDropUp = spaceBelow < 160;
+
+        menu.classList.toggle("drop-up", isDropUp);
+        const available = isDropUp ? rect.top - 12 : spaceBelow - 12;
+        menu.style.maxHeight = `${Math.max(80, Math.min(170, available))}px`;
+
+        menu.classList.add("open");
+        trigger.classList.add("active");
+
+        const selected = menu.querySelector(".glass-select-option.selected") as HTMLElement | null;
+        if (selected) {
+          menu.scrollTop = selected.offsetTop - menu.clientHeight / 2 + selected.clientHeight / 2;
+        }
+      }
     });
 
     const options = this.container.querySelectorAll(".glass-select-option");
@@ -89,26 +111,18 @@ export class BackdropSelectComponent {
           this.updateUI(mode);
           this.onSelect(mode);
         }
-        menu.classList.remove("open");
+        menu.classList.remove("open", "drop-up");
+        trigger.classList.remove("active");
       });
     });
 
     this.outsideClickHandler = (e: MouseEvent) => {
       if (!this.container.contains(e.target as Node)) {
-        menu.classList.remove("open");
+        menu.classList.remove("open", "drop-up");
+        trigger.classList.remove("active");
       }
     };
     window.addEventListener("click", this.outsideClickHandler);
-
-    this.scrollCloseHandler = () => {
-      if (menu.classList.contains("open")) {
-        menu.classList.remove("open");
-      }
-    };
-    const scrollParent = document.getElementById("pane-settings");
-    if (scrollParent) {
-      scrollParent.addEventListener("scroll", this.scrollCloseHandler, { passive: true });
-    }
   }
 
   public updateUI(mode: WindowsBackdropType): void {
@@ -138,11 +152,6 @@ export class BackdropSelectComponent {
     if (this.outsideClickHandler) {
       window.removeEventListener("click", this.outsideClickHandler);
       this.outsideClickHandler = null;
-    }
-    const scrollParent = document.getElementById("pane-settings");
-    if (scrollParent && this.scrollCloseHandler) {
-      scrollParent.removeEventListener("scroll", this.scrollCloseHandler);
-      this.scrollCloseHandler = null;
     }
   }
 }

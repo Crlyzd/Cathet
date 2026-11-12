@@ -7,7 +7,6 @@ export class LanguageSelectComponent {
   private currentLocale: string;
   private onSelect: (localeCode: string) => void;
   private outsideClickHandler: ((e: MouseEvent) => void) | null = null;
-  private scrollCloseHandler: ((e: Event) => void) | null = null;
 
   constructor(
     container: HTMLElement,
@@ -98,17 +97,6 @@ export class LanguageSelectComponent {
       }
     };
     document.addEventListener("click", this.outsideClickHandler);
-
-    this.scrollCloseHandler = (e: Event) => {
-      // Ignore scroll events originating from inside the dropdown menu itself
-      if (menu && (e.target === menu || menu.contains(e.target as Node))) {
-        return;
-      }
-      if (menu.classList.contains("open")) {
-        this.closeMenu(menu, trigger);
-      }
-    };
-    window.addEventListener("scroll", this.scrollCloseHandler, true);
   }
 
   private openMenu(menu: HTMLElement, trigger: HTMLElement): void {
@@ -168,10 +156,6 @@ export class LanguageSelectComponent {
     if (this.outsideClickHandler) {
       document.removeEventListener("click", this.outsideClickHandler);
       this.outsideClickHandler = null;
-    }
-    if (this.scrollCloseHandler) {
-      window.removeEventListener("scroll", this.scrollCloseHandler, true);
-      this.scrollCloseHandler = null;
     }
     this.container.innerHTML = "";
   }
