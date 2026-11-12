@@ -1,8 +1,8 @@
 /**
- * VaultLockHud.ts — Mechanical Safe Tumbler HUD for Private Notes
- * Renders an authentic rotary combination safe dial with 120fps rotation,
- * top red index marker, and graduation ring (0–90).
- * Target Line Count: <140 lines (Strict Anti-Monolith).
+ * VaultLockHud.ts — Cyber Iris Shutter HUD for Private Notes
+ * Renders a high-contrast 4-blade geometric iris aperture with 120fps rotation,
+ * expanding central glowing core, and emerald unlock snap.
+ * Target Line Count: <130 lines (Strict Anti-Monolith).
  */
 
 export class VaultLockHud {
@@ -10,6 +10,7 @@ export class VaultLockHud {
   private hudEl: HTMLElement;
   private cylinderEl: HTMLElement;
   private rotorEl: HTMLElement;
+  private coreEl: SVGCircleElement;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -20,68 +21,28 @@ export class VaultLockHud {
     this.hudEl.className = "vault-lock-hud";
     this.hudEl.innerHTML = `
       <div class="vault-cylinder">
-        <svg class="vault-safe-dial" width="58" height="58" viewBox="0 0 120 120" fill="none">
-          <defs>
-            <radialGradient id="v-dial-face" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#1e2433" />
-              <stop offset="70%" stop-color="#11141c" />
-              <stop offset="100%" stop-color="#0a0c12" />
-            </radialGradient>
-            <radialGradient id="v-knob-grad" cx="40%" cy="35%" r="60%">
-              <stop offset="0%" stop-color="#384252" />
-              <stop offset="60%" stop-color="#1e2430" />
-              <stop offset="100%" stop-color="#0d1117" />
-            </radialGradient>
-          </defs>
+        <svg class="vault-safe-dial" width="58" height="58" viewBox="0 0 100 100" fill="none">
+          <!-- Outer Housing Bezel Circle -->
+          <circle class="vault-iris-housing" cx="50" cy="50" r="46" stroke-width="2.5" />
 
-          <!-- Outer Housing Shadow & Bezel -->
-          <circle cx="60" cy="60" r="57" fill="#0c0e14" stroke="rgba(255,255,255,0.12)" stroke-width="2" />
-          <circle cx="60" cy="60" r="52" fill="url(#v-dial-face)" />
+          <!-- Expanding Central Glowing Core -->
+          <circle class="vault-iris-core" cx="50" cy="50" r="8" />
+          <circle class="vault-iris-glint" cx="50" cy="50" r="3" fill="#ffffff" opacity="0.9" />
 
-          <!-- ROTATING TUMBLER ASSEMBLY -->
+          <!-- ROTATING & DILATING 4-BLADE IRIS ASSEMBLY -->
           <g class="vault-safe-rotor">
-            <!-- Dial Number Ring Background -->
-            <circle cx="60" cy="60" r="48" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
-
-            <!-- Precision Graduation Marks -->
-            <circle cx="60" cy="60" r="47" stroke="#94a3b8" stroke-width="1.8" pathLength="360" stroke-dasharray="2 7" opacity="0.45" />
-            <circle cx="60" cy="60" r="44" stroke="#94a3b8" stroke-width="1.2" pathLength="360" stroke-dasharray="4 32" opacity="0.75" />
-
-            <!-- Numbers (0, 10, 20, 30 ... 90) around perimeter -->
-            <g font-family="monospace" font-size="5" font-weight="700" fill="#94a3b8" text-anchor="middle" dominant-baseline="central" opacity="0.85">
-              <text transform="translate(60, 20) rotate(0, 0, 0)">0</text>
-              <text transform="translate(83.5, 27.6) rotate(36, 0, 0)">10</text>
-              <text transform="translate(98, 47.6) rotate(72, 0, 0)">20</text>
-              <text transform="translate(98, 72.4) rotate(108, 0, 0)">30</text>
-              <text transform="translate(83.5, 92.4) rotate(144, 0, 0)">40</text>
-              <text transform="translate(60, 100) rotate(180, 0, 0)">50</text>
-              <text transform="translate(36.5, 92.4) rotate(216, 0, 0)">60</text>
-              <text transform="translate(22, 72.4) rotate(252, 0, 0)">70</text>
-              <text transform="translate(22, 47.6) rotate(288, 0, 0)">80</text>
-              <text transform="translate(36.5, 27.6) rotate(324, 0, 0)">90</text>
-            </g>
-
-            <!-- Knurled Rotary Knob -->
-            <circle cx="60" cy="60" r="28" fill="#1e2430" stroke="rgba(255,255,255,0.18)" stroke-width="1" />
-            <circle cx="60" cy="60" r="28" stroke="#334155" stroke-width="2.5" pathLength="120" stroke-dasharray="1 1" />
-            <circle cx="60" cy="60" r="24" fill="url(#v-knob-grad)" stroke="rgba(255,255,255,0.12)" stroke-width="1.2" />
-            <circle cx="60" cy="60" r="18" fill="#141822" stroke="rgba(0,0,0,0.5)" stroke-width="1" />
-
-            <!-- Center mechanical hub & indicator -->
-            <circle class="vault-safe-hub" cx="60" cy="60" r="11" fill="#0d1017" stroke="rgba(56,189,248,0.3)" stroke-width="1.2" />
-            <line class="vault-safe-hub-notch" x1="60" y1="49" x2="60" y2="53" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" />
-            <circle class="vault-safe-hub-dot" cx="60" cy="60" r="3" fill="#38bdf8" opacity="0.85" />
+            <path class="vault-iris-blade" d="M50,14 A36,36 0 0,1 86,50 L68,50 A18,18 0 0,0 50,32 Z" stroke-width="1.8" />
+            <path class="vault-iris-blade" d="M86,50 A36,36 0 0,1 50,86 L50,68 A18,18 0 0,0 68,50 Z" stroke-width="1.8" />
+            <path class="vault-iris-blade" d="M50,86 A36,36 0 0,1 14,50 L32,50 A18,18 0 0,0 50,68 Z" stroke-width="1.8" />
+            <path class="vault-iris-blade" d="M14,50 A36,36 0 0,1 50,14 L50,32 A18,18 0 0,0 32,50 Z" stroke-width="1.8" />
           </g>
-
-          <!-- FIXED RED INDEX MARKER (Top 12 o'clock) -->
-          <polygon points="60,11 57.5,5 62.5,5" fill="#ef4444" />
-          <line x1="60" y1="5" x2="60" y2="13" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" />
         </svg>
       </div>
     `;
 
     this.cylinderEl = this.hudEl.querySelector(".vault-cylinder")!;
     this.rotorEl = this.hudEl.querySelector(".vault-safe-rotor")!;
+    this.coreEl = this.hudEl.querySelector(".vault-iris-core")!;
     this.container.prepend(this.hudEl);
   }
 
@@ -101,13 +62,18 @@ export class VaultLockHud {
 
   setRotation(degrees: number): void {
     const clamped = Math.max(0, Math.min(90, degrees));
-    this.rotorEl.style.transform = `rotate(${clamped}deg)`;
+    const progress = clamped / 90;
+    // 1.35x angular speed for responsive thumb drag feel (0° to 121.5°)
+    this.rotorEl.style.transform = `rotate(${clamped * 1.35}deg)`;
+    // Dynamic concentric core expansion from 8px to 16px radius
+    this.coreEl.setAttribute("r", `${8 + progress * 8}`);
   }
 
   setUnlocked(unlocked: boolean): void {
     if (unlocked) {
       this.hudEl.classList.add("is-unlocked");
-      this.rotorEl.style.transform = "rotate(90deg)";
+      this.rotorEl.style.transform = "rotate(121.5deg)";
+      this.coreEl.setAttribute("r", "16");
     } else {
       this.hudEl.classList.remove("is-unlocked");
     }
@@ -121,6 +87,7 @@ export class VaultLockHud {
       this.hudEl.style.transform = "translateY(-70px)";
       this.hudEl.style.opacity = "0";
       this.rotorEl.style.transform = "rotate(0deg)";
+      this.coreEl.setAttribute("r", "8");
       this.hudEl.classList.remove("is-engaged", "is-unlocked");
 
       setTimeout(() => {
@@ -134,6 +101,7 @@ export class VaultLockHud {
       this.hudEl.style.opacity = "0";
       this.hudEl.style.visibility = "hidden";
       this.rotorEl.style.transform = "rotate(0deg)";
+      this.coreEl.setAttribute("r", "8");
       this.hudEl.classList.remove("is-engaged", "is-unlocked");
       onDone?.();
     }
