@@ -16,6 +16,8 @@ export interface ShortcutHandlers {
   onToggleWordWrap?: () => void;
   onSearchWeb?: () => void;
   onFind?: () => void;
+  onFindNext?: () => void;
+  onFindPrevious?: () => void;
   onToggleDualPane?: () => void;
   onFormat?: (action: FormatAction) => void;
 }
@@ -25,6 +27,13 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
     if (e.key === "Escape") {
       e.preventDefault();
       handlers.onQuit();
+      return;
+    }
+
+    if (e.key === "F3") {
+      e.preventDefault();
+      if (e.shiftKey) handlers.onFindPrevious?.();
+      else handlers.onFindNext?.();
       return;
     }
 

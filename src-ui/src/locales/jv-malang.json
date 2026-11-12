@@ -21,6 +21,7 @@
     "open": "Bukak...",
     "save": "Simpen",
     "saveAs": "Simpen Dadi...",
+    "find": "Goleki...",
     "dualPane": "Papan Loro",
     "exitDualPane": "Metu Papan Loro",
     "markdownPreview": "Markdown: Delok",
@@ -59,6 +60,7 @@
     "table": "Tabel",
     "rule": "Garis Lurus",
     "clearFormatting": "Ilangno Format",
+    "find": "Goleki...",
     "searchWeb": "Goleki ndek Web"
   },
   "topbar": {
@@ -69,6 +71,7 @@
   },
   "home": {
     "searchPlaceholder": "Nggolek cathetan...",
+    "findPlaceholder": "Goleki ndek dokumen...",
     "selectItems": "Pilih cathetan",
     "itemsSelected": "{count} kepilih",
     "allNotes": "Kabeh",

@@ -21,6 +21,7 @@
     "open": "Open...",
     "save": "Save",
     "saveAs": "Save As...",
+    "find": "Find...",
     "dualPane": "Dual Pane",
     "exitDualPane": "Exit Dual Pane",
     "markdownPreview": "Markdown: Preview",
@@ -59,6 +60,7 @@
     "table": "Table",
     "rule": "Horizontal Rule",
     "clearFormatting": "Clear Formatting",
+    "find": "Find...",
     "searchWeb": "Search in Web"
   },
   "topbar": {
@@ -69,6 +71,7 @@
   },
   "home": {
     "searchPlaceholder": "Search notes...",
+    "findPlaceholder": "Find in document...",
     "selectItems": "Select items",
     "itemsSelected": "{count} selected",
     "allNotes": "All",

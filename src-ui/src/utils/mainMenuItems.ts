@@ -10,6 +10,7 @@ export interface MainMenuContext {
   onOpen: () => void;
   onSave: () => void;
   onSaveAs: () => void;
+  onFind: () => void;
   onToggleDualPane: () => void;
   onToggleMarkdown: () => void;
   onOpenSettings: () => void;
@@ -25,6 +26,7 @@ export function buildMainMenuItems(ctx: MainMenuContext): MenuItem[] {
     { id: "open", label: t("menu.open"), shortcut: "Ctrl+O", action: ctx.onOpen },
     { id: "save", label: t("menu.save"), shortcut: "Ctrl+S", disabled: ctx.isUpToDate, action: ctx.onSave },
     { id: "saveas", label: t("menu.saveAs"), shortcut: "Ctrl+Shift+S", action: ctx.onSaveAs },
+    { id: "find", label: t("menu.find") || "Find...", shortcut: "Ctrl+F", action: ctx.onFind },
     { id: "div_dual", label: "", isDivider: true },
     {
       id: "toggle_dualpane",

@@ -21,6 +21,7 @@
     "open": "Bikak...",
     "save": "Nyimpen",
     "saveAs": "Simpen Minangka...",
+    "find": "Padosi...",
     "dualPane": "Panel Kalih",
     "exitDualPane": "Miyos Panel Kalih",
     "markdownPreview": "Markdown: Pratingal",
@@ -59,6 +60,7 @@
     "table": "Tabel",
     "rule": "Garis Palang",
     "clearFormatting": "Ilangaken Wewangun",
+    "find": "Padosi...",
     "searchWeb": "Padosi wonten Web"
   },
   "topbar": {
@@ -69,6 +71,7 @@
   },
   "home": {
     "searchPlaceholder": "Padosi cathetan...",
+    "findPlaceholder": "Padosi ing cathetan...",
     "selectItems": "Pilih cathetan",
     "itemsSelected": "{count} kapilih",
     "allNotes": "Sedaya",
