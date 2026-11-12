@@ -473,29 +473,29 @@
 }
 
 /* Dark Mode Tokens (Default) */
-:root,
+.vault-cylinder,
 [data-theme="dark"] .vault-cylinder {
   background: var(--col-menu-bg, rgba(24, 26, 33, 0.92));
   border: 1px solid var(--col-border, rgba(255, 255, 255, 0.14));
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
 }
 
-:root,
+.vault-iris-housing,
 [data-theme="dark"] .vault-iris-housing {
   fill: #0c0e15;
   stroke: rgba(255, 255, 255, 0.16);
 }
 
-:root,
+.vault-iris-blade:nth-child(1),
 [data-theme="dark"] .vault-iris-blade:nth-child(1) { fill: #252c3d; stroke: rgba(255, 255, 255, 0.28); }
-:root,
+.vault-iris-blade:nth-child(2),
 [data-theme="dark"] .vault-iris-blade:nth-child(2) { fill: #1e2432; stroke: rgba(255, 255, 255, 0.28); }
-:root,
+.vault-iris-blade:nth-child(3),
 [data-theme="dark"] .vault-iris-blade:nth-child(3) { fill: #181d28; stroke: rgba(255, 255, 255, 0.28); }
-:root,
+.vault-iris-blade:nth-child(4),
 [data-theme="dark"] .vault-iris-blade:nth-child(4) { fill: #222938; stroke: rgba(255, 255, 255, 0.28); }
 
-:root,
+.vault-iris-core,
 [data-theme="dark"] .vault-iris-core {
   fill: #38bdf8;
   transition: fill 0.2s ease, filter 0.2s ease;

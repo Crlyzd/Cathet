@@ -11,6 +11,23 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-12: Top-Level `:root,` Selector Typo in Shared CSS Painting Over Windows Acrylic Backdrop
+- **Context**: In commit `004d705`, mobile Vault Lock HUD tokens were added to `src-ui/styles/home.css` for dark and light theme styling of the Cyber Iris aperture. Lines 476–502 introduced rules prefixed with `:root, [data-theme="dark"] .vault-cylinder` instead of descendant or compound selectors.
+- **User Correction**:
+  - *"you fucked up something and make the window acyrlics broken. I have checked the last commit that the acrylic is still usable is this 1a724e89b56cdd1417b3270a545326b5dff09165 as you can see, the SS, the main window should be like in the second pict check what make it broken and make a plan to fix it"*
+  - *"okay so basically, you blame windows build? fuck you not, the latest commit thet I showd you is pereectly fine. even the version 5.4. I run all that in this same PC"*
+- **Root Cause**:
+  1. `index.html` (the shared entry point for both Windows Desktop and Android Mobile) statically loads `src-ui/styles/home.css`.
+  2. The comma `,` after `:root` (`:root,\n[data-theme="dark"] .vault-cylinder`) created an independent top-level CSS selector matching the document `<html>` tag.
+  3. This assigned `background: var(--col-menu-bg, rgba(24, 26, 33, 0.92))` directly to `:root`, painting an opaque 95% black layer over the entire WebView2 viewport and completely occluding Windows DWM Acrylic frosted glass underneath.
+  4. `settings.html` does not load `home.css`, which is why Settings remained translucent while Main window appeared completely pitch black.
+  5. Initially blamed Windows OS build DWM API changes instead of systematically bisecting the user-provided working commit (`da7ff6d`) and broken commit (`004d705`).
+- **Corrective Guardrail**:
+  1. Never use top-level `:root,` selectors in component or mobile stylesheets. Always use compound/descendant selectors (e.g. `.vault-cylinder, [data-theme="dark"] .vault-cylinder`).
+  2. When diagnosing rendering regressions, never blame OS builds or platform environments before checking `git diff` against the last known working commit.
+  3. Keep global root styling strictly confined to `main.css`. Component styles must never declare background or dimensions on `:root` or `body`.
+
+
 ### [Mistake] 2026-11-12: Constricting Slider Container Width Without `min-width: 0` on `<input type="range">` Pushing Badge Off-Screen
 - **Context**: Attempting to fix the percentage badge clipping (`75%` / `100%`), the assistant reduced `.slider-control-wrap` from 160px to 130px. However, the inner `<input type="range" class="glass-range-slider">` retained `flex: 1` with Chromium's default user-agent `min-width: auto` (~129px).
 - **User Correction**: *"bro I just want the value for the slider is showing, why do I have to scream at you for the third time now?"* with screenshot showing only the digit `1` visible from `100%` and `00%` completely pushed out of the window.
@@ -305,6 +322,17 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-12: Fix Windows Acrylic Frosted Glass by Removing `:root,` CSS Selector in Vault HUD Tokens
+- **Summary**:
+  - Restored translucent Windows DWM Acrylic frosted glass on the main desktop window (`index.html`).
+  - Identified root cause in `src-ui/styles/home.css`: lines 476–502 introduced during the mobile vault lock aperture redesign mistakenly declared `:root, [data-theme="dark"] .vault-cylinder` with a dangling comma after `:root`.
+  - Because `home.css` is statically imported by `index.html`, this comma-separated selector rule applied `background: var(--col-menu-bg, rgba(24, 26, 33, 0.92))` directly to the `<html>` document root, occluding the underlying Windows Acrylic backdrop with an opaque 95% black surface.
+  - Corrected selectors to `.vault-cylinder, [data-theme="dark"] .vault-cylinder`, `.vault-iris-housing, [data-theme="dark"] .vault-iris-housing`, etc., eliminating all unintended styles on `:root`.
+  - Rebuilt production assets via `npm run build` and verified TypeScript compilation with `npx tsc --noEmit` (0 errors).
+- **Affected Files**:
+  - `src-ui/styles/home.css` (589 lines)
+
 
 ### 2026-11-12: Desktop Maximized & Fullscreen Window Preservation on Dual Pane Toggle
 - **Summary**:
