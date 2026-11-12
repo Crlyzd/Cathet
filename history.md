@@ -306,6 +306,20 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-12: Search Bar Escape Key Dismissal & App Exit Prevention
+- **Summary**:
+  - Trapped `Escape` keydown events inside `DesktopSearchBarComponent` and `MobileSearchBarComponent`: added `e.stopPropagation()` and `e.stopImmediatePropagation()` to both `this.input` and `this.element` container listeners so pressing `Escape` cleanly dismisses the search ribbon and returns focus to the editor without bubbling to `window`.
+  - Fixed bubbling race condition where `this.hide()` previously mutated `this.visible = false` before the unstopped `Escape` event bubbled to `window`, causing `shortcuts.ts` -> `onQuit()` in `main.ts` to see `isOpen() === false` and prematurely invoke `this.windowService.close()`.
+  - Added multi-layer `onQuit` dismissal defense in `main.ts` covering both desktop (`this.desktopSearchBar?.isOpen()`) and mobile/Android (`this.mobileCoord?.isMobile() && this.mobileCoord.isSearchBarOpen()`).
+  - Added `isSearchBarOpen()` and `closeSearchBar()` to `MobileActionBarComponent` and `MobileCoordinator` for cross-platform parity.
+  - Verified strict Anti-Monolith line count compliance (<250 lines/file) across all modified components.
+- **Affected Files**:
+  - `src-ui/src/components/DesktopSearchBar.ts` (191 lines)
+  - `src-ui/src/components/MobileSearchBar.ts` (184 lines)
+  - `src-ui/src/components/MobileActionBar.ts` (249 lines)
+  - `src-ui/src/services/mobileCoordinator.ts` (165 lines)
+  - `src-ui/src/main.ts` (608 lines)
+
 ### 2026-11-12: Directional Dropup Flip Threshold Calibration (Prevent Ceiling Collision)
 - **Summary**:
   - Calibrated dropdown auto-flip condition across `BackdropSelect.ts`, `FontSelect.ts`, and `LanguageSelect.ts`: replaced static `spaceBelow < 160` (which forced any dropdown below the 159px vertical midpoint to flip upward into the window titlebar) with directional clearance comparison `spaceBelow < 115 && spaceAbove > spaceBelow`.
