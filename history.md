@@ -306,6 +306,25 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-12: Slider Hover Wheel Scrolling, 50% Opacity Default, At-Least-2 Accordion Fold & Dropup Auto-Flipping
+- **Summary**:
+  - Implemented reusable `sliderWheel.ts` utility: enables mouse wheel scrolling on hover for range inputs (`#backdrop-opacity-slider` and `#glass-hue-slider`) without scrolling the parent Settings window, using a 60px accumulation threshold, direction normalization, and `{ passive: false }` event prevention.
+  - Standardized default backdrop opacity: fixed `backdropService.ts` to return `50%` consistently across all backdrops (resolving bug where fresh Windows launch sat at 0%), with fallback migration for legacy `cathet_backdrop_opacity`.
+  - Fixed backdrop mode-switch opacity synchronization: updated `SettingsPane.updateState()` so switching between materials (Acrylic, Mica, Transparent) immediately updates the opacity slider and percentage badge.
+  - Enforced "At Least 2 Open Out of 3 Total" Accordion Invariant: updated `SettingsAccordions.ts` to support opening all 3 accordions simultaneously while preventing collapsing below 2 open (or closing all 3). Clicking an open accordion when 2 are open automatically expands the 3rd closed section.
+  - Fixed Light Mode preset swatch checkmark visibility: added `[data-theme="light"] .solid-color-swatch .swatch-check { color: #0f172a; }` in `settings.css` to render high-contrast dark slate checkmarks against light canvas swatches.
+  - Implemented Smart Auto-Flipping Dropup (`.drop-up`): updated both `LanguageSelect.ts` and `FontSelect.ts` to dynamically detect available vertical space below the trigger and flip upward when near the window bottom (`spaceBelow < 160px`). Replaced `scrollIntoView()` with internal `menu.scrollTop` centering, completely eliminating ancestor scroll event bubbling that caused the language dropdown to vanish instantly.
+  - Enforced strict Anti-Monolith line counts (<250 lines across all modified TypeScript files: `sliderWheel.ts` 93 lines, `backdropService.ts` 233 lines, `SettingsAccordions.ts` 243 lines, `SettingsPane.ts` 245 lines, `GlassColorPicker.ts` 163 lines, `LanguageSelect.ts` 178 lines, `FontSelect.ts` 171 lines).
+- **Affected Files**:
+  - `src-ui/src/utils/sliderWheel.ts` (93 lines)
+  - `src-ui/src/services/backdropService.ts` (233 lines)
+  - `src-ui/src/components/settings/SettingsAccordions.ts` (243 lines)
+  - `src-ui/src/components/settings/SettingsPane.ts` (245 lines)
+  - `src-ui/src/components/settings/GlassColorPicker.ts` (163 lines)
+  - `src-ui/src/components/settings/LanguageSelect.ts` (178 lines)
+  - `src-ui/src/components/settings/FontSelect.ts` (171 lines)
+  - `src-ui/styles/settings.css` (1420 lines)
+
 ### 2026-11-12: Deterministic Range Slider Width & Opacity Badge Visibility Fix
 - **Summary**:
   - Eliminated percentage badge right-side truncation (`100%` clipping past card edge): replaced fluid `flex: 1` on `.glass-range-slider` (which refused to shrink below Chromium's user-agent intrinsic ~129px min-width) with explicit `width: 85px; min-width: 0; max-width: 85px; flex: none;`.
