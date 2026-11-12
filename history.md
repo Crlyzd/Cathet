@@ -306,6 +306,16 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-12: Backdrop Select Dropup Auto-Flip & Persistent Dropdowns on Page Scroll
+- **Summary**:
+  - Implemented smart auto-flipping dropup (`.drop-up`) for `BackdropSelect.ts`: measures vertical space below the trigger and flips upward if `spaceBelow < 160px` with dynamic `max-height` clamping and internal `menu.scrollTop` centering.
+  - Eliminated premature dropdown dismissal on page scroll across all three custom select dropdowns (`BackdropSelect.ts`, `FontSelect.ts`, `LanguageSelect.ts`): removed `scrollCloseHandler` so open dropdowns remain anchored to their trigger button and smoothly travel with the row when scrolling the settings card.
+  - Preserved strict Anti-Monolith line counts (<250 lines/file: `BackdropSelect.ts` 157 lines, `FontSelect.ts` 155 lines, `LanguageSelect.ts` 162 lines).
+- **Affected Files**:
+  - `src-ui/src/components/settings/BackdropSelect.ts` (157 lines)
+  - `src-ui/src/components/settings/FontSelect.ts` (155 lines)
+  - `src-ui/src/components/settings/LanguageSelect.ts` (162 lines)
+
 ### 2026-11-12: Slider Hover Wheel Scrolling, 50% Opacity Default, At-Least-2 Accordion Fold & Dropup Auto-Flipping
 - **Summary**:
   - Implemented reusable `sliderWheel.ts` utility: enables mouse wheel scrolling on hover for range inputs (`#backdrop-opacity-slider` and `#glass-hue-slider`) without scrolling the parent Settings window, using a 60px accumulation threshold, direction normalization, and `{ passive: false }` event prevention.
