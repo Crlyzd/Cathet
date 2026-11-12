@@ -306,6 +306,19 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-12: Desktop Maximized & Fullscreen Window Preservation on Dual Pane Toggle
+- **Summary**:
+  - Resolved desktop defect where entering Dual Pane mode (`Ctrl+D` or menu) while maximized or fullscreen caused the window to suddenly unmaximize and revert into a restored floating window.
+  - Identified root cause in Tauri's Windows windowing backend (`tao-0.35.3` in `platform_impl/windows/window.rs` line 328): `set_min_inner_size` internally called `set_inner_size`, which unconditionally cleared `WindowFlags::MAXIMIZED` to `false` and issued `SetWindowPos`, dropping the window out of maximized state.
+  - Added `target_min_size: Mutex<Option<(f64, f64)>>` and `was_maximized: AtomicBool` to `AppState` in `src-tauri/src/state.rs`.
+  - Guarded `set_window_min_size` in `src-tauri/src/commands/window.rs`: when the window is maximized (`window.is_maximized()`) or fullscreen (`window.is_fullscreen()`), the requested layout bounds are saved in `AppState` while immediately returning `Ok(())` without calling Tao's destructive `set_min_size`.
+  - Added state transition handler to `on_window_event` (`tauri::WindowEvent::Resized`) in `src-tauri/src/lib.rs`: when the user later unmaximizes/restores the window, the pending deferred layout floor (e.g. 350x350 for dual pane or 200x300 for single pane) is cleanly enforced.
+  - Verified with `npx tsc --noEmit` (0 errors) and `cargo check --manifest-path src-tauri/Cargo.toml` (0 errors, 9.39s).
+- **Affected Files**:
+  - `src-tauri/src/state.rs` (21 lines)
+  - `src-tauri/src/commands/window.rs` (177 lines)
+  - `src-tauri/src/lib.rs` (160 lines)
+
 ### 2026-11-12: Mobile Vault Lock HUD Redesign with Cyber Iris Aperture (Option D)
 - **Summary**:
   - Replaced the cluttered, microscopic mechanical safe tumbler in `VaultLockHud.ts` (which packed 160+ micro-elements, numbers, and graduation tick dashes into a 58px circle, causing sub-pixel aliasing and illegible dark smudges on mobile screens) with a clean, high-contrast 4-blade Cyber Iris Aperture.
