@@ -6,7 +6,7 @@ use window_vibrancy::{apply_acrylic, apply_blur, apply_mica};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::Foundation::HWND;
 #[cfg(target_os = "windows")]
-use windows_sys::Win32::Graphics::Dwm::DwmSetWindowAttribute;
+use windows_sys::Win32::Graphics::Dwm::{DwmGetColorizationColor, DwmSetWindowAttribute};
 
 #[cfg(target_os = "windows")]
 const DWMWA_USE_IMMERSIVE_DARK_MODE: u32 = 20;
@@ -215,4 +215,22 @@ pub fn set_window_backdrop(app_handle: AppHandle, backdrop: String) -> Result<()
         let _ = (app_handle, backdrop);
     }
     Ok(())
+}
+
+/// Queries the Windows system DWM colorization / accent color as a #RRGGBB hex string.
+#[tauri::command]
+pub fn get_windows_accent_color() -> Result<String, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let mut color: u32 = 0;
+        let mut opaque: windows_sys::Win32::Foundation::BOOL = 0;
+        let res = unsafe { DwmGetColorizationColor(&mut color, &mut opaque) };
+        if res == 0 {
+            let r = ((color >> 16) & 0xFF) as u8;
+            let g = ((color >> 8) & 0xFF) as u8;
+            let b = (color & 0xFF) as u8;
+            return Ok(format!("#{:02x}{:02x}{:02x}", r, g, b));
+        }
+    }
+    Ok("#0078d4".to_string())
 }
