@@ -137,6 +137,8 @@ export class MobileActionBarComponent {
     this.setSearchMode(!this.isSearchMode);
   }
 
+  isSearchBarOpen(): boolean { return this.isSearchMode; }
+
   setKeyboardOpen(isOpen: boolean): void {
     this.isKeyboardOpen = isOpen;
     if (isOpen) {

@@ -242,6 +242,10 @@ class CathetApp {
       },
       onSearchWeb: () => { const t = this.getActiveEditor().getSelectedText().trim(); if (t) openUrl(`https://www.google.com/search?q=${encodeURIComponent(t)}`).catch(console.error); },
       onQuit: () => {
+        if (this.mobileCoord?.isMobile() && this.mobileCoord.isSearchBarOpen()) {
+          this.mobileCoord.closeSearchBar();
+          return;
+        }
         if (this.desktopSearchBar?.isOpen()) {
           this.desktopSearchBar.hide();
           return;

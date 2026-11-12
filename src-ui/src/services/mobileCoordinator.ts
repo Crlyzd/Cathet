@@ -138,6 +138,16 @@ export class MobileCoordinator {
     this.actionBar?.toggleSearchMode();
   }
 
+  isSearchBarOpen(): boolean {
+    return !!this.actionBar?.isSearchBarOpen();
+  }
+
+  closeSearchBar(): void {
+    if (this.actionBar?.isSearchBarOpen()) {
+      this.actionBar.setSearchMode(false);
+    }
+  }
+
   isMobile(): boolean {
     return this.platform.isMobile();
   }

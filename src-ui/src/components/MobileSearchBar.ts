@@ -65,6 +65,14 @@ export class MobileSearchBarComponent {
     };
     this.element.addEventListener("mousedown", preventUnfocus);
     this.element.addEventListener("pointerdown", preventUnfocus);
+    this.element.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        this.hide();
+      }
+    });
 
     this.input.addEventListener("input", () => this.handleQueryChange());
     this.input.addEventListener("keydown", (e) => {
@@ -74,6 +82,8 @@ export class MobileSearchBarComponent {
         else this.findNext();
       } else if (e.key === "Escape") {
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         this.hide();
       }
     });
