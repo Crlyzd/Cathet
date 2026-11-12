@@ -261,6 +261,29 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-12: Full Windows DWM Backdrops, Linux Translucent Support & Interactive Transparency Slider with Accordion Settings
+- **Summary**:
+  - Implemented dynamic runtime switching across all Windows 11 DWM backdrops: Acrylic (`DWMSBT_TRANSIENTWINDOW`), Mica (`DWMSBT_MAINWINDOW`), Mica Alt (`DWMSBT_TABBEDWINDOW`), Pure Transparent (`DWMSBT_NONE`), and Solid Opaque (`DWMSBT_AUTO`).
+  - Added real-time drag-to-adjust transparency slider for both Windows and Linux, varying the CSS background alpha / tint layer while keeping document text, markdown syntax, buttons, and caret 100% crisp and readable.
+  - Reorganized the Desktop Settings window into 3 collapsible frosted glass accordion groups (Appearance, Editor & Dual-Pane, System & Updates) to eliminate visual clutter, maintain compact 350x318 window proportions, and remember the open accordion state.
+  - Implemented cross-window real-time synchronization between the Settings window and main editor window via Tauri IPC event bus (`cathet:backdrop-update`) and persistent `localStorage`.
+  - Strictly preserved Android mobile isolation: Android's native bottom sheet (`MobileSettingsView.ts`), 120fps motion curves, and `#0f1117` solid surfaces remain completely untouched.
+  - Fully compliant with the Anti-Monolith standard: all newly created and modified files remain strictly under 250 lines (`vibrancy.rs` 218 lines, `backdropService.ts` 147 lines, `BackdropSelect.ts` 148 lines, `SettingsAccordions.ts` 220 lines, `SettingsPane.ts` 221 lines, `SettingsTabs.ts` 209 lines).
+- **Affected Files**:
+  - `src-tauri/src/commands/vibrancy.rs`
+  - `src-tauri/src/lib.rs`
+  - `src-ui/src/services/backdropService.ts`
+  - `src-ui/src/components/settings/BackdropSelect.ts`
+  - `src-ui/src/components/settings/SettingsAccordions.ts`
+  - `src-ui/src/components/settings/SettingsPane.ts`
+  - `src-ui/src/components/SettingsTabs.ts`
+  - `src-ui/src/main.ts`
+  - `src-ui/src/settingsMain.ts`
+  - `src-ui/styles/main.css`
+  - `src-ui/styles/linux.css`
+  - `src-ui/styles/settings.css`
+  - `history.md`
+
 ### 2026-11-12: Implement On-Demand Desktop In-Document Text Search (Windows & Linux)
 - **Summary**:
   - Implemented an on-demand, floating frosted glass desktop search bar (`DesktopSearchBarComponent`) for Windows and Linux without adding any buttons to the pristine titlebar or window chrome.
