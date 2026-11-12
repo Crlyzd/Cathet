@@ -306,6 +306,18 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-12: Mobile Vault Lock HUD Redesign with Cyber Iris Aperture (Option D)
+- **Summary**:
+  - Replaced the cluttered, microscopic mechanical safe tumbler in `VaultLockHud.ts` (which packed 160+ micro-elements, numbers, and graduation tick dashes into a 58px circle, causing sub-pixel aliasing and illegible dark smudges on mobile screens) with a clean, high-contrast 4-blade Cyber Iris Aperture.
+  - Formulated a 100% mathematically concentric coordinate space (`viewBox="0 0 100 100"`) with native center pivot `(50, 50)`.
+  - Implemented 120fps compound iris dynamics: as the user drags horizontally during the secret pull-down gesture ($0^\circ \to 90^\circ$), the 4 shutter blades rotate at $1.35\times$ speed ($0^\circ \to 121.5^\circ$) while the central glowing cyan core dynamically expands from $8\text{px} \to 16\text{px}$ radius.
+  - Implemented dynamic dual-theme adaptation in `home.css`: in Dark Mode, renders steely obsidian/graphite blades with neon cyan core; in Light Mode, renders 4 distinct polished titanium/slate shades with dark outline seams and deep azure core, both snapping to radiant emerald green (`#10b981` / `#059669`) on unlock.
+  - Shrunk `VaultLockHud.ts` from 145 lines to 113 lines (well below the 140-line Anti-Monolith invariant).
+  - Verified with `npx tsc --noEmit` (0 errors).
+- **Affected Files**:
+  - `src-ui/src/components/home/VaultLockHud.ts` (113 lines)
+  - `src-ui/styles/home.css` (589 lines)
+
 ### 2026-11-12: Search Bar Escape Key Dismissal & App Exit Prevention
 - **Summary**:
   - Trapped `Escape` keydown events inside `DesktopSearchBarComponent` and `MobileSearchBarComponent`: added `e.stopPropagation()` and `e.stopImmediatePropagation()` to both `this.input` and `this.element` container listeners so pressing `Escape` cleanly dismisses the search ribbon and returns focus to the editor without bubbling to `window`.
