@@ -11,6 +11,25 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-12: Full Component Re-rendering on Continuous State Updates Destroying Pointer Capture & Inverting Theme Contrast
+- **Context**: During settings window backdrop opacity slider dragging and solid color customization, dragging the opacity slider immediately dropped the drag handle, and choosing a solid preset in Light mode before toggling to Dark mode caused blinding illegible white text on light cream canvas. Furthermore, Settings window remained transparent when set to Solid Opaque, and raw translation keys appeared in System accordion.
+- **User Correction**:
+  - *"1. I couldnt click and drag the slider (first ss)"*
+  - *"2. maybe just make dedicated check box for 'use windows color' or something, second SS kinda look lame"*
+  - *"3. instead of shit default css color picker. wrote dedicated color picker within the window"*
+  - *"okay, picking the presets, then swicthing to dark mode or vice versa, will fucked the whole app"*
+  - *"you fuck the text for update and default app"*
+- **Root Cause**:
+  1. `SettingsPane.updateState()` invoked full `this.render()` on every single percentage change of `backdropOpacity` and `solidColor`, destroying and replacing the `<input type="range">` DOM node mid-drag and aborting active pointer capture.
+  2. Solid color was saved into a single global key `cathet_solid_color`. When light cream (`#fefce8`) was picked in Light mode and user switched to Dark mode, text color became `#ffffff` while background remained light cream, yielding zero contrast.
+  3. Tauri desktop windows have `"transparent": true` by default. Selecting `solid` set Windows DWM to `DWMSBT_AUTO`, but `.settings-window` CSS had `background-color: transparent`, so WebView2 rendered transparency directly to desktop.
+  4. Old translation keys `settings.removeDefault` and `settings.updateTitle` were hardcoded in `SettingsAccordions.ts` instead of `settings.unregister`, `settings.setAsDefault`, and `settings.appUpdates`.
+- **Corrective Guardrail**:
+  1. In reactive components with continuous slider or pointer tracking, `updateState()` must bypass DOM reconstruction for single-property continuous updates (`partial.backdropOpacity` and `partial.solidColor`), mutating DOM properties in place without calling `this.render()`.
+  2. Canvas and solid colors must ALWAYS be theme-scoped (`cathet_solid_color_dark` vs `cathet_solid_color_light`). Theme switching must dynamically re-evaluate and apply the theme-calibrated solid color.
+  3. Solid opaque and pure transparent modes must have explicit CSS guardrails: solid backdrop sets 100% solid background (`--col-solid-bg` / `#0f1117` / `#f8fafc`) on `html`, `body`, and `.settings-window`; pure transparent sets 50% opacity with 16px blur (`rgba(15, 17, 23, 0.50)` / `rgba(248, 250, 252, 0.50)`) so the settings window remains readable.
+  4. Always verify i18n keys against `src-ui/src/locales/en.json` before rendering.
+
 ### [Mistake] 2026-11-12: Checking `if (this.mobileCoord)` Instead of `isMobile()` Causing Desktop Search Bar to Silently Fail
 - **Context**: When implementing the on-demand desktop search bar in `main.ts`, the dispatch for `globalEventBus.on("search:open")` and `shortcuts.onFind` checked `if (this.mobileCoord) { this.mobileCoord.toggleSearchBar(); } else if (this.desktopSearchBar) { ... }`.
 - **User Correction**: User uploaded screenshot of context menu with "Find... Ctrl+F" and noted: *"the search bar dowsnt shows up"*.
@@ -260,6 +279,17 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-12: Smooth Opacity Slider Dragging, Dedicated In-Window Glass Color Picker, Theme-Scoped Canvas Presets & Solid/Transparent Guardrails
+- **Summary**:
+  - Resolved slider drag interruption: bypassed full component `this.render()` during continuous `backdropOpacity` updates in `SettingsPane.updateState()`, mutating slider and value badge in-place to preserve active pointer capture.
+  - Built dedicated in-window custom frosted glass color picker (`GlassColorPickerComponent`, 158 lines): replaced browser OS color popup with a custom 2D SV area, hue rainbow slider, hex input, and live pointer tracking (`pointerdown`, `pointermove`, `pointerup` with `setPointerCapture`).
+  - Replaced button row with clean `Match Windows Color` / `Match System Color` toggle switch and 5 theme-calibrated solid swatches with custom color picker toggle.
+  - Eliminated theme switch contrast bug: separated solid color storage into `cathet_solid_color_dark` and `cathet_solid_color_light`, ensuring switching themes immediately swaps to the corresponding calibrated canvas tint and avoids illegible contrast inversion.
+  - Fixed Settings window readability in Pure Transparent mode: configured 50% translucent glass background (`rgba(15, 17, 23, 0.50)` dark / `rgba(248, 250, 252, 0.50)` light with 16px blur) so settings content remains crystal clear against desktop wallpapers.
+  - Fixed Solid Opaque transparency in Settings window: enforced 100% solid background on `html[data-backdrop="solid"]`, `body[data-backdrop="solid"]`, and `.settings-window`.
+  - Maintained strict Anti-Monolith line counts across all 9 touched files (all strictly <250 lines: `backdropService.ts` 226, `SettingsPane.ts` 244, `settingsMain.ts` 248, `SolidColorPicker.ts` 146, `GlassColorPicker.ts` 158, `SettingsAccordions.ts` 220, `BackdropSelect.ts` 148, `windowSync.ts` 63, `vibrancy.rs` 236).
+
 
 ### 2026-11-12: Refine Backdrops & Opacity Slider, Solid Opaque Customization, Pure Transparent Guardrail & Fix Settings Layout
 - **Summary**:
