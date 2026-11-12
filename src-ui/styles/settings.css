@@ -1149,14 +1149,16 @@ body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] .
 .slider-control-wrap {
   display: flex;
   align-items: center;
-  gap: 7px;
-  width: 130px;
-  min-width: 130px;
+  gap: 6px;
+  width: auto;
   flex-shrink: 0;
 }
 
 .glass-range-slider {
-  flex: 1;
+  width: 85px;
+  min-width: 0;
+  max-width: 85px;
+  flex: none;
   -webkit-appearance: none;
   appearance: none;
   height: 5px;
@@ -1192,11 +1194,10 @@ body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] .
   font-size: 11px;
   font-weight: 600;
   color: var(--col-text);
-  width: 32px;
-  min-width: 32px;
-  flex-shrink: 0;
+  width: 36px;
+  min-width: 36px;
+  flex: none;
   text-align: right;
-  padding-right: 2px;
   font-variant-numeric: tabular-nums;
 }
 
