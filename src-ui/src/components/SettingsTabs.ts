@@ -61,9 +61,18 @@ export class SettingsTabsComponent {
     this.render();
   }
 
+  public getState(): SettingsInitialState {
+    return this.state;
+  }
+
   public updateState(partial: Partial<SettingsInitialState>): void {
     this.state = { ...this.state, ...partial };
     this.settingsPane?.updateState(partial);
+  }
+
+  public updateOpacityState(percent: number): void {
+    this.state.backdropOpacity = percent;
+    this.settingsPane?.updateOpacityState(percent);
   }
 
   public setDownloadProgress(percent: number): void {

@@ -71,6 +71,7 @@ class SettingsApp {
         },
         onBackdropOpacityChange: (percent) => {
           this.backdropService.setOpacityPercent(percent);
+          this.tabsComponent.updateOpacityState(percent);
         },
         onSolidColorChange: async (color) => {
           await this.backdropService.setSolidColor(color, this.themeService.getTheme());
@@ -81,9 +82,8 @@ class SettingsApp {
           this.tabsComponent.updateState({ linuxBackdrop: mode, backdropOpacity: this.backdropService.getOpacityPercent(mode) });
           if (mode === "blur") {
             await showGlassDialog({
-              title: "Translucent Backdrop",
+              title: "Translucent Backdrop", type: "info",
               message: "On Linux (KDE Plasma / Wayland), translucent glass requires a KWin Window Rule ('Force Blur Behind: Enabled') in System Settings to blur your wallpaper.",
-              type: "info",
             });
           }
         },
@@ -193,7 +193,6 @@ class SettingsApp {
     const resync = () => { this.syncAlwaysOnTop(); this.syncAssociationStatus(); };
     window.addEventListener("focus", resync);
     await listen("cathet:settings-focused", resync);
-
     await listen<any>("cathet:update-status", (event) => {
       const info = event.payload;
       this.tabsComponent.updateState({ updateAvailable: !!info?.update_available, latestVersion: info?.latest_version });
@@ -201,6 +200,8 @@ class SettingsApp {
   }
 
   private applyAssociationStatus(status: AssociationStatus): void {
+    const cur = this.tabsComponent.getState();
+    if (cur.isRegistered === status.isRegistered && cur.currentExePath === status.currentExePath && cur.registeredExePath === status.registeredExePath) return;
     this.tabsComponent.updateState({
       isRegistered: status.isRegistered,
       currentExePath: status.currentExePath,

@@ -6,14 +6,11 @@ import { PlatformService } from "../../services/platformService";
 import { SUPPORTED_LOCALES } from "../../locales";
 import { t } from "../../services/i18nService";
 import { initAutoScroll } from "../../utils/autoScroll";
-import { WindowsBackdropType } from "../../services/backdropService";
+import { WindowsBackdropType, BackdropService } from "../../services/backdropService";
 import { APP_VERSION } from "../../version";
 import {
-  renderAppearanceAccordion,
-  renderEditorAccordion,
-  renderSystemAccordion,
-  bindAccordionToggles,
-  AccordionRenderState,
+  renderAppearanceAccordion, renderEditorAccordion, renderSystemAccordion,
+  bindAccordionToggles, AccordionRenderState,
 } from "./SettingsAccordions";
 
 export interface SettingsPaneCallbacks {
@@ -77,14 +74,18 @@ export class SettingsPaneComponent {
   public updateLanguageUI(locale: string): void { this.languageSelect?.updateUI(locale); }
   public updateBackdropUI(mode: WindowsBackdropType): void { this.backdropSelect?.updateUI(mode); }
 
+  public updateOpacityState(pct: number): void {
+    this.state.backdropOpacity = pct;
+    const slider = this.container.querySelector("#backdrop-opacity-slider") as HTMLInputElement | null;
+    const badge = this.container.querySelector("#backdrop-opacity-val");
+    if (slider && parseInt(slider.value, 10) !== pct) slider.value = String(pct);
+    if (badge) badge.textContent = `${pct}%`;
+  }
+
   public updateState(partial: Partial<SettingsPaneState>): void {
     this.state = { ...this.state, ...partial };
     if (partial.backdropOpacity !== undefined && !partial.windowsBackdrop && !partial.theme) {
-      const slider = this.container.querySelector("#backdrop-opacity-slider") as HTMLInputElement | null;
-      const badge = this.container.querySelector("#backdrop-opacity-val");
-      if (slider && parseInt(slider.value, 10) !== partial.backdropOpacity) slider.value = String(partial.backdropOpacity);
-      if (badge) badge.textContent = `${partial.backdropOpacity}%`;
-      return;
+      return this.updateOpacityState(partial.backdropOpacity);
     }
     if (partial.solidColor !== undefined && !partial.windowsBackdrop && !partial.theme) return;
     if (partial.fontId !== undefined && !partial.theme) return this.updateFontUI(partial.fontId);
@@ -128,7 +129,7 @@ export class SettingsPaneComponent {
       snapScroll: this.state.snapScroll,
       linuxBackdrop: this.state.linuxBackdrop,
       windowsBackdrop: this.state.windowsBackdrop,
-      backdropOpacity: this.state.backdropOpacity !== undefined ? this.state.backdropOpacity : 50,
+      backdropOpacity: this.state.backdropOpacity !== undefined ? this.state.backdropOpacity : BackdropService.getInstance().getOpacityPercent(),
       isRegistered: this.state.isRegistered,
       registeredExePath: this.state.registeredExePath,
       currentExePath: this.state.currentExePath,
@@ -199,6 +200,7 @@ export class SettingsPaneComponent {
     slider?.addEventListener("input", () => {
       const val = parseInt(slider.value, 10);
       if (valBadge) valBadge.textContent = `${val}%`;
+      this.state.backdropOpacity = val;
       this.callbacks.onBackdropOpacityChange?.(val);
     });
 
