@@ -11,7 +11,7 @@ import { PreviewService } from "./services/previewService";
 import { DualPaneService } from "./services/dualPaneService";
 import { I18nService } from "./services/i18nService";
 import { PlatformService } from "./services/platformService";
-import { getLinuxBackdropPreference, setLinuxBackdropPreference } from "./services/kdePortalService";
+import { BackdropService } from "./services/backdropService";
 import { APP_VERSION } from "./version";
 
 class SettingsApp {
@@ -21,12 +21,14 @@ class SettingsApp {
   private associationService = new AssociationService();
   private previewService = new PreviewService();
   private dualPaneService = new DualPaneService();
+  private backdropService = BackdropService.getInstance();
   private i18n = I18nService.getInstance();
   private tabsComponent: SettingsTabsComponent;
   private currentWindow = getCurrentWindow();
   private isAlwaysOnTop = false;
 
   constructor() {
+    this.backdropService.init().catch(console.error);
     const root = document.getElementById("settings-root");
     if (!root) throw new Error("Settings root container not found");
 
@@ -51,7 +53,9 @@ class SettingsApp {
         updateAvailable: !!updateInfo?.update_available,
         latestVersion: updateInfo?.latest_version,
         isStorePackage: !!updateInfo?.is_store_package,
-        linuxBackdrop: getLinuxBackdropPreference(),
+        linuxBackdrop: this.backdropService.getLinuxBackdrop(),
+        windowsBackdrop: this.backdropService.getWindowsBackdrop(),
+        backdropOpacity: this.backdropService.getOpacityPercent(),
       },
       {
         onThemeChange: (theme) => this.handleThemeChange(theme),
@@ -60,8 +64,16 @@ class SettingsApp {
         onAlwaysOnTopChange: (enabled) => this.handleAlwaysOnTopChange(enabled),
         onAlwaysPreviewChange: (enabled) => this.handleAlwaysPreviewChange(enabled),
         onSnapScrollChange: (enabled) => this.handleSnapScrollChange(enabled),
+        onWindowsBackdropChange: async (mode) => {
+          await this.backdropService.setWindowsBackdrop(mode);
+          this.tabsComponent.updateState({ windowsBackdrop: mode });
+        },
+        onBackdropOpacityChange: (percent) => {
+          this.backdropService.setOpacityPercent(percent);
+          this.tabsComponent.updateState({ backdropOpacity: percent });
+        },
         onLinuxBackdropChange: async (mode) => {
-          await setLinuxBackdropPreference(mode);
+          await this.backdropService.setLinuxBackdrop(mode);
           this.tabsComponent.updateState({ linuxBackdrop: mode });
           if (mode === "blur") {
             await showGlassDialog({

@@ -16,6 +16,7 @@ import { PreviewService } from "./services/previewService";
 import { DualPaneService } from "./services/dualPaneService";
 import { MobileCoordinator } from "./services/mobileCoordinator";
 import { PlatformService } from "./services/platformService";
+import { BackdropService } from "./services/backdropService";
 import { NotesService } from "./services/notesService";
 import { HomeCoordinator } from "./services/homeCoordinator";
 import { globalEventBus } from "./utils/eventBus";
@@ -54,6 +55,7 @@ class CathetApp {
 
   private init(): void {
     PlatformService.getInstance().applyPlatformClasses();
+    BackdropService.getInstance().init().catch(console.error);
     this.topBar.setTitle("Untitled");
     this.editor.setFontFamily(this.fontService.getCurrentFont().family);
     invoke("sync_window_theme", { theme: this.themeService.getTheme() }).catch(console.error);

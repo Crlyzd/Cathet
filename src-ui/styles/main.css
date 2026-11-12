@@ -309,3 +309,40 @@ body {
 .glass-dialog-btn:active {
   transform: scale(0.97);
 }
+
+/* ============================================================
+   Windows Desktop DWM Backdrop Configurations
+   ============================================================ */
+body:not(.is-mobile):not(.is-linux)[data-backdrop="acrylic"][data-theme="dark"],
+body:not(.is-mobile):not(.is-linux)[data-backdrop="mica"][data-theme="dark"],
+body:not(.is-mobile):not(.is-linux)[data-backdrop="mica_alt"][data-theme="dark"] {
+  --col-bg-main: rgba(15, 17, 23, var(--backdrop-tint-opacity, 0.65));
+  --col-bg-bar: rgba(20, 22, 30, var(--backdrop-tint-opacity, 0.65));
+}
+
+body:not(.is-mobile):not(.is-linux)[data-backdrop="acrylic"][data-theme="light"],
+body:not(.is-mobile):not(.is-linux)[data-backdrop="mica"][data-theme="light"],
+body:not(.is-mobile):not(.is-linux)[data-backdrop="mica_alt"][data-theme="light"] {
+  --col-bg-main: rgba(248, 250, 252, var(--backdrop-tint-opacity, 0.65));
+  --col-bg-bar: rgba(255, 255, 255, var(--backdrop-tint-opacity, 0.65));
+}
+
+body:not(.is-mobile):not(.is-linux)[data-backdrop="transparent"][data-theme="dark"] {
+  --col-bg-main: rgba(15, 17, 23, var(--backdrop-tint-opacity, 0.65));
+  --col-bg-bar: rgba(20, 22, 30, var(--backdrop-tint-opacity, 0.65));
+}
+
+body:not(.is-mobile):not(.is-linux)[data-backdrop="transparent"][data-theme="light"] {
+  --col-bg-main: rgba(248, 250, 252, var(--backdrop-tint-opacity, 0.65));
+  --col-bg-bar: rgba(255, 255, 255, var(--backdrop-tint-opacity, 0.65));
+}
+
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="dark"] {
+  --col-bg-main: #0f1117;
+  --col-bg-bar: #161822;
+}
+
+body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] {
+  --col-bg-main: #f8fafc;
+  --col-bg-bar: #ffffff;
+}

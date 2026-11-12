@@ -11,6 +11,8 @@ import { FontOption } from "./settings/FontSelect";
 import { PlatformService } from "../services/platformService";
 import { t } from "../services/i18nService";
 
+import { WindowsBackdropType } from "../services/backdropService";
+
 export interface SettingsTabCallbacks extends SettingsPaneCallbacks {
   onOpenTutorial: () => void;
   onClose: () => void;
@@ -24,6 +26,8 @@ export interface SettingsInitialState {
   alwaysPreview: boolean;
   snapScroll: boolean;
   linuxBackdrop?: "solid" | "blur";
+  windowsBackdrop?: WindowsBackdropType;
+  backdropOpacity?: number;
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;

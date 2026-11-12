@@ -79,8 +79,8 @@ body.is-linux.de-blur[data-theme="dark"] .workspace-shell,
 [data-theme="dark"] body.is-linux.de-blur #app,
 [data-theme="dark"] body.is-linux.de-blur .cathet-root,
 [data-theme="dark"] body.is-linux.de-blur .workspace-shell {
-  --col-bg-main: rgba(27, 30, 32, 0.88);
-  --col-bg-bar: rgba(35, 38, 41, 0.94);
+  --col-bg-main: rgba(27, 30, 32, var(--backdrop-opacity, 0.88));
+  --col-bg-bar: rgba(35, 38, 41, var(--backdrop-opacity, 0.94));
 }
 
 body.is-linux.de-blur[data-theme="light"],
@@ -91,8 +91,8 @@ body.is-linux.de-blur[data-theme="light"] .workspace-shell,
 [data-theme="light"] body.is-linux.de-blur #app,
 [data-theme="light"] body.is-linux.de-blur .cathet-root,
 [data-theme="light"] body.is-linux.de-blur .workspace-shell {
-  --col-bg-main: rgba(252, 252, 252, 0.90);
-  --col-bg-bar: rgba(239, 240, 241, 0.95);
+  --col-bg-main: rgba(252, 252, 252, var(--backdrop-opacity, 0.90));
+  --col-bg-bar: rgba(239, 240, 241, var(--backdrop-opacity, 0.95));
 }
 
 /* 4. KDE Breeze 8px Window Frame & Shadow */

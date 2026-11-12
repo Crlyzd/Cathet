@@ -1,11 +1,18 @@
-import { icons } from "../../utils/monochromeIcons";
-import { APP_VERSION } from "../../version";
 import { FontSelectComponent, FontOption } from "./FontSelect";
 import { LanguageSelectComponent } from "./LanguageSelect";
+import { BackdropSelectComponent } from "./BackdropSelect";
 import { PlatformService } from "../../services/platformService";
 import { SUPPORTED_LOCALES } from "../../locales";
 import { t } from "../../services/i18nService";
 import { initAutoScroll } from "../../utils/autoScroll";
+import { WindowsBackdropType } from "../../services/backdropService";
+import {
+  renderAppearanceAccordion,
+  renderEditorAccordion,
+  renderSystemAccordion,
+  bindAccordionToggles,
+  AccordionRenderState,
+} from "./SettingsAccordions";
 
 export interface SettingsPaneCallbacks {
   onThemeChange: (theme: "dark" | "light") => void;
@@ -15,6 +22,8 @@ export interface SettingsPaneCallbacks {
   onAlwaysPreviewChange: (enabled: boolean) => void;
   onSnapScrollChange: (enabled: boolean) => void;
   onLinuxBackdropChange?: (mode: "solid" | "blur") => void;
+  onWindowsBackdropChange?: (mode: WindowsBackdropType) => void;
+  onBackdropOpacityChange?: (percent: number) => void;
   onConfigureDefaultApp: () => Promise<void>;
   onUnregisterDefaultApp: () => Promise<void>;
   onCheckUpdates: () => Promise<void>;
@@ -30,6 +39,8 @@ export interface SettingsPaneState {
   alwaysPreview: boolean;
   snapScroll: boolean;
   linuxBackdrop?: "solid" | "blur";
+  windowsBackdrop?: WindowsBackdropType;
+  backdropOpacity?: number; // 15 to 100
   fonts: FontOption[];
   updateAvailable: boolean;
   latestVersion?: string;
@@ -47,6 +58,7 @@ export class SettingsPaneComponent {
   private callbacks: SettingsPaneCallbacks;
   private fontSelect: FontSelectComponent | null = null;
   private languageSelect: LanguageSelectComponent | null = null;
+  private backdropSelect: BackdropSelectComponent | null = null;
   private autoScrollCleanup: (() => void) | null = null;
 
   constructor(container: HTMLElement, state: SettingsPaneState, callbacks: SettingsPaneCallbacks) {
@@ -58,12 +70,14 @@ export class SettingsPaneComponent {
 
   public updateFontUI(fontId: string): void { this.fontSelect?.updateUI(fontId); }
   public updateLanguageUI(locale: string): void { this.languageSelect?.updateUI(locale); }
+  public updateBackdropUI(mode: WindowsBackdropType): void { this.backdropSelect?.updateUI(mode); }
 
   public updateState(partial: Partial<SettingsPaneState>): void {
     this.state = { ...this.state, ...partial };
     if (Object.keys(partial).length === 1) {
       if (partial.fontId !== undefined) return this.updateFontUI(partial.fontId);
       if (partial.locale !== undefined) return this.updateLanguageUI(partial.locale);
+      if (partial.windowsBackdrop !== undefined) return this.updateBackdropUI(partial.windowsBackdrop);
     }
     this.render();
   }
@@ -82,115 +96,29 @@ export class SettingsPaneComponent {
   private render(): void {
     this.destroySelects();
     this.autoScrollCleanup?.();
-    const isMobile = PlatformService.getInstance().isMobile();
+
     const isLinux = PlatformService.getInstance().isLinux();
-    const activePath = this.state.registeredExePath || this.state.currentExePath || "";
-    const defaultAppSubtext = activePath ? `${this.state.isRegistered ? "Registered: " : "Path: "}${activePath}` : t("settings.defaultApp");
-    const updateText = this.state.isStorePackage ? "Installed via Microsoft Store (Auto-Updated)"
-      : this.state.downloadState === "downloading" ? "Downloading..."
-      : this.state.downloadState === "ready" ? "Ready!"
-      : this.state.updateAvailable ? `v${this.state.latestVersion || "3.0"} ready`
-      : `Up to date (v${APP_VERSION})`;
+    const accordionState: AccordionRenderState = {
+      theme: this.state.theme,
+      fontId: this.state.fontId,
+      locale: this.state.locale,
+      isAlwaysOnTop: this.state.isAlwaysOnTop,
+      alwaysPreview: this.state.alwaysPreview,
+      snapScroll: this.state.snapScroll,
+      linuxBackdrop: this.state.linuxBackdrop,
+      windowsBackdrop: this.state.windowsBackdrop,
+      backdropOpacity: this.state.backdropOpacity || 65,
+      isRegistered: this.state.isRegistered,
+      registeredExePath: this.state.registeredExePath,
+      currentExePath: this.state.currentExePath,
+      updateHtml: this.getUpdateHtml(),
+    };
 
     this.container.innerHTML = `
-      <div class="settings-card">
-        <div class="setting-item">
-          <div class="setting-meta">
-            <span class="setting-title">${t("settings.theme")}</span>
-            <span class="setting-subtext"><span class="subtext-content">${t("settings.themeSub")}</span></span>
-          </div>
-          <div class="pill-toggle-group">
-            <button class="pill-toggle-btn ${this.state.theme === "dark" ? "active" : ""}" id="btn-theme-dark">${icons.moon}<span>${t("settings.themeDark")}</span></button>
-            <button class="pill-toggle-btn ${this.state.theme === "light" ? "active" : ""}" id="btn-theme-light">${icons.sun}<span>${t("settings.themeLight")}</span></button>
-          </div>
-        </div>
-
-        <div class="setting-item">
-          <div class="setting-meta">
-            <span class="setting-title">${t("settings.language")}</span>
-            <span class="setting-subtext"><span class="subtext-content">${t("settings.languageSub")}</span></span>
-          </div>
-          <div id="language-select-mount"></div>
-        </div>
-
-        <div class="setting-item">
-          <div class="setting-meta">
-            <span class="setting-title">${t("settings.editorFont")}</span>
-            <span class="setting-subtext"><span class="subtext-content">${t("settings.fontSub")}</span></span>
-          </div>
-          <div id="font-select-mount"></div>
-        </div>
-
-        ${!isMobile ? `
-        <div class="setting-item">
-          <div class="setting-meta">
-            <span class="setting-title">${t("settings.stayOnTop")}</span>
-            <span class="setting-subtext"><span class="subtext-content">${t("settings.stayOnTopSub")}</span></span>
-          </div>
-          <label class="switch-control">
-            <input type="checkbox" id="ontop-checkbox" ${this.state.isAlwaysOnTop ? "checked" : ""} />
-            <span class="switch-track"></span>
-          </label>
-        </div>` : ""}
-
-        ${isLinux ? `
-        <div class="setting-item">
-          <div class="setting-meta">
-            <span class="setting-title">Window Backdrop</span>
-            <span class="setting-subtext"><span class="subtext-content">Solid canvas or translucent glass</span></span>
-          </div>
-          <div class="pill-toggle-group">
-            <button class="pill-toggle-btn ${this.state.linuxBackdrop !== "blur" ? "active" : ""}" id="btn-backdrop-solid"><span>Solid</span></button>
-            <button class="pill-toggle-btn ${this.state.linuxBackdrop === "blur" ? "active" : ""}" id="btn-backdrop-blur"><span>Translucent</span></button>
-          </div>
-        </div>` : ""}
-
-        <div class="setting-item">
-          <div class="setting-meta">
-            <span class="setting-title">${t("settings.alwaysPreview")}</span>
-            <span class="setting-subtext"><span class="subtext-content">${t("settings.alwaysPreviewSub")}</span></span>
-          </div>
-          <label class="switch-control">
-            <input type="checkbox" id="always-preview-checkbox" ${this.state.alwaysPreview ? "checked" : ""} />
-            <span class="switch-track"></span>
-          </label>
-        </div>
-
-        <div class="setting-item">
-          <div class="setting-meta">
-            <span class="setting-title">${t("settings.snapScroll")}</span>
-            <span class="setting-subtext"><span class="subtext-content">${t("settings.snapScrollSub")}</span></span>
-          </div>
-          <label class="switch-control">
-            <input type="checkbox" id="snap-scroll-checkbox" ${this.state.snapScroll ? "checked" : ""} />
-            <span class="switch-track"></span>
-          </label>
-        </div>
-
-        ${!isMobile ? `
-        <div class="setting-item">
-          <div class="setting-meta">
-            <span class="setting-title">${t("settings.defaultApp")}</span>
-            <span class="setting-subtext" id="default-app-subtext" title="${defaultAppSubtext}">
-              <span class="subtext-content">${defaultAppSubtext}</span>
-            </span>
-          </div>
-          <div class="default-app-actions">
-            ${this.state.isRegistered
-              ? `<button class="glass-btn" id="btn-unregister-default-app">${t("settings.unregister")}</button>`
-              : `<button class="glass-btn" id="btn-set-default-app">${t("settings.setAsDefault")}</button>`}
-          </div>
-        </div>
-
-        <div class="setting-item">
-          <div class="setting-meta">
-            <span class="setting-title">${t("settings.appUpdates")}</span>
-            <span class="setting-subtext" id="update-status-text">
-              <span class="subtext-content">${updateText}</span>
-            </span>
-          </div>
-          ${this.getUpdateHtml()}
-        </div>` : ""}
+      <div class="settings-accordion-wrap">
+        ${renderAppearanceAccordion(accordionState)}
+        ${renderEditorAccordion(accordionState)}
+        ${renderSystemAccordion(accordionState)}
       </div>
     `;
 
@@ -210,7 +138,23 @@ export class SettingsPaneComponent {
       );
     }
 
+    if (!isLinux) {
+      const backdropMount = this.container.querySelector("#backdrop-select-mount") as HTMLElement | null;
+      if (backdropMount) {
+        this.backdropSelect = new BackdropSelectComponent(
+          backdropMount,
+          this.state.windowsBackdrop || "acrylic",
+          (mode) => {
+            const opacityItem = this.container.querySelector("#backdrop-opacity-item") as HTMLElement | null;
+            if (opacityItem) opacityItem.style.display = mode === "solid" ? "none" : "";
+            this.callbacks.onWindowsBackdropChange?.(mode);
+          }
+        );
+      }
+    }
+
     this.bindEvents();
+    bindAccordionToggles(this.container);
     this.autoScrollCleanup = initAutoScroll(this.container);
   }
 
@@ -222,11 +166,25 @@ export class SettingsPaneComponent {
       if (this.state.theme !== "light") this.callbacks.onThemeChange("light");
     });
     this.container.querySelector("#btn-backdrop-solid")?.addEventListener("click", () => {
+      const opacityItem = this.container.querySelector("#backdrop-opacity-item") as HTMLElement | null;
+      if (opacityItem) opacityItem.style.display = "none";
       this.callbacks.onLinuxBackdropChange?.("solid");
     });
     this.container.querySelector("#btn-backdrop-blur")?.addEventListener("click", () => {
+      const opacityItem = this.container.querySelector("#backdrop-opacity-item") as HTMLElement | null;
+      if (opacityItem) opacityItem.style.display = "";
       this.callbacks.onLinuxBackdropChange?.("blur");
     });
+
+    const slider = this.container.querySelector("#backdrop-opacity-slider") as HTMLInputElement | null;
+    const valBadge = this.container.querySelector("#backdrop-opacity-val");
+    if (slider) {
+      slider.addEventListener("input", () => {
+        const val = parseInt(slider.value, 10);
+        if (valBadge) valBadge.textContent = `${val}%`;
+        this.callbacks.onBackdropOpacityChange?.(val);
+      });
+    }
 
     const bind = (id: string, cb: (v: boolean) => void) => {
       (this.container.querySelector(id) as HTMLInputElement | null)?.addEventListener("change", (e) => {
@@ -244,8 +202,7 @@ export class SettingsPaneComponent {
         try { await action(); } finally { if (btn) btn.disabled = false; }
       });
     };
-    bindBtn("#btn-set-default-app", this.callbacks.onConfigureDefaultApp);
-    bindBtn("#btn-unregister-default-app", this.callbacks.onUnregisterDefaultApp);
+    bindBtn("#btn-default-app", this.callbacks.onConfigureDefaultApp);
     bindBtn("#btn-check-updates", this.callbacks.onCheckUpdates);
     this.container.querySelector("#btn-start-download")?.addEventListener("click", () => this.callbacks.onStartDownload());
     this.container.querySelector("#btn-restart-install")?.addEventListener("click", () => this.callbacks.onInstallAndRestart());
@@ -254,6 +211,7 @@ export class SettingsPaneComponent {
   private destroySelects(): void {
     this.fontSelect?.destroy(); this.fontSelect = null;
     this.languageSelect?.destroy(); this.languageSelect = null;
+    this.backdropSelect?.destroy(); this.backdropSelect = null;
   }
 
   public destroy(): void {
