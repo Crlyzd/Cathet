@@ -3,31 +3,36 @@ import { t } from "../../services/i18nService";
 import { PlatformService } from "../../services/platformService";
 import { WindowsBackdropType } from "../../services/backdropService";
 
-const STORAGE_KEY_OPEN_ACCORDION = "cathet_open_accordion";
+const STORAGE_KEY_OPEN_ACCORDIONS = "cathet_open_accordions";
+export const ALL_ACCORDION_IDS = ["appearance", "editor", "system"] as const;
+export type AccordionId = typeof ALL_ACCORDION_IDS[number];
+const DEFAULT_OPEN_ACCORDIONS: AccordionId[] = ["appearance", "editor"];
 
 export interface AccordionRenderState {
   theme: "dark" | "light";
-  fontId: string;
-  locale: string;
-  isAlwaysOnTop: boolean;
-  alwaysPreview: boolean;
-  snapScroll: boolean;
-  linuxBackdrop?: "solid" | "blur";
-  windowsBackdrop?: WindowsBackdropType;
-  backdropOpacity: number;
-  isRegistered?: boolean;
-  registeredExePath?: string | null;
-  currentExePath?: string;
-  updateText: string;
-  updateHtml: string;
+  fontId: string; locale: string;
+  isAlwaysOnTop: boolean; alwaysPreview: boolean; snapScroll: boolean;
+  linuxBackdrop?: "solid" | "blur"; windowsBackdrop?: WindowsBackdropType;
+  backdropOpacity: number; isRegistered?: boolean;
+  registeredExePath?: string | null; currentExePath?: string;
+  updateText: string; updateHtml: string;
 }
 
-export function getOpenAccordionId(): string {
-  return localStorage.getItem(STORAGE_KEY_OPEN_ACCORDION) || "appearance";
+export function getOpenAccordionIds(): AccordionId[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_OPEN_ACCORDIONS);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length >= 2 && parsed.every((id) => ALL_ACCORDION_IDS.includes(id))) {
+        return parsed as AccordionId[];
+      }
+    }
+  } catch (_) {}
+  return [...DEFAULT_OPEN_ACCORDIONS];
 }
 
-export function setOpenAccordionId(id: string): void {
-  localStorage.setItem(STORAGE_KEY_OPEN_ACCORDION, id);
+export function setOpenAccordionIds(ids: AccordionId[]): void {
+  localStorage.setItem(STORAGE_KEY_OPEN_ACCORDIONS, JSON.stringify(ids));
 }
 
 export function bindAccordionToggles(container: HTMLElement): void {
@@ -37,20 +42,38 @@ export function bindAccordionToggles(container: HTMLElement): void {
       e.stopPropagation();
       const group = header.closest(".accordion-group") as HTMLElement | null;
       if (!group) return;
-      const groupId = group.dataset.accordionId || "";
-      const isOpen = group.classList.contains("is-open");
-      group.classList.toggle("is-open", !isOpen);
-      if (!isOpen && groupId) {
-        setOpenAccordionId(groupId);
+      const clickedId = group.dataset.accordionId as AccordionId | undefined;
+      if (!clickedId || !ALL_ACCORDION_IDS.includes(clickedId)) return;
+
+      const currentOpen = getOpenAccordionIds();
+      let nextOpen: AccordionId[];
+
+      if (currentOpen.includes(clickedId)) {
+        if (currentOpen.length > 2) {
+          nextOpen = currentOpen.filter((id) => id !== clickedId);
+        } else {
+          const closedId = ALL_ACCORDION_IDS.find((id) => !currentOpen.includes(id)) || "system";
+          nextOpen = [currentOpen.find((id) => id !== clickedId)!, closedId];
+        }
+      } else {
+        nextOpen = [...currentOpen, clickedId];
       }
+
+      setOpenAccordionIds(nextOpen);
+
+      const allGroups = container.querySelectorAll<HTMLElement>(".accordion-group");
+      allGroups.forEach((g) => {
+        const id = g.dataset.accordionId as AccordionId;
+        g.classList.toggle("is-open", nextOpen.includes(id));
+      });
     });
   });
 }
 
 export function renderAppearanceAccordion(state: AccordionRenderState): string {
   const isLinux = PlatformService.getInstance().isLinux();
-  const openId = getOpenAccordionId();
-  const isOpen = openId === "appearance";
+  const openIds = getOpenAccordionIds();
+  const isOpen = openIds.includes("appearance");
   const isSolid = isLinux ? state.linuxBackdrop !== "blur" : state.windowsBackdrop === "solid";
 
   return `
@@ -114,8 +137,8 @@ export function renderAppearanceAccordion(state: AccordionRenderState): string {
 
 export function renderEditorAccordion(state: AccordionRenderState): string {
   const isMobile = PlatformService.getInstance().isMobile();
-  const openId = getOpenAccordionId();
-  const isOpen = openId === "editor";
+  const openIds = getOpenAccordionIds();
+  const isOpen = openIds.includes("editor");
 
   return `
     <div class="accordion-group ${isOpen ? "is-open" : ""}" data-accordion-id="editor">
@@ -167,8 +190,8 @@ export function renderEditorAccordion(state: AccordionRenderState): string {
 
 export function renderSystemAccordion(state: AccordionRenderState): string {
   const isMobile = PlatformService.getInstance().isMobile();
-  const openId = getOpenAccordionId();
-  const isOpen = openId === "system";
+  const openIds = getOpenAccordionIds();
+  const isOpen = openIds.includes("system");
   const activePath = state.registeredExePath || state.currentExePath || "";
   const defaultAppSubtext = activePath ? `${state.isRegistered ? "Registered: " : "Path: "}${activePath}` : t("settings.defaultApp");
 

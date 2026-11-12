@@ -1,3 +1,5 @@
+import { attachSliderWheel } from "../../utils/sliderWheel";
+
 export function hsvToHex(h: number, s: number, v: number): string {
   const f = (n: number, k = (n + h / 60) % 6) =>
     v - v * s * Math.max(Math.min(k, 4 - k, 1), 0);
@@ -76,6 +78,8 @@ export class GlassColorPickerComponent {
     const preview = this.container.querySelector("#glass-picker-preview") as HTMLElement | null;
 
     if (!svArea || !handle || !hueSlider || !hexInput || !preview) return;
+
+    attachSliderWheel(hueSlider, hueSlider, { step: 5, shiftStep: 15 });
 
     const updateFromSV = (e: PointerEvent) => {
       const rect = svArea.getBoundingClientRect();

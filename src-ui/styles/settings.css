@@ -471,6 +471,12 @@ body.is-linux #pane-about .settings-card {
   display: flex;
 }
 
+.glass-select-menu.drop-up {
+  top: auto;
+  bottom: calc(100% + 4px);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
+}
+
 .glass-select-option {
   display: flex;
   align-items: center;
@@ -1251,6 +1257,10 @@ body:not(.is-mobile):not(.is-linux)[data-backdrop="solid"][data-theme="light"] .
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+[data-theme="light"] .solid-color-swatch .swatch-check {
+  color: #0f172a;
 }
 
 .solid-color-swatch .swatch-check svg {

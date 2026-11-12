@@ -6,6 +6,7 @@ import { PlatformService } from "../../services/platformService";
 import { SUPPORTED_LOCALES } from "../../locales";
 import { t } from "../../services/i18nService";
 import { initAutoScroll } from "../../utils/autoScroll";
+import { attachSliderWheel } from "../../utils/sliderWheel";
 import { WindowsBackdropType, BackdropService } from "../../services/backdropService";
 import { APP_VERSION } from "../../version";
 import {
@@ -62,6 +63,7 @@ export class SettingsPaneComponent {
   private backdropSelect: BackdropSelectComponent | null = null;
   private solidColorPicker: SolidColorPickerComponent | null = null;
   private autoScrollCleanup: (() => void) | null = null;
+  private sliderWheelCleanup: (() => void) | null = null;
 
   constructor(container: HTMLElement, state: SettingsPaneState, callbacks: SettingsPaneCallbacks) {
     this.container = container;
@@ -90,7 +92,11 @@ export class SettingsPaneComponent {
     if (partial.solidColor !== undefined && !partial.windowsBackdrop && !partial.theme) return;
     if (partial.fontId !== undefined && !partial.theme) return this.updateFontUI(partial.fontId);
     if (partial.locale !== undefined && !partial.theme) return this.updateLanguageUI(partial.locale);
-    if (partial.windowsBackdrop !== undefined && !partial.theme) return this.updateBackdropUI(partial.windowsBackdrop);
+    if (partial.windowsBackdrop !== undefined && !partial.theme) {
+      this.updateBackdropUI(partial.windowsBackdrop);
+      if (partial.backdropOpacity !== undefined) this.updateOpacityState(partial.backdropOpacity);
+      return;
+    }
     this.render();
   }
 
@@ -108,31 +114,19 @@ export class SettingsPaneComponent {
   private render(): void {
     this.destroySelects();
     this.autoScrollCleanup?.();
+    this.sliderWheelCleanup?.();
+    this.sliderWheelCleanup = null;
 
     const isLinux = PlatformService.getInstance().isLinux();
-    const updateText = this.state.isStorePackage
-      ? "Installed via Microsoft Store (Auto-Updated)"
-      : this.state.downloadState === "downloading"
-      ? "Downloading..."
-      : this.state.downloadState === "ready"
-      ? "Ready!"
-      : this.state.updateAvailable
-      ? `v${this.state.latestVersion || "3.0"} ready`
+    const updateText = this.state.isStorePackage ? "Installed via Microsoft Store (Auto-Updated)"
+      : this.state.downloadState === "downloading" ? "Downloading..."
+      : this.state.downloadState === "ready" ? "Ready!"
+      : this.state.updateAvailable ? `v${this.state.latestVersion || "3.0"} ready`
       : `Up to date (v${APP_VERSION})`;
 
     const accordionState: AccordionRenderState = {
-      theme: this.state.theme,
-      fontId: this.state.fontId,
-      locale: this.state.locale,
-      isAlwaysOnTop: this.state.isAlwaysOnTop,
-      alwaysPreview: this.state.alwaysPreview,
-      snapScroll: this.state.snapScroll,
-      linuxBackdrop: this.state.linuxBackdrop,
-      windowsBackdrop: this.state.windowsBackdrop,
+      ...this.state,
       backdropOpacity: this.state.backdropOpacity !== undefined ? this.state.backdropOpacity : BackdropService.getInstance().getOpacityPercent(),
-      isRegistered: this.state.isRegistered,
-      registeredExePath: this.state.registeredExePath,
-      currentExePath: this.state.currentExePath,
       updateText,
       updateHtml: this.getUpdateHtml(),
     };
@@ -197,12 +191,16 @@ export class SettingsPaneComponent {
 
     const slider = this.container.querySelector("#backdrop-opacity-slider") as HTMLInputElement | null;
     const valBadge = this.container.querySelector("#backdrop-opacity-val");
+    const sliderWrap = this.container.querySelector(".slider-control-wrap") as HTMLElement | null;
     slider?.addEventListener("input", () => {
       const val = parseInt(slider.value, 10);
       if (valBadge) valBadge.textContent = `${val}%`;
       this.state.backdropOpacity = val;
       this.callbacks.onBackdropOpacityChange?.(val);
     });
+    if (sliderWrap && slider) {
+      this.sliderWheelCleanup = attachSliderWheel(sliderWrap, slider, { step: 2, shiftStep: 5 });
+    }
 
     const bind = (id: string, cb: (v: boolean) => void) => {
       (this.container.querySelector(id) as HTMLInputElement | null)?.addEventListener("change", (e) => cb((e.target as HTMLInputElement).checked));
@@ -241,6 +239,7 @@ export class SettingsPaneComponent {
 
   public destroy(): void {
     this.autoScrollCleanup?.(); this.autoScrollCleanup = null;
+    this.sliderWheelCleanup?.(); this.sliderWheelCleanup = null;
     this.destroySelects();
   }
 }

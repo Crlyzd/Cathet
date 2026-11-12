@@ -65,11 +65,32 @@ export class FontSelectComponent {
     trigger?.addEventListener("click", (e) => {
       e.stopPropagation();
       const isOpen = menu?.classList.contains("open");
-      menu?.classList.toggle("open", !isOpen);
-      trigger.classList.toggle("open", !isOpen);
-      if (!isOpen) {
-        const selected = menu?.querySelector(".glass-select-option.selected") as HTMLElement | null;
-        selected?.scrollIntoView({ block: "nearest" });
+      if (isOpen) {
+        menu?.classList.remove("open", "drop-up");
+        trigger.classList.remove("open");
+      } else if (menu) {
+        document.querySelectorAll(".glass-select-menu.open").forEach((m) => {
+          if (m !== menu) {
+            m.classList.remove("open", "drop-up");
+            m.parentElement?.querySelector(".glass-select-trigger")?.classList.remove("active", "open");
+          }
+        });
+
+        const rect = trigger.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const isDropUp = spaceBelow < 160;
+
+        menu.classList.toggle("drop-up", isDropUp);
+        const available = isDropUp ? rect.top - 12 : spaceBelow - 12;
+        menu.style.maxHeight = `${Math.max(80, Math.min(170, available))}px`;
+
+        menu.classList.add("open");
+        trigger.classList.add("open");
+
+        const selected = menu.querySelector(".glass-select-option.selected") as HTMLElement | null;
+        if (selected) {
+          menu.scrollTop = selected.offsetTop - menu.clientHeight / 2 + selected.clientHeight / 2;
+        }
       }
     });
 
@@ -82,7 +103,7 @@ export class FontSelectComponent {
     }
     this.outsideClickHandler = (e: MouseEvent) => {
       if (!selectContainer?.contains(e.target as Node)) {
-        menu?.classList.remove("open");
+        menu?.classList.remove("open", "drop-up");
         trigger?.classList.remove("open");
       }
     };
@@ -93,7 +114,7 @@ export class FontSelectComponent {
         return;
       }
       if (menu?.classList.contains("open")) {
-        menu.classList.remove("open");
+        menu.classList.remove("open", "drop-up");
         trigger?.classList.remove("open");
       }
     };
@@ -105,7 +126,7 @@ export class FontSelectComponent {
         e.stopPropagation();
         const fontId = opt.getAttribute("data-font-id");
         if (fontId) {
-          menu?.classList.remove("open");
+          menu?.classList.remove("open", "drop-up");
           trigger?.classList.remove("open");
           this.currentFontId = fontId;
           this.updateUI(fontId);

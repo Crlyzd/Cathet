@@ -70,8 +70,6 @@ export class LanguageSelectComponent {
         this.closeMenu(menu, trigger);
       } else {
         this.openMenu(menu, trigger);
-        const selected = menu.querySelector(".glass-select-option.selected") as HTMLElement | null;
-        selected?.scrollIntoView({ block: "nearest" });
       }
     });
 
@@ -116,17 +114,30 @@ export class LanguageSelectComponent {
   private openMenu(menu: HTMLElement, trigger: HTMLElement): void {
     document.querySelectorAll(".glass-select-menu.open").forEach((m) => {
       if (m !== menu) {
-        m.classList.remove("open");
+        m.classList.remove("open", "drop-up");
         m.parentElement?.querySelector(".glass-select-trigger")?.classList.remove("active");
       }
     });
 
+    const rect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const isDropUp = spaceBelow < 160;
+
+    menu.classList.toggle("drop-up", isDropUp);
+    const available = isDropUp ? rect.top - 12 : spaceBelow - 12;
+    menu.style.maxHeight = `${Math.max(80, Math.min(170, available))}px`;
+
     menu.classList.add("open");
     trigger.classList.add("active");
+
+    const selected = menu.querySelector(".glass-select-option.selected") as HTMLElement | null;
+    if (selected) {
+      menu.scrollTop = selected.offsetTop - menu.clientHeight / 2 + selected.clientHeight / 2;
+    }
   }
 
   private closeMenu(menu: HTMLElement, trigger: HTMLElement): void {
-    menu.classList.remove("open");
+    menu.classList.remove("open", "drop-up");
     trigger.classList.remove("active");
   }
 

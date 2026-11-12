@@ -56,7 +56,14 @@ export class BackdropService {
         return parsed;
       }
     }
-    return mode === "acrylic" ? 0 : 50;
+    const legacy = localStorage.getItem("cathet_backdrop_opacity");
+    if (legacy !== null) {
+      const parsed = parseInt(legacy, 10);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+        return parsed;
+      }
+    }
+    return 50;
   }
 
   getMatchOsColor(): boolean {
