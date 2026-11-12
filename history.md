@@ -11,6 +11,20 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-12: Premature Coding Without Prior Plan Artifact & Assuming Scrollable Page Was "Sliced"
+- **Context**: When the user reported the slider still being undraggable, the assistant jumped into modifying code files before creating an architectural plan artifact in `implementation_plan.md` and asking for explicit user approval. Furthermore, the assistant incorrectly assumed that the second accordion visible at the bottom of the Settings window was "sliced in half" due to window height, proposing to enlarge the window.
+- **User Correction**:
+  - *"and its still fucking clipped, what are you doing in your previous session, writing DEAD CODE? ALSO STOP WRITING CODE WITHOUT WRITING A PLAN, HOW MUCH HOW DO I TELL YOU, DID YOU NOT FUCKING READ THE HISTORY.MD ??"*
+  - *"that wasnt sliced dumbass, the page is scrollable"*
+- **Root Cause**:
+  1. Violated Rule 12 & Rule 13 of `AGENTS.md` and the `architect` skill by modifying code directly instead of publishing a plan artifact to `<appDataDir>\brain\<conversation-id>\implementation_plan.md` with `RequestFeedback: true` and waiting for user authorization.
+  2. The slider value badge (`.slider-val-badge`) clipped because `.slider-control-wrap` had a fixed `width: 160px` with `gap: 12px` and `width: 36px` badge inside a 350px window (where available inner width is only 302px, overflowing by 20px).
+  3. The Settings window is intentionally compact (350x318) and scrollable (`overflow-y: auto`). Content naturally extends below the viewport fold and scrolls smoothly; misinterpreting this as a clipping defect was a faulty assumption.
+- **Corrective Guardrail**:
+  1. NEVER write implementation code without first writing a detailed architectural plan artifact in `<appDataDir>\brain\<conversation-id>\implementation_plan.md` with `RequestFeedback: true` and receiving explicit user authorization (e.g., `/orchestrator go` or explicit approval).
+  2. Preserve compact 350x318 scrollable window dimensions without alteration.
+  3. For the badge clipping: calibrate `.slider-control-wrap` width to 130px, reduce `.setting-item` gap to 8px, and set `.slider-val-badge` width to 32px with 2px right padding.
+
 ### [Mistake] 2026-11-12: Full Component Re-rendering on Continuous State Updates Destroying Pointer Capture & Inverting Theme Contrast
 - **Context**: During settings window backdrop opacity slider dragging and solid color customization, dragging the opacity slider immediately dropped the drag handle, and choosing a solid preset in Light mode before toggling to Dark mode caused blinding illegible white text on light cream canvas. Furthermore, Settings window remained transparent when set to Solid Opaque, and raw translation keys appeared in System accordion.
 - **User Correction**:
