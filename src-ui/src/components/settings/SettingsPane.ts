@@ -79,6 +79,14 @@ export class SettingsPaneComponent {
 
   public updateState(partial: Partial<SettingsPaneState>): void {
     this.state = { ...this.state, ...partial };
+    if (partial.backdropOpacity !== undefined && Object.keys(partial).length === 1) {
+      const slider = this.container.querySelector("#backdrop-opacity-slider") as HTMLInputElement | null;
+      const badge = this.container.querySelector("#backdrop-opacity-val");
+      if (slider && parseInt(slider.value, 10) !== partial.backdropOpacity) slider.value = String(partial.backdropOpacity);
+      if (badge) badge.textContent = `${partial.backdropOpacity}%`;
+      return;
+    }
+    if (partial.solidColor !== undefined && Object.keys(partial).length === 1) return;
     if (partial.fontId !== undefined && Object.keys(partial).length === 1) return this.updateFontUI(partial.fontId);
     if (partial.locale !== undefined && Object.keys(partial).length === 1) return this.updateLanguageUI(partial.locale);
     if (partial.windowsBackdrop !== undefined && Object.keys(partial).length === 1) return this.updateBackdropUI(partial.windowsBackdrop);
@@ -128,13 +136,7 @@ export class SettingsPaneComponent {
       updateHtml: this.getUpdateHtml(),
     };
 
-    this.container.innerHTML = `
-      <div class="settings-accordion-wrap">
-        ${renderAppearanceAccordion(accordionState)}
-        ${renderEditorAccordion(accordionState)}
-        ${renderSystemAccordion(accordionState)}
-      </div>
-    `;
+    this.container.innerHTML = `<div class="settings-accordion-wrap">${renderAppearanceAccordion(accordionState)}${renderEditorAccordion(accordionState)}${renderSystemAccordion(accordionState)}</div>`;
 
     const langMount = this.container.querySelector("#language-select-mount") as HTMLElement | null;
     if (langMount) {
@@ -189,14 +191,8 @@ export class SettingsPaneComponent {
     const onClk = (id: string, fn: () => void) => this.container.querySelector(id)?.addEventListener("click", fn);
     onClk("#btn-theme-dark", () => this.state.theme !== "dark" && this.callbacks.onThemeChange("dark"));
     onClk("#btn-theme-light", () => this.state.theme !== "light" && this.callbacks.onThemeChange("light"));
-    onClk("#btn-backdrop-solid", () => {
-      this.toggleSolidUI(true);
-      this.callbacks.onLinuxBackdropChange?.("solid");
-    });
-    onClk("#btn-backdrop-blur", () => {
-      this.toggleSolidUI(false);
-      this.callbacks.onLinuxBackdropChange?.("blur");
-    });
+    onClk("#btn-backdrop-solid", () => { this.toggleSolidUI(true); this.callbacks.onLinuxBackdropChange?.("solid"); });
+    onClk("#btn-backdrop-blur", () => { this.toggleSolidUI(false); this.callbacks.onLinuxBackdropChange?.("blur"); });
 
     const slider = this.container.querySelector("#backdrop-opacity-slider") as HTMLInputElement | null;
     const valBadge = this.container.querySelector("#backdrop-opacity-val");
@@ -228,10 +224,10 @@ export class SettingsPaneComponent {
   }
 
   private toggleSolidUI(isSolid: boolean): void {
-    const opacityItem = this.container.querySelector("#backdrop-opacity-item") as HTMLElement | null;
-    const solidMount = this.container.querySelector("#solid-color-mount") as HTMLElement | null;
-    if (opacityItem) opacityItem.style.display = isSolid ? "none" : "";
-    if (solidMount) solidMount.style.display = isSolid ? "" : "none";
+    const op = this.container.querySelector("#backdrop-opacity-item") as HTMLElement | null;
+    const sm = this.container.querySelector("#solid-color-mount") as HTMLElement | null;
+    if (op) op.style.display = isSolid ? "none" : "";
+    if (sm) sm.style.display = isSolid ? "" : "none";
   }
 
   private destroySelects(): void {

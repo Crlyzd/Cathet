@@ -1,6 +1,7 @@
 import { icons } from "../../utils/monochromeIcons";
 import { BackdropService } from "../../services/backdropService";
 import { PlatformService } from "../../services/platformService";
+import { GlassColorPickerComponent } from "./GlassColorPicker";
 
 export const DARK_SOLID_PRESETS = [
   { name: "Slate", hex: "#0f1117" },
@@ -23,6 +24,8 @@ export class SolidColorPickerComponent {
   private isDark: boolean;
   private currentColor: string | null;
   private onSelectColor: (color: string | null) => void;
+  private glassPicker: GlassColorPickerComponent | null = null;
+  private showCustomPicker = false;
 
   constructor(
     container: HTMLElement,
@@ -38,14 +41,15 @@ export class SolidColorPickerComponent {
   }
 
   public render(): void {
-    const presets = this.isDark ? DARK_SOLID_PRESETS : LIGHT_SOLID_PRESETS;
-    const isCustom = this.currentColor && !presets.some((p) => p.hex.toLowerCase() === this.currentColor?.toLowerCase());
+    const backdropService = BackdropService.getInstance();
+    const isMatchOs = backdropService.getMatchOsColor();
     const isWindows = !PlatformService.getInstance().isLinux() && !PlatformService.getInstance().isMobile();
+    const presets = this.isDark ? DARK_SOLID_PRESETS : LIGHT_SOLID_PRESETS;
+    const defaultColor = this.isDark ? "#0f1117" : "#f8fafc";
+    const activeColor = this.currentColor || defaultColor;
 
     const swatchesHtml = presets.map((p) => {
-      const isSelected = this.currentColor
-        ? this.currentColor.toLowerCase() === p.hex.toLowerCase()
-        : p.hex === (this.isDark ? "#0f1117" : "#f8fafc");
+      const isSelected = !isMatchOs && this.currentColor?.toLowerCase() === p.hex.toLowerCase();
       return `
         <button class="solid-color-swatch ${isSelected ? "selected" : ""}" 
           style="background-color: ${p.hex};" 
@@ -57,32 +61,65 @@ export class SolidColorPickerComponent {
     }).join("");
 
     this.container.innerHTML = `
-      <div class="setting-item solid-custom-palette-item">
-        <div class="setting-meta">
-          <span class="setting-title">Canvas Color</span>
-          <span class="setting-subtext"><span class="subtext-content">Presets, system accent, or custom</span></span>
-        </div>
-        <div class="solid-palette-controls">
-          <div class="solid-color-swatches">${swatchesHtml}</div>
-          <div class="solid-color-actions">
-            <button class="glass-btn solid-sys-btn" id="btn-follow-sys-color" title="Match ${isWindows ? "Windows" : "System"} accent color">
-              ${isWindows ? icons.settings : icons.globe}
-              <span>${isWindows ? "Windows" : "System"}</span>
-            </button>
-            <label class="glass-btn solid-picker-label ${isCustom ? "active" : ""}" title="Choose custom color">
-              <span class="picker-swatch" style="background-color: ${this.currentColor || (this.isDark ? "#0f1117" : "#f8fafc")};"></span>
-              <input type="color" id="solid-color-native-input" class="visually-hidden-color" value="${this.currentColor || (this.isDark ? "#0f1117" : "#f8fafc")}" />
-            </label>
-            ${this.currentColor ? `<button class="glass-btn solid-reset-btn" id="btn-reset-solid-color" title="Reset to default">${icons.close}</button>` : ""}
+      <div class="solid-opaque-customizer">
+        <div class="setting-item">
+          <div class="setting-meta">
+            <span class="setting-title">${isWindows ? "Match Windows Color" : "Match System Color"}</span>
+            <span class="setting-subtext"><span class="subtext-content">Derive solid canvas tint from OS theme</span></span>
           </div>
+          <label class="switch-control">
+            <input type="checkbox" id="match-os-color-switch" ${isMatchOs ? "checked" : ""} />
+            <span class="switch-track"></span>
+          </label>
+        </div>
+
+        <div id="solid-manual-palette-section" style="${isMatchOs ? "display: none;" : ""}">
+          <div class="setting-item">
+            <div class="setting-meta">
+              <span class="setting-title">Canvas Color</span>
+              <span class="setting-subtext"><span class="subtext-content">Calibrated ${this.isDark ? "dark" : "light"} presets</span></span>
+            </div>
+            <div class="solid-palette-controls">
+              <div class="solid-color-swatches">${swatchesHtml}</div>
+              <div class="solid-color-actions">
+                <button class="glass-btn ${this.showCustomPicker ? "active" : ""}" id="btn-toggle-custom-picker" title="Custom color picker">
+                  ${icons.settings}
+                  <span>Custom</span>
+                </button>
+                ${this.currentColor ? `<button class="glass-btn solid-reset-btn" id="btn-reset-solid-color" title="Reset to default">${icons.close}</button>` : ""}
+              </div>
+            </div>
+          </div>
+
+          <div id="glass-color-picker-mount" style="${!this.showCustomPicker ? "display: none;" : ""}"></div>
         </div>
       </div>
     `;
+
+    if (this.showCustomPicker && !isMatchOs) {
+      const mount = this.container.querySelector("#glass-color-picker-mount") as HTMLElement | null;
+      if (mount) {
+        this.glassPicker = new GlassColorPickerComponent(mount, activeColor, (hex) => {
+          this.currentColor = hex;
+          this.onSelectColor(hex);
+        });
+      }
+    }
 
     this.bindEvents();
   }
 
   private bindEvents(): void {
+    const backdropService = BackdropService.getInstance();
+
+    const osSwitch = this.container.querySelector("#match-os-color-switch") as HTMLInputElement | null;
+    osSwitch?.addEventListener("change", async () => {
+      const enabled = osSwitch.checked;
+      await backdropService.setMatchOsColor(enabled);
+      const manualSection = this.container.querySelector("#solid-manual-palette-section") as HTMLElement | null;
+      if (manualSection) manualSection.style.display = enabled ? "none" : "";
+    });
+
     const swatches = this.container.querySelectorAll(".solid-color-swatch");
     swatches.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -95,26 +132,12 @@ export class SolidColorPickerComponent {
       });
     });
 
-    const followBtn = this.container.querySelector("#btn-follow-sys-color");
-    followBtn?.addEventListener("click", async () => {
-      const backdrop = BackdropService.getInstance();
-      const accent = await backdrop.getWindowsAccentColor();
-      this.currentColor = accent;
-      this.onSelectColor(accent);
+    this.container.querySelector("#btn-toggle-custom-picker")?.addEventListener("click", () => {
+      this.showCustomPicker = !this.showCustomPicker;
       this.render();
     });
 
-    const nativeInput = this.container.querySelector("#solid-color-native-input") as HTMLInputElement | null;
-    nativeInput?.addEventListener("input", () => {
-      const color = nativeInput.value;
-      this.currentColor = color;
-      this.onSelectColor(color);
-      const swatch = this.container.querySelector(".picker-swatch") as HTMLElement | null;
-      if (swatch) swatch.style.backgroundColor = color;
-    });
-
-    const resetBtn = this.container.querySelector("#btn-reset-solid-color");
-    resetBtn?.addEventListener("click", () => {
+    this.container.querySelector("#btn-reset-solid-color")?.addEventListener("click", () => {
       this.currentColor = null;
       this.onSelectColor(null);
       this.render();
