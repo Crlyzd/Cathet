@@ -13,8 +13,8 @@ use commands::file::{
     read_clipboard_image, read_text_file, show_open_dialog, show_save_dialog, write_text_file,
 };
 use commands::notes::{
-    create_folder, delete_notes, import_external_file, list_notes, move_notes, read_note,
-    rename_note, save_note, set_note_hidden, set_note_pinned,
+    create_folder, delete_folder, delete_notes, import_external_file, list_notes, move_notes,
+    read_note, rename_folder, rename_note, save_note, set_note_hidden, set_note_pinned,
 };
 use commands::memory::trim_memory;
 use commands::linux_desktop::get_linux_desktop_info;
@@ -150,6 +150,8 @@ pub fn run() {
             set_note_pinned,
             set_note_hidden,
             create_folder,
+            rename_folder,
+            delete_folder,
             import_external_file,
             authenticate_biometric,
             set_window_backdrop,
