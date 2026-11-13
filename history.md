@@ -75,6 +75,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-13: Upgrade README Screenshot Placeholders with Visual Blueprint Cards
+- **Summary**: Upgraded all 17 blank black screenshot placeholders (`docs/screenshots/*.png`) into high-contrast, informative visual blueprint cards. Each card clearly displays its Spec Number (`📸 SCREENSHOT SPEC #01` to `#17`), target asset filename in bold monospace, platform badge (Windows 11, Linux Desktop, or Android Mobile), view description subtitle, and exact aspect ratio dimensions (960×540 for 16:9 landscape, 540×1170 for 9:19.5 portrait).
+- **Affected Files**: `docs/screenshots/*` (17 files), `history.md`
+
 ### 2026-11-13: Sync `AGENTS.md` and `.agents/skills/` to Cathet v5.5.0
 - **Summary**: Updated `AGENTS.md` (intro, `build.ps1` Linux packaging, Rule 10 module inventory, relative skill links) and `.agents/skills/{architect,orchestrator,coding-specialist,code-reviewer}/SKILL.md` from v5.1.0 to v5.5.0 to reflect Linux Desktop support, Private Vault/Biometrics (`biometric.rs`, `VaultLockHud.ts`), 5-locale i18n (`locales/*.json`, `i18nService.ts`), `CSS.highlights` search (`domSearch.ts`), and `isMobile()` gating.
 - **Affected Files**: `AGENTS.md`, `.agents/skills/architect/SKILL.md`, `.agents/skills/orchestrator/SKILL.md`, `.agents/skills/coding-specialist/SKILL.md`, `.agents/skills/code-reviewer/SKILL.md`
