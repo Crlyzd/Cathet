@@ -323,6 +323,26 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-13: Prevent "Hidden" Public Folder Creation & Add iOS-Style Folder Wiggle Delete + Rename Mode
+- **Summary**:
+  - Resolved issue where creating a note inside Private Notes mode (`isPrivateMode = true`) created a physical `notes/Hidden` directory on disk and exposed a public `"Hidden"` category tab on the Android homepage.
+  - Updated `save_note` and `list_notes` in `src-tauri/src/commands/notes.rs` so `"Hidden"` is strictly treated as the private vault flag (`is_hidden = true`, `folder = ""` at notes root), auto-migrating any legacy `notes/Hidden` files to root with `is_hidden = true`, deleting the legacy `notes/Hidden` folder, and preventing `"Hidden"` or `"All"` from ever appearing in `reg.folders`.
+  - Implemented `delete_folder` and `rename_folder` Tauri commands (`notes.rs`) and `NotesService.deleteFolder` / `NotesService.renameFolder` (`notesService.ts`), supporting instant deletion of empty folders, keeping or deleting notes for non-empty folders (while always preserving private/hidden notes), and renaming folders on disk and in `metadata.json`.
+  - Added iOS-style long-press (`420ms` + haptic pulse) wiggle edit mode to `HomeCategoryTabs.ts` and `home.css`: all user folder chips oscillate with staggered `@keyframes folderChipWiggle`, display a top-right floating circular `×` badge (`.home-tab-delete-badge`) to delete the folder, and open `RenameModalComponent` when tapping the wiggling folder chip body to rename the folder, dismissing cleanly on outside tap, `"All"` tap, or Android Back (`popstate`).
+  - Extended `FolderModal.ts`, `HomeBatchActions.ts`, and all 5 locale dictionaries (`en.json`, `id.json`, `jv-krama.json`, `jv-ngoko.json`, `jv-malang.json`) with non-empty folder deletion confirmation options.
+  - Verified with `npx tsc --noEmit` (0 errors) and `cargo check --manifest-path src-tauri/Cargo.toml` (0 errors).
+- **Affected Files**:
+  - `src-tauri/src/commands/notes.rs` (249 lines)
+  - `src-tauri/src/lib.rs` (162 lines)
+  - `src-ui/src/services/notesService.ts` (194 lines)
+  - `src-ui/src/services/homeCoordinator.ts` (248 lines)
+  - `src-ui/src/components/home/HomeCategoryTabs.ts` (222 lines)
+  - `src-ui/src/components/home/FolderModal.ts` (146 lines)
+  - `src-ui/src/components/home/HomeBatchActions.ts` (123 lines)
+  - `src-ui/src/components/home/HomeView.ts` (247 lines)
+  - `src-ui/styles/home.css` (631 lines)
+  - `src-ui/src/locales/en.json`, `id.json`, `jv-krama.json`, `jv-ngoko.json`, `jv-malang.json`
+
 ### 2026-11-12: Fix Windows Acrylic Frosted Glass by Removing `:root,` CSS Selector in Vault HUD Tokens
 - **Summary**:
   - Restored translucent Windows DWM Acrylic frosted glass on the main desktop window (`index.html`).
