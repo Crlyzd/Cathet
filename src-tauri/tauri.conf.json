@@ -43,10 +43,11 @@
     "shortDescription": "Sleek, lightweight text & markdown editor",
     "longDescription": "Cathet is a sleek, ultra-lightweight, cross-platform text and markdown editor with live preview, dual-pane editing, and frosted glass aesthetics.",
     "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
       "icons/icon.png",
+      "icons/128x128@2x.png",
+      "icons/128x128.png",
+      "icons/64x64.png",
+      "icons/32x32.png",
       "icons/icon.icns",
       "icons/icon.ico"
     ],
