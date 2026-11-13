@@ -2240,3 +2240,20 @@ px tsc --noEmit and cargo check.
   - `src-ui/src/services/fileService.ts`: Forwarded `defaultName` in `saveFile` when prompting native save dialog.
   - `src-tauri/src/commands/file.rs`: Stripped extensions from `target_name`, defaulted fallback to `.md`, and safeguarded `content://` URIs (245 lines).
   - `history.md`: Appended project changelog entry per Rule 13.
+
+
+### 2026-11-13: App Icon Refresh (Concept 3 — Dual-Pane Markdown)
+
+- **Summary**:
+  1. **Canonical SVG & Master PNG**:
+     - Created `src-ui/src/assets/app-icon.svg` (22 lines) featuring Concept 3 (Dual-Pane Markdown): a dark `#18181B`→`#09090B` squircle containing a frosted-glass raw editor pane on the left and a sky-blue `#38BDF8`→`#2563EB` Markdown `M` preview pane on the right.
+     - Rasterized `src-ui/src/assets/app-icon.png` at 1024×1024 RGBA with transparent corners.
+  2. **Cross-Platform Icon Generation**:
+     - Executed `npx tauri icon src-ui/src/assets/app-icon.png` to regenerate all Windows (`.ico`, `Square*Logo.png`, `StoreLogo.png`), macOS/Linux (`icon.icns`, `icon.png`, `32x32.png`–`128x128@2x.png`), and Android (`mipmap-mdpi`–`xxxhdpi`) icon assets.
+     - Updated `src-tauri/gen/android/app/src/main/res/values/ic_launcher_background.xml` from `#fff` to `#09090B` for seamless Android adaptive icon masking.
+- **Files Modified / Created**:
+  - `src-ui/src/assets/app-icon.svg`: Canonical 1024×1024 vector icon (22 lines).
+  - `src-ui/src/assets/app-icon.png`: Master 1024×1024 PNG.
+  - `src-tauri/icons/*` & `src-tauri/gen/android/app/src/main/res/mipmap-*`: Regenerated platform icons.
+  - `src-tauri/gen/android/app/src/main/res/values/ic_launcher_background.xml`: Updated adaptive icon background color to `#09090B` (4 lines).
+  - `history.md`: Appended project changelog entry per Rule 13.
