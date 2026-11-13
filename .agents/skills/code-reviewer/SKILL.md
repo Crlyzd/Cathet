@@ -33,18 +33,20 @@ You are a meticulous Senior Code Reviewer. Your task is not to write feature cod
 
 ---
 
-## Cathet v5.1.0 Audit Checklist
+## Cathet v5.5.0 Audit Checklist
 1. **Anti-Monolith Invariant (<250 Lines/File)**:
    - Flag any TypeScript, Rust, or Kotlin source file exceeding **250 lines** as a refactoring target, and fail review on any monolithic file (>350–400 lines).
-2. **Rust FFI, Windows DWM & Memory Trimming**:
+2. **Rust FFI, Windows DWM, Linux GTK & Memory Trimming**:
    - Verify `vibrancy.rs` uses modern `DwmSetWindowAttribute` (`DWMWA_SYSTEMBACKDROP_TYPE`) and never legacy `SetWindowCompositionAttribute`.
+   - Verify Linux-only sizing/styling is gated behind `#[cfg(target_os = "linux")]` or `body.is-linux`, and no `:root,` selector leaks into shared component CSS (`home.css`).
    - Confirm `memory.rs` (`trim_memory`) calls are non-blocking and safe.
-3. **Android JNI, SAF & Gradle Build Persistence**:
+3. **Android JNI, SAF, Private Vault & Gradle Build Persistence**:
    - Verify `android_fs.rs` and `FileHelper.kt` handle `content://` and `file://` URIs, null streams, and permissions without leaking descriptors or panicking across the JNI boundary.
+   - Verify Private Vault notes use `is_hidden` at root (`notes.rs`) rather than exposing a public `Hidden` folder, and `biometric.rs` / `biometricService.ts` fail closed.
    - Verify any edits to `RustWebView.kt` are backed by `applyRustWebViewPatch()` in `src-tauri/gen/android/app/build.gradle.kts` (`rustBuild*.doLast` and `compile*Kotlin.doFirst`) and protected in `proguard-rules.pro` so `tauri android build` and R8 minification cannot strip them.
-4. **120fps Motion & Layout Invariants**:
+4. **120fps Motion, Platform Gating & Layout Invariants**:
    - Ensure `containerTransform.ts` scales/clips the live `#workspace-shell` with `opacity: 1` (never fading the container overlay to `0` or creating fake ghost DOM headers).
    - Ensure `themeTransition.ts` keeps `document.startViewTransition` circular `clip-path` active on mobile Android.
-   - Ensure scrollable flex children have `min-height: 0` and `overflow: hidden` on intermediate flex ancestors.
+   - Ensure mobile-only branches are gated with `isMobile()` (not `if (this.mobileCoord)`), scrollable flex children have `min-height: 0` + `overflow: hidden` on intermediate flex ancestors, and `public/app-icon.png` stays synced with `src-ui/src/assets/app-icon.png`.
 5. **History & Automation Hygiene**:
    - Confirm `history.md` was updated per Rule 13 and no rogue `.ps1` or `.bat` scripts were created outside `build.ps1`.

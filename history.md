@@ -75,6 +75,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-13: Sync `AGENTS.md` and `.agents/skills/` to Cathet v5.5.0
+- **Summary**: Updated `AGENTS.md` (intro, `build.ps1` Linux packaging, Rule 10 module inventory, relative skill links) and `.agents/skills/{architect,orchestrator,coding-specialist,code-reviewer}/SKILL.md` from v5.1.0 to v5.5.0 to reflect Linux Desktop support, Private Vault/Biometrics (`biometric.rs`, `VaultLockHud.ts`), 5-locale i18n (`locales/*.json`, `i18nService.ts`), `CSS.highlights` search (`domSearch.ts`), and `isMobile()` gating.
+- **Affected Files**: `AGENTS.md`, `.agents/skills/architect/SKILL.md`, `.agents/skills/orchestrator/SKILL.md`, `.agents/skills/coding-specialist/SKILL.md`, `.agents/skills/code-reviewer/SKILL.md`
+
 ### 2026-11-13: Bump Version to 5.5.0
 - **Summary**: Bumped Cathet version from `5.4.1` to `5.5.0` via `.\build.ps1 -TargetVersion 5.5.0 -NoPause` and synchronized `Cargo.lock`.
 - **Affected Files**: `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`

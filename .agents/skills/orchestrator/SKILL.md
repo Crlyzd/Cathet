@@ -43,11 +43,11 @@ When structuring phase transitions or subagent delegations, format each handoff 
 
 ---
 
-## Cathet v5.1.0 Scope & Modularity Addendum
-- **Cross-Platform Stack**: Rust + Tauri v2, Vanilla TypeScript & CSS, Android Kotlin/JNI (`src-tauri/gen/android`).
+## Cathet v5.5.0 Scope & Modularity Addendum
+- **Cross-Platform Stack**: Rust + Tauri v2, Vanilla TypeScript & CSS, Android Kotlin/JNI (`src-tauri/gen/android`), and Linux Desktop (GTK/KDE via `linux_desktop.rs`, `kdePortalService.ts`).
 - **Core Project Invariants**:
   - **Anti-Monolith Standard**: Every source file must target 100–250 lines maximum.
-  - **Windows Desktop**: Hardware-accelerated DWM Acrylic backdrop when active, energy-saving fallback when inactive (`vibrancy.rs`); release `.exe` binaries under 4 MB using Windows SChannel (`native-tls`).
-  - **Android Mobile**: Local Notes Home dashboard (`notes.rs`, `HomeView.ts`, `homeCoordinator.ts`), dynamic 120Hz+ display unlock (`MainActivity.kt`), 380ms zero-fade `#workspace-shell` container morph (`containerTransform.ts`), 420ms `document.startViewTransition` circular theme reveal (`themeTransition.ts`), and Gboard Commit Content API (`RustWebView.kt` patched via `build.gradle.kts` `rustBuild*.doLast` & `compile*Kotlin.doFirst`).
-  - **Dual-Pane (`Ctrl+D`)**: Desktop horizontal split and Android vertical split (`DualPaneView.ts`) with 3-state scroll synchronization and automatic note persistence.
-  - **Unified Pipeline (`build.ps1`)**: Single automation script outputting versioned binaries to `release/cathet-v<version>-x64.exe`, `release/cathet-v<version>-arm64.exe`, `release/cathet-v<version>-<arch>-fast.exe`, and `release/cathet-v<version>-android.apk`.
+  - **Windows & Linux Desktop**: Hardware-accelerated DWM Acrylic backdrop when active and energy-saving fallback when inactive (`vibrancy.rs`, `backdropService.ts`); release `.exe` binaries under 4 MB using Windows SChannel (`native-tls`); Linux-specific sizing and CSS scoped strictly to `#[cfg(target_os = "linux")]` / `body.is-linux`.
+  - **Android Mobile**: Local Notes Home dashboard + Private Vault (`notes.rs`, `biometric.rs`, `HomeView.ts`, `VaultLockHud.ts`, `homeCoordinator.ts`), dynamic 120Hz+ display unlock (`MainActivity.kt`), 380ms zero-fade `#workspace-shell` container morph (`containerTransform.ts`), 420ms `document.startViewTransition` circular theme reveal (`themeTransition.ts`), and Gboard Commit Content API (`RustWebView.kt` patched via `build.gradle.kts` `rustBuild*.doLast` & `compile*Kotlin.doFirst`).
+  - **Dual-Pane (`Ctrl+D`) & i18n**: Desktop horizontal split and Android vertical split (`DualPaneView.ts`) with 3-state scroll synchronization and automatic note persistence; 5-locale i18n (`i18nService.ts`, `src-ui/src/locales/*.json`) and `CSS.highlights` search (`domSearch.ts`).
+  - **Unified Pipeline (`build.ps1`)**: Single automation script outputting versioned binaries to `release/cathet-v<version>-x64.exe`, `release/cathet-v<version>-arm64.exe`, `release/cathet-v<version>-<arch>-fast.exe`, Linux `.rpm`/`.deb`/AppImage packages, and `release/cathet-v<version>-android.apk`.
