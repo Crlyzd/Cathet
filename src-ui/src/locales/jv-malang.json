@@ -84,7 +84,11 @@
     "privateNotes": "Cathetan Nyingit",
     "exitPrivateNotes": "Metu teko Cathetan Nyingit",
     "pullDownHint": "Tarik ngisor gae mbukak Cathetan Nyingit",
-    "releaseHint": "Uculno gae ndelok cathetan nyingit"
+    "releaseHint": "Uculno gae ndelok cathetan nyingit",
+    "deleteFolderTitle": "Busek folder \"{name}\"?",
+    "deleteFolderMsg": "Folder iki onok {count} cathetan. Ate diapano?",
+    "deleteFolderKeepNotes": "Simpen cathetan (Pindhah nang Kabeh)",
+    "deleteFolderAndNotes": "Busek folder & cathetan"
   },
   "dualpane": {
     "openFile": "Bukak Berkas",

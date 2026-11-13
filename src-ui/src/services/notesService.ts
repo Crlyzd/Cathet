@@ -23,6 +23,9 @@ export class NotesService {
     try {
       const reg = await invoke<NotesRegistry>("list_notes");
       this.registry = reg || { folders: [], notes: {} };
+      this.registry.folders = (this.registry.folders || []).filter(
+        (f) => f && f.toLowerCase() !== "hidden" && f.toLowerCase() !== "all"
+      );
       return this.registry;
     } catch (err) {
       console.error("Failed to list notes:", err);
@@ -115,10 +118,12 @@ export class NotesService {
   }
 
   async createFolder(folderName: string): Promise<boolean> {
+    const clean = folderName.trim();
+    if (!clean || clean.toLowerCase() === "hidden" || clean.toLowerCase() === "all") return false;
     try {
-      await invoke("create_folder", { folderName });
-      if (!this.registry.folders.includes(folderName)) {
-        this.registry.folders.push(folderName);
+      await invoke("create_folder", { folderName: clean });
+      if (!this.registry.folders.includes(clean)) {
+        this.registry.folders.push(clean);
         this.registry.folders.sort();
       }
       return true;
@@ -126,6 +131,36 @@ export class NotesService {
       console.error("Failed to create folder:", err);
       return false;
     }
+  }
+
+  async deleteFolder(folderName: string, deleteNotes = false): Promise<boolean> {
+    try {
+      await invoke("delete_folder", { folderName, deleteNotes });
+      await this.fetchNotes();
+      return true;
+    } catch (err) {
+      console.error("Failed to delete folder:", err);
+      return false;
+    }
+  }
+
+  async renameFolder(oldName: string, newName: string): Promise<string | null> {
+    const clean = newName.trim();
+    if (!clean || clean.toLowerCase() === "hidden" || clean.toLowerCase() === "all") return null;
+    try {
+      const updated = await invoke<string>("rename_folder", { oldName, newName: clean });
+      await this.fetchNotes();
+      return updated;
+    } catch (err) {
+      console.error("Failed to rename folder:", err);
+      return null;
+    }
+  }
+
+  getFolderNoteCount(folderName: string): number {
+    return Object.values(this.registry.notes).filter(
+      (n) => !n.isHidden && n.folder === folderName
+    ).length;
   }
 
   async importExternalFile(sourcePath: string, folder?: string): Promise<NoteItem | null> {

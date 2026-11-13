@@ -50,7 +50,7 @@ export class HomeCoordinator {
       notesService: this.notesService,
       onOpenNote: (note, rect) => this.openNote(note, rect),
       onNewNote: (folder, rect) => this.openNewNote(folder, rect),
-      onOpenFile: () => this.options.onOpenExternalPicker(),
+      onOpenFile: (folder) => { this.currentFolder = folder === "All" ? "" : folder; this.options.onOpenExternalPicker(); },
     });
 
     globalEventBus.on("topbar:navigateHome", () => this.navigateBackToHome());
@@ -150,7 +150,7 @@ export class HomeCoordinator {
       }
 
       this.currentNoteId = note.id;
-      this.currentFolder = note.folder;
+      this.currentFolder = note.isHidden ? "Hidden" : note.folder;
       this.options.onNoteSelectedForEditor(content, note.id, note.title);
       this.topBar.setTitle(note.title);
       this.topBar.setBackVisible(true);
@@ -200,7 +200,6 @@ export class HomeCoordinator {
 
   openExternalFile(title: string): void {
     this.currentNoteId = null;
-    this.currentFolder = "";
     const fabEl = document.querySelector<HTMLElement>("#home-fab-main") || document.querySelector<HTMLElement>(".home-fab-btn");
     this.lastOriginRect = fabEl?.getBoundingClientRect() || null;
     this.topBar.setTitle(title);
@@ -244,6 +243,6 @@ export class HomeCoordinator {
   }
 
   createEmbeddedHome(container: HTMLElement, onSelect: (note: NoteItem) => void): HomeViewComponent {
-    return new HomeViewComponent({ containerElement: container, notesService: this.notesService, isEmbedded: true, onOpenNote: onSelect, onNewNote: () => {}, onOpenFile: () => {} });
+    return new HomeViewComponent({ containerElement: container, notesService: this.notesService, isEmbedded: true, onOpenNote: onSelect, onNewNote: () => { }, onOpenFile: () => { } });
   }
 }

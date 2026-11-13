@@ -84,7 +84,11 @@
     "privateNotes": "Cathetan Pribadi",
     "exitPrivateNotes": "Metu Cathetan Pribadi",
     "pullDownHint": "Tarik ngisor nggo cathetan pribadi",
-    "releaseHint": "Uculno nggo ndelok cathetan pribadi"
+    "releaseHint": "Uculno nggo ndelok cathetan pribadi",
+    "deleteFolderTitle": "Busek folder \"{name}\"?",
+    "deleteFolderMsg": "Folder iki isine {count} cathetan. Ape dikapakno?",
+    "deleteFolderKeepNotes": "Simpen cathetan (Pindhah neng Kabeh)",
+    "deleteFolderAndNotes": "Busek folder & cathetan"
   },
   "dualpane": {
     "openFile": "Bukak Berkas",

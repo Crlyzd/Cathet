@@ -84,7 +84,11 @@
     "privateNotes": "Catatan Pribadi",
     "exitPrivateNotes": "Keluar Catatan Pribadi",
     "pullDownHint": "Tarik ke bawah untuk catatan pribadi",
-    "releaseHint": "Lepaskan untuk melihat catatan pribadi"
+    "releaseHint": "Lepaskan untuk melihat catatan pribadi",
+    "deleteFolderTitle": "Hapus folder \"{name}\"?",
+    "deleteFolderMsg": "Folder ini berisi {count} catatan. Apa yang ingin Anda lakukan?",
+    "deleteFolderKeepNotes": "Simpan catatan (Pindah ke Semua)",
+    "deleteFolderAndNotes": "Hapus folder & catatan"
   },
   "dualpane": {
     "openFile": "Buka Berkas",

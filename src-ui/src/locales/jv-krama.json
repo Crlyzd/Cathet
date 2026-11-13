@@ -84,7 +84,11 @@
     "privateNotes": "Cathetan Wados",
     "exitPrivateNotes": "Miyos Cathetan Wados",
     "pullDownHint": "Tarik mangandhap kanggé cathetan wados",
-    "releaseHint": "Uculaken kanggé mirsani cathetan wados"
+    "releaseHint": "Uculaken kanggé mirsani cathetan wados",
+    "deleteFolderTitle": "Ilangaken papan \"{name}\"?",
+    "deleteFolderMsg": "Papan punika gadhah {count} cathetan. Kados pundi kersanipun?",
+    "deleteFolderKeepNotes": "Simpen cathetan (Pindhah dhateng Sedaya)",
+    "deleteFolderAndNotes": "Ilangaken papan & cathetan"
   },
   "dualpane": {
     "openFile": "Bikak Berkas",
@@ -127,4 +131,3 @@
     "aboutDesc": "Piranti panyerat ènthèng tanpa gangguan ingkang dipunrancang kanggé rikat lan éndah."
   }
 }
-

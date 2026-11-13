@@ -84,7 +84,11 @@
     "privateNotes": "Private notes",
     "exitPrivateNotes": "Exit Private notes",
     "pullDownHint": "Pull down to reveal private notes",
-    "releaseHint": "Release to view private notes"
+    "releaseHint": "Release to view private notes",
+    "deleteFolderTitle": "Delete folder \"{name}\"?",
+    "deleteFolderMsg": "This folder contains {count} note(s). What would you like to do with them?",
+    "deleteFolderKeepNotes": "Keep notes (Move to All)",
+    "deleteFolderAndNotes": "Delete folder & notes"
   },
   "dualpane": {
     "openFile": "Open File",
@@ -127,4 +131,3 @@
     "aboutDesc": "Lightweight, distraction-free text & markdown editor crafted for speed and elegance."
   }
 }
-
