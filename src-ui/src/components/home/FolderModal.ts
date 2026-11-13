@@ -73,8 +73,13 @@ export class FolderModalComponent {
   }
 
   private bindEvents(): void {
+    let backdropPointerDown = false;
+    this.element.addEventListener("pointerdown", (e) => {
+      backdropPointerDown = e.target === this.element;
+    });
     this.element.addEventListener("click", (e) => {
-      if (e.target === this.element) this.close();
+      if (e.target === this.element && backdropPointerDown) this.close();
+      backdropPointerDown = false;
     });
 
     this.element.querySelector(".btn-cancel")?.addEventListener("click", () => this.close());
