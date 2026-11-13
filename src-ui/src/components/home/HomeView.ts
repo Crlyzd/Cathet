@@ -87,17 +87,16 @@ export class HomeViewComponent {
     this.categoryTabs = new HomeCategoryTabsComponent(this.element, {
       onSelectFolder: (f) => { this.activeFolder = f; this.renderGrid(); },
       onRequestNewFolder: () => this.batchActions.promptNewFolder(),
+      onDeleteFolder: (f) => this.batchActions.handleDeleteFolder(f, (del) => { if (this.activeFolder === del) this.activeFolder = "All"; this.refresh(); }),
+      onRenameFolder: (f) => this.batchActions.handleRenameFolder(f, (oldN, newN) => { if (this.activeFolder === oldN) this.activeFolder = newN; this.refresh(); }),
+      onEditModeChange: (editing) => { if (editing) window.history.pushState({ screen: "folder_edit" }, ""); else if (window.history.state?.screen === "folder_edit") window.history.back(); },
     });
 
-    this.noteGrid = new HomeNoteGridComponent(
-      this.element,
-      {
-        onOpenNote: (n, rect) => this.options.onOpenNote(n, rect),
-        onSelectNote: (id, sel) => { if (sel) this.selectedNoteIds.add(id); else this.selectedNoteIds.delete(id); this.syncSelectionUI(); },
-        onEnterSelectionMode: (id) => this.enterSelectionMode(id),
-      },
-      this.isEmbedded
-    );
+    this.noteGrid = new HomeNoteGridComponent(this.element, {
+      onOpenNote: (n, rect) => this.options.onOpenNote(n, rect),
+      onSelectNote: (id, sel) => { if (sel) this.selectedNoteIds.add(id); else this.selectedNoteIds.delete(id); this.syncSelectionUI(); },
+      onEnterSelectionMode: (id) => this.enterSelectionMode(id),
+    }, this.isEmbedded);
 
     if (!this.isEmbedded) {
       this.selectionBar = new HomeSelectionBarComponent(this.element, {
@@ -136,6 +135,7 @@ export class HomeViewComponent {
 
   async refresh(): Promise<void> {
     const reg = await this.notesService.fetchNotes();
+    if (this.activeFolder !== "All" && !reg.folders.includes(this.activeFolder)) this.activeFolder = "All";
     this.categoryTabs.setFolders(reg.folders, this.activeFolder);
     this.renderGrid();
   }
@@ -163,10 +163,11 @@ export class HomeViewComponent {
     this.selectionBar?.setSingleSelected(this.selectedNoteIds.size === 1);
   }
 
-  isSelectionActive(): boolean { return this.isSelectionMode; }
+  isSelectionActive(): boolean { return this.isSelectionMode || this.categoryTabs.isEditModeActive(); }
 
   private enterSelectionMode(initialId: string): void {
     if (this.isEmbedded) return;
+    if (this.categoryTabs.isEditModeActive()) this.categoryTabs.setEditMode(false, false);
     this.isSelectionMode = true;
     this.selectedNoteIds = new Set([initialId]);
     if (this.fab) this.fab.setVisible(false);
@@ -175,6 +176,7 @@ export class HomeViewComponent {
   }
 
   exitSelectionMode(syncHistory = true): void {
+    if (this.categoryTabs.isEditModeActive()) { this.categoryTabs.setEditMode(false, syncHistory); return; }
     if (syncHistory && window.history.state?.screen === "selection") { window.history.back(); return; }
     this.isSelectionMode = false;
     this.selectedNoteIds.clear();

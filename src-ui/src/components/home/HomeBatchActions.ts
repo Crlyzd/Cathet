@@ -85,5 +85,39 @@ export class HomeBatchActions {
       },
     });
   }
+
+  async handleDeleteFolder(folderName: string, onDeleted: (name: string) => void): Promise<void> {
+    const count = this.opts.notesService.getFolderNoteCount(folderName);
+    if (count === 0) {
+      if (await this.opts.notesService.deleteFolder(folderName, false)) {
+        onDeleted(folderName);
+      }
+      return;
+    }
+
+    new FolderModalComponent({
+      mode: "delete",
+      folderName,
+      noteCount: count,
+      onConfirm: async (choice) => {
+        const deleteNotes = choice === "delete_all";
+        if (await this.opts.notesService.deleteFolder(folderName, deleteNotes)) {
+          onDeleted(folderName);
+        }
+      },
+    });
+  }
+
+  handleRenameFolder(folderName: string, onRenamed: (oldName: string, newName: string) => void): void {
+    new RenameModalComponent({
+      currentTitle: folderName,
+      onConfirm: async (newName) => {
+        const updated = await this.opts.notesService.renameFolder(folderName, newName);
+        if (updated) {
+          onRenamed(folderName, updated);
+        }
+      },
+    });
+  }
 }
 

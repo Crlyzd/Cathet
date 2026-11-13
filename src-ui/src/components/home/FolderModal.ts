@@ -1,9 +1,11 @@
 import { t } from "../../services/i18nService";
 
 export interface FolderModalOptions {
-  mode: "create" | "move";
+  mode: "create" | "move" | "delete";
   existingFolders?: string[];
-  onConfirm: (folderName: string) => void;
+  folderName?: string;
+  noteCount?: number;
+  onConfirm: (result: string) => void;
   onCancel?: () => void;
 }
 
@@ -32,8 +34,26 @@ export class FolderModalComponent {
           </div>
         </div>
       `;
+    } else if (this.options.mode === "delete") {
+      const name = this.escapeHtml(this.options.folderName || "");
+      const count = this.options.noteCount ?? 0;
+      this.element.innerHTML = `
+        <div class="folder-modal-card">
+          <h3 class="folder-modal-title">${t("home.deleteFolderTitle", { name })}</h3>
+          <p class="folder-modal-desc">${t("home.deleteFolderMsg", { count })}</p>
+          <div class="folder-modal-list">
+            <button class="folder-modal-btn primary folder-modal-choice" data-choice="keep">${t("home.deleteFolderKeepNotes")}</button>
+            <button class="folder-modal-btn danger folder-modal-choice" data-choice="delete_all">${t("home.deleteFolderAndNotes")}</button>
+          </div>
+          <div class="folder-modal-actions">
+            <button class="folder-modal-btn btn-cancel">${t("common.cancel")}</button>
+          </div>
+        </div>
+      `;
     } else {
-      const folders = this.options.existingFolders || [];
+      const folders = (this.options.existingFolders || []).filter(
+        (f) => f && f.toLowerCase() !== "hidden" && f.toLowerCase() !== "all"
+      );
       const folderItems = [
         `<div class="folder-modal-item" data-folder="All">📁 (Root / ${t("home.allNotes")})</div>`,
         ...folders.map((f) => `<div class="folder-modal-item" data-folder="${this.escapeHtml(f)}">📁 ${this.escapeHtml(f)}</div>`),
@@ -64,7 +84,7 @@ export class FolderModalComponent {
       input.focus();
       const submit = () => {
         const val = input.value.trim();
-        if (val) {
+        if (val && val.toLowerCase() !== "hidden" && val.toLowerCase() !== "all") {
           this.options.onConfirm(val);
           this.close();
         }
@@ -73,6 +93,16 @@ export class FolderModalComponent {
       input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") submit();
         if (e.key === "Escape") this.close();
+      });
+    } else if (this.options.mode === "delete") {
+      this.element.querySelectorAll(".folder-modal-choice").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const choice = btn.getAttribute("data-choice");
+          if (choice) {
+            this.options.onConfirm(choice);
+            this.close();
+          }
+        });
       });
     } else {
       this.element.querySelectorAll(".folder-modal-item").forEach((item) => {
