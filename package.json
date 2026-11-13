@@ -1,7 +1,7 @@
 {
   "name": "cathet",
   "private": true,
-  "version": "5.4.1",
+  "version": "5.5.0",
   "author": "Crlyzd",
   "license": "GPL-3.0-or-later",
   "type": "module",
