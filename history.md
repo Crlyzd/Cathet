@@ -323,6 +323,18 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-13: Android About Author Row + Spammable Heart & Folder Rename Modal Backdrop Fix
+- **Summary**:
+  - Added the `Made with ♥ by Kaleksanan Bagus` author row to the Android Settings **About & Support** card (`MobileSettingsView.ts`) and wired `attachHeartSprout` (`heartSprout.ts`) with cleanup on `destroy()`.
+  - Updated `.mobile-about-card` in `mobile.css` with `position: relative; overflow: visible;` (so floating heart particles are not clipped by `.mobile-settings-card`), `13.5px` author row text, `16px` heart icon, and `4px` touch-target padding with `-webkit-tap-highlight-color: transparent`.
+  - Fixed Android folder rename modal flashing and immediately closing when tapping a wiggling folder pill: `bindLongPress` fires `onClick` during `pointerup`, so the browser's subsequent synthesized `click` landed on the newly mounted `.folder-modal-backdrop` and triggered `close()`. Added a `backdropPointerDown` guard in `RenameModal.ts` and `FolderModal.ts` so backdrop clicks only dismiss when `pointerdown` also originated on the backdrop.
+  - Verified with `npx tsc --noEmit` (0 errors).
+- **Affected Files**:
+  - `src-ui/src/components/MobileSettingsView.ts` (238 lines)
+  - `src-ui/styles/mobile.css`
+  - `src-ui/src/components/home/RenameModal.ts` (76 lines)
+  - `src-ui/src/components/home/FolderModal.ts` (141 lines)
+
 ### 2026-11-13: Prevent "Hidden" Public Folder Creation & Add iOS-Style Folder Wiggle Delete + Rename Mode
 - **Summary**:
   - Resolved issue where creating a note inside Private Notes mode (`isPrivateMode = true`) created a physical `notes/Hidden` directory on disk and exposed a public `"Hidden"` category tab on the Android homepage.
