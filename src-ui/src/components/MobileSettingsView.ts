@@ -3,6 +3,7 @@ import { APP_VERSION } from "../version";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { SUPPORTED_LOCALES } from "../locales";
 import { t } from "../services/i18nService";
+import { attachHeartSprout } from "../utils/heartSprout";
 
 export interface MobileSettingsState {
   theme: "dark" | "light";
@@ -29,6 +30,7 @@ export class MobileSettingsView {
   private container: HTMLElement;
   private state: MobileSettingsState;
   private callbacks: MobileSettingsCallbacks;
+  private heartSproutCleanup: (() => void) | null = null;
 
   constructor(container: HTMLElement, initialState: MobileSettingsState, callbacks: MobileSettingsCallbacks) {
     this.container = container;
@@ -157,6 +159,13 @@ export class MobileSettingsView {
               </div>
             </div>
             <div class="mobile-about-desc">${t("settings.aboutDesc")}</div>
+            <div class="about-hairline"></div>
+            <div class="about-author-row">
+              <span>Made with</span>
+              <span class="minimal-heart-wrap" id="btn-mobile-sprout-heart" role="button" title="Send love">${icons.heart}</span>
+              <span>by</span>
+              <span class="author-name-text">Kaleksanan Bagus</span>
+            </div>
             <div class="mobile-about-actions">
               <button class="mobile-about-btn" id="btn-about-github">${icons.github}<span>GitHub ↗</span></button>
               <button class="mobile-about-btn" id="btn-about-website">${icons.globe}<span>Website ↗</span></button>
@@ -212,9 +221,18 @@ export class MobileSettingsView {
     openLink("btn-about-saweria", "https://saweria.co/crlyzd");
     openLink("btn-about-kofi", "https://ko-fi.com/curlyzed");
     openLink("btn-about-bug", "https://github.com/Crlyzd/Cathet/issues/new");
+
+    const heartBtn = this.container.querySelector("#btn-mobile-sprout-heart") as HTMLElement | null;
+    const aboutCard = this.container.querySelector(".mobile-about-card") as HTMLElement | null;
+    if (heartBtn && aboutCard) {
+      this.heartSproutCleanup?.();
+      this.heartSproutCleanup = attachHeartSprout(heartBtn, aboutCard);
+    }
   }
 
   destroy(): void {
+    this.heartSproutCleanup?.();
+    this.heartSproutCleanup = null;
     this.container.innerHTML = "";
   }
 }

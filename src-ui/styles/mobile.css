@@ -856,10 +856,29 @@ body.is-mobile[data-theme="light"] .mobile-font-btn {
 
 /* About Grid & Social Pills */
 .mobile-about-card {
+  position: relative;
+  overflow: visible;
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.mobile-about-card .about-author-row {
+  font-size: 13.5px;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.mobile-about-card .minimal-heart-wrap {
+  padding: 4px;
+  margin: -4px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-about-card .minimal-heart-wrap svg {
+  width: 16px;
+  height: 16px;
 }
 
 .mobile-about-brand {
