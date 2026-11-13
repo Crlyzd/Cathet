@@ -11,6 +11,13 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-13: Missing `public/app-icon.png` Update During App Icon Refresh
+- **Context**: When refreshing Cathet's app icon to Concept 3 (Dual-Pane Markdown), `src-ui/src/assets/app-icon.png`, `src-tauri/icons/*`, and Android `mipmap-*` were updated, but `public/app-icon.png` at the repository root was missed.
+- **User Correction**: User shared a screenshot of the Settings & About window still displaying the old blue spiral notebook icon with *"you forgot this"*.
+- **Root Cause**: `SettingsTabs.ts`, `AboutPane.ts`, and `MobileSettingsView.ts` reference `/app-icon.png`, which Vite serves from `public/app-icon.png` at the repo root rather than `src-ui/src/assets/app-icon.png`.
+- **Corrective Guardrail**:
+  1. Whenever updating the app icon, always search the entire workspace (`*app-icon*`) and update both `src-ui/src/assets/app-icon.png` and `public/app-icon.png`.
+
 ### [Mistake] 2026-11-12: Top-Level `:root,` Selector Typo in Shared CSS Painting Over Windows Acrylic Backdrop
 - **Context**: In commit `004d705`, mobile Vault Lock HUD tokens were added to `src-ui/styles/home.css` for dark and light theme styling of the Cyber Iris aperture. Lines 476–502 introduced rules prefixed with `:root, [data-theme="dark"] .vault-cylinder` instead of descendant or compound selectors.
 - **User Correction**:
