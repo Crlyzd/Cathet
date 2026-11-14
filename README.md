@@ -58,6 +58,29 @@ Standard Notepad feels plain, dated, and lacks formatting. Meanwhile, modern mar
 
 ---
 
+## ✍️ Markdown Superpowers (Zero-Bloat, 100% Lossless)
+
+Cathet isn't just a frosted-glass Notepad—under the hood it packs a **zero-dependency Tier 2 GitHub Flavored Markdown (GFM) engine** engineered to stay fast, faithful, and completely out of your way:
+
+- **100% Lossless Instant Toggle (`Ctrl+M`)**: Flip between raw Markdown and rendered Preview instantaneously without re-serializing, stripping whitespace, or mutating your underlying plain text.
+- **Summonable Floating Toolbar (`Ctrl+/` or `⋯ → Format Toolbar`)**: Keep the glass canvas distraction-free until you need formatting tools. Dock it **Top**, **Bottom**, or **Left** in Settings—with non-occluding insets so it never covers text, dual-pane headers, or the sync badge—plus an `L`/`R` active-pane target indicator, 5-type Alert popover, and automatic hide in Preview mode.
+- **Extended GFM & Technical Writing**: Native support for **GitHub Alerts** (`[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`), **YAML Frontmatter** metadata pills, inline `$math$` & display `$$math$$` blocks, interactive nested & numbered task lists, clickable `[^1]` footnotes, fenced code language headers with one-click **Copy**, `~sub~` / `^sup^` / `==highlight==`, `<details>` accordions, reference links, and escaped table pipes (`\|`).
+- **Smart Clipboard & Image Pipeline**: Rich HTML-to-Markdown paste conversion (`sub`, `sup`, fenced code languages), in-memory WebP compression (>500 KB) folded into interactive `[ 📷 WEBP ~245 KB ▾ ]` pills, and Android Gboard `CommitContent` sticker/GIF support.
+
+<!--
+📸 SCREENSHOT SPEC #18: MARKDOWN SUPERPOWERS & FLOATING TOOLBAR
+- Target File: docs/screenshots/windows-floating-toolbar-markdown.webp
+- Platform: Windows 11 Desktop
+- Theme: Dark Mode (Acrylic)
+- Aspect Ratio: 1280x720 window crop
+- State to Capture: Dual-Pane mode (`Ctrl+D`) with the Floating Markdown Toolbar (`Ctrl+/`) docked at the bottom (showing `L` active-pane badge and 5-type Alert popover or formatting buttons) while Left pane shows raw Markdown/frontmatter/alerts and Right pane renders styled Alerts, Math, Task Lists, and Code Copy headers.
+-->
+<p align="center">
+  <img src="docs/screenshots/windows-floating-toolbar-markdown.webp" alt="Cathet Floating Markdown Toolbar & Tier 2 GFM Showcase" width="850" style="max-width: 100%; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.35);" />
+</p>
+
+---
+
 ## 🪟 Windows Desktop Showcase
 
 Cathet leverages native Windows Desktop Window Manager (DWM) APIs for hardware-accelerated **Acrylic** and **Mica** system backdrops. Your workspace seamlessly blurs and reflects your desktop wallpaper.

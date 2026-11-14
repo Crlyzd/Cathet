@@ -9,7 +9,7 @@ platforms: Windows, Linux, Android
 Welcome to **Cathet**, a high-performance, distraction-free text & Markdown editor crafted with native frosted glass (*Windows Acrylic / Mica / KDE Blur*) for **Windows**, **Linux**, and **Android**.
 
 > [!NOTE]
-> **Lossless Instant Toggle (`Ctrl + M`)**: Cathet switches between raw editing and rendered preview without reformatting or mutating your plain text. Press `Ctrl + M` at any time to inspect or edit this guide!
+> **Lossless Instant Toggle (`Ctrl + M`)**: Cathet switches between raw editing and rendered preview without reformatting or mutating your plain text. Press `Ctrl + M` at any time to inspect or edit this guide, or `Ctrl + /` on Desktop to summon the floating formatting toolbar!
 
 ---
 
@@ -19,6 +19,7 @@ Welcome to **Cathet**, a high-performance, distraction-free text & Markdown edit
 | Action | Shortcut | Description |
 | :--- | :--- | :--- |
 | **Toggle Preview** | `Ctrl + M` | Switch between raw Markdown editing and rendered preview |
+| **Format Toolbar** | `Ctrl + /` | Toggle the floating Markdown toolbar (dock **Top / Bottom / Left** in Settings, or via `⋯` menu) |
 | **Dual-Pane Mode** | `Ctrl + D` | Split view horizontally (Desktop) or vertically (Mobile) |
 | **Find in Document** | `Ctrl + F` | Open non-destructive highlight search (`F3` / `Shift + F3` to cycle) |
 | **Save / Save As** | `Ctrl + S` / `Ctrl + Shift + S` | Save active document or choose a new file location |
