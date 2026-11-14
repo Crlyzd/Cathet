@@ -1,45 +1,6 @@
 import { icons } from "../utils/monochromeIcons";
-import { formatIcons } from "../utils/contextMenuItems";
+import { FORMAT_BUTTONS } from "../utils/formatToolbarItems";
 import { FormatAction } from "../utils/formatUtils";
-
-interface FormatButtonDef {
-  action?: FormatAction;
-  title?: string;
-  iconSvg?: string;
-  isDivider?: boolean;
-}
-
-const FORMAT_BUTTONS: FormatButtonDef[] = [
-  { action: "bold", title: "Bold", iconSvg: formatIcons.bold },
-  { action: "italic", title: "Italic", iconSvg: formatIcons.italic },
-  { action: "strike", title: "Strikethrough", iconSvg: formatIcons.strike },
-  { action: "code", title: "Inline Code", iconSvg: formatIcons.code },
-  { action: "highlight", title: "Highlight", iconSvg: formatIcons.highlight },
-  { action: "math", title: "Inline Math", iconSvg: formatIcons.math },
-  { action: "subscript", title: "Subscript", iconSvg: formatIcons.subscript },
-  { action: "superscript", title: "Superscript", iconSvg: formatIcons.superscript },
-  { isDivider: true },
-  { action: "h1", title: "Heading 1", iconSvg: formatIcons.h1 },
-  { action: "h2", title: "Heading 2", iconSvg: formatIcons.h2 },
-  { action: "h3", title: "Heading 3", iconSvg: formatIcons.h3 },
-  { isDivider: true },
-  { action: "bullet", title: "Bullet List", iconSvg: formatIcons.bullet },
-  { action: "number", title: "Numbered List", iconSvg: formatIcons.number },
-  { action: "task", title: "Task List", iconSvg: formatIcons.task },
-  { isDivider: true },
-  { action: "quote", title: "Blockquote", iconSvg: formatIcons.quote },
-  { action: "codeblock", title: "Code Block", iconSvg: formatIcons.codeblock },
-  { action: "link", title: "Hyperlink", iconSvg: formatIcons.link },
-  { action: "image", title: "Insert Image", iconSvg: formatIcons.image },
-  { action: "table", title: "Insert Table", iconSvg: formatIcons.table },
-  { action: "rule", title: "Horizontal Rule", iconSvg: formatIcons.rule },
-  { action: "alertNote", title: "Insert Alert", iconSvg: formatIcons.alert },
-  { action: "displayMath", title: "Display Math", iconSvg: formatIcons.displayMath },
-  { action: "footnote", title: "Insert Footnote", iconSvg: formatIcons.footnote },
-  { action: "details", title: "Collapsible Details", iconSvg: formatIcons.details },
-  { isDivider: true },
-  { action: "clear", title: "Clear Formatting", iconSvg: formatIcons.clear },
-];
 
 export class MobileFormatBarComponent {
   private element: HTMLElement;
