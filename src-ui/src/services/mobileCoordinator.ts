@@ -13,6 +13,8 @@ export interface MobileCoordinatorActions {
   onNewDocument: () => void;
   onOpen: () => void;
   onToggleDualPane: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
   onOpenTutorial: () => void;
   onFontChanged: (fontFamily: string) => void;
   onFormat?: (action: FormatAction) => void;
@@ -80,6 +82,8 @@ export class MobileCoordinator {
           onOpen: this.actions.onOpen,
           onSave: this.actions.onSave,
           onSaveAs: this.actions.onSaveAs,
+          onUndo: () => this.actions.onUndo?.(),
+          onRedo: () => this.actions.onRedo?.(),
           onToggleDualPane: this.actions.onToggleDualPane,
           onToggleMarkdown: this.actions.onToggleMarkdown,
           onOpenSettings: () => this.openSettings(),

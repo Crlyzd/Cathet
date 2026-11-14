@@ -21,6 +21,13 @@ export interface ShortcutHandlers {
   onToggleDualPane?: () => void;
   onToggleFormatBar?: () => void;
   onFormat?: (action: FormatAction) => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+}
+
+function isTextInputFocused(): boolean {
+  const tag = (document.activeElement as HTMLElement | null)?.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA";
 }
 
 export function registerShortcuts(handlers: ShortcutHandlers): () => void {
@@ -102,11 +109,14 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
         case "C": e.preventDefault(); handlers.onFormat?.("codeblock"); return;
         case "B": e.preventDefault(); handlers.onFormat?.("table"); return;
         case "I": e.preventDefault(); handlers.onFormat?.("image"); return;
+        case "Z": if (!isTextInputFocused()) { e.preventDefault(); handlers.onRedo?.(); } return;
       }
       return;
     }
 
     switch (key) {
+      case "Z": if (!isTextInputFocused()) { e.preventDefault(); handlers.onUndo?.(); } break;
+      case "Y": if (!isTextInputFocused()) { e.preventDefault(); handlers.onRedo?.(); } break;
       case "D": e.preventDefault(); handlers.onToggleDualPane?.(); break;
       case "S": e.preventDefault(); handlers.onSave(); break;
       case "O": e.preventDefault(); handlers.onOpen(); break;

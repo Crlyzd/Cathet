@@ -123,6 +123,7 @@ class CathetApp {
       onSaveAs: () => this.saveDocument(true), onNewDocument: () => this.newDocument(),
       onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
       onToggleDualPane: () => this.toggleDualPane(), onOpenTutorial: () => this.loadTutorialDocument(),
+      onUndo: () => this.getActiveEditor().undo(), onRedo: () => this.getActiveEditor().redo(),
       onFontChanged: (f) => { this.editor.setFontFamily(f); this.dualPaneView?.getEditorRight()?.setFontFamily(f); },
       onFormat: (a) => applyMarkdownFormat(this.getActiveEditor(), a),
       onToggleSync: (mode) => {
@@ -244,6 +245,7 @@ class CathetApp {
       onToggleFormatBar: () => this.toggleFormatBar(),
       onToggleBold: () => this.getActiveEditor().toggleBold(), onToggleItalic: () => this.getActiveEditor().toggleItalic(), onToggleUnderline: () => this.getActiveEditor().toggleUnderline(),
       onFormat: (a) => applyMarkdownFormat(this.getActiveEditor(), a),
+      onUndo: () => this.getActiveEditor().undo(), onRedo: () => this.getActiveEditor().redo(),
       onSelectAll: () => this.getActiveEditor().selectAllClean(), onToggleWordWrap: () => this.getActiveEditor().toggleWordWrap(),
       onFind: () => {
         if (this.mobileCoord?.isMobile()) {
@@ -339,6 +341,8 @@ class CathetApp {
         isMarkdownPreview: ed.getIsMarkdownPreview(),
         isDualPane: this.dualPaneService.isDualPane(),
         canSave: ed.isModified(),
+        canUndo: ed.canUndo(),
+        canRedo: ed.canRedo(),
       });
       return;
     }

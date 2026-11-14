@@ -1,10 +1,13 @@
 import { icons } from "../utils/monochromeIcons";
+import { contextIcons } from "../utils/contextMenuItems";
 import { t } from "../services/i18nService";
 
 export interface MobileDrawerState {
   isMarkdownPreview: boolean;
   isDualPane: boolean;
   canSave: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export interface MobileDrawerCallbacks {
@@ -12,6 +15,8 @@ export interface MobileDrawerCallbacks {
   onOpen: () => void;
   onSave: () => void;
   onSaveAs: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
   onToggleDualPane: () => void;
   onToggleMarkdown: () => void;
   onOpenSettings: () => void;
@@ -82,6 +87,22 @@ export class MobileMenuDrawerComponent {
 
         <div class="mobile-drawer-divider"></div>
 
+        <div class="mobile-drawer-item" id="drawer-item-undo" style="${!state.isMarkdownPreview && state.canUndo ? "" : "opacity: 0.4; pointer-events: none;"}">
+          <div class="mobile-drawer-item-left">
+            <span>${contextIcons.undo}</span>
+            <span>${t("context.undo")}</span>
+          </div>
+        </div>
+
+        <div class="mobile-drawer-item" id="drawer-item-redo" style="${!state.isMarkdownPreview && state.canRedo ? "" : "opacity: 0.4; pointer-events: none;"}">
+          <div class="mobile-drawer-item-left">
+            <span>${contextIcons.redo}</span>
+            <span>${t("context.redo")}</span>
+          </div>
+        </div>
+
+        <div class="mobile-drawer-divider"></div>
+
         <div class="mobile-drawer-item" id="drawer-item-dual">
           <div class="mobile-drawer-item-left">
             <span>${icons.dualpane}</span>
@@ -135,6 +156,8 @@ export class MobileMenuDrawerComponent {
     bindItem("drawer-item-open", this.callbacks.onOpen);
     if (state.canSave) bindItem("drawer-item-save", this.callbacks.onSave);
     bindItem("drawer-item-saveas", this.callbacks.onSaveAs);
+    if (!state.isMarkdownPreview && state.canUndo) bindItem("drawer-item-undo", this.callbacks.onUndo);
+    if (!state.isMarkdownPreview && state.canRedo) bindItem("drawer-item-redo", this.callbacks.onRedo);
     bindItem("drawer-item-dual", this.callbacks.onToggleDualPane);
     bindItem("drawer-item-markdown", this.callbacks.onToggleMarkdown);
     bindItem("drawer-item-settings", this.callbacks.onOpenSettings);
