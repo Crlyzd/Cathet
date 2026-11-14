@@ -1,0 +1,197 @@
+/* ============================================================
+   markdown-ext.css — Tier 2 Extended Markdown Preview Styles
+   ============================================================ */
+
+.editor-content ol {
+  padding-left: 22px;
+  margin-bottom: 0.8em;
+}
+
+.editor-content ul ul,
+.editor-content ol ol,
+.editor-content ul ol,
+.editor-content ol ul {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+.editor-content ul ul > li.task-list-item,
+.editor-content ol ol > li.task-list-item,
+.editor-content ul ol > li.task-list-item,
+.editor-content ol ul > li.task-list-item {
+  margin-left: 0;
+}
+
+.editor-content sub,
+.editor-content sup {
+  font-size: 0.78em;
+  line-height: 0;
+}
+
+/* YAML Frontmatter Metadata Pills */
+.editor-content .md-frontmatter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 1em 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--col-card-bg);
+  border: 1px solid var(--col-border);
+}
+
+.editor-content .md-fm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8em;
+  background: var(--col-code-bg);
+  border: 1px solid var(--col-border);
+}
+
+.editor-content .md-fm-key {
+  font-weight: 600;
+  color: var(--col-accent);
+}
+
+.editor-content .md-fm-val {
+  color: var(--col-text-muted);
+}
+
+/* Fenced Code Block Header & Copy Button */
+.editor-content .md-code-block {
+  margin: 0.8em 0;
+  border-radius: 7px;
+  background: var(--col-code-bg);
+  border: 1px solid var(--col-border);
+  overflow: hidden;
+}
+
+.editor-content .md-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--col-border);
+  background: rgba(255, 255, 255, 0.04);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 11px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[data-theme="light"] .editor-content .md-code-header {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.editor-content .md-code-lang {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-transform: lowercase;
+  color: var(--col-text-dim);
+}
+
+.editor-content .md-code-copy {
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--col-border);
+  background: transparent;
+  color: var(--col-text-muted);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 10.5px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.editor-content .md-code-copy:hover {
+  background: var(--col-card-bg);
+  color: var(--col-text);
+  border-color: var(--col-accent);
+}
+
+.editor-content .md-code-copy.copied {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.editor-content .md-code-block pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Display Math Blocks */
+.editor-content .md-math-block {
+  margin: 0.9em 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--col-code-bg);
+  border: 1px solid var(--col-border);
+  text-align: center;
+  overflow-x: auto;
+}
+
+.editor-content .md-math-block .md-math {
+  background: transparent;
+  padding: 0;
+  white-space: pre-wrap;
+}
+
+/* GitHub Alerts / Callouts */
+.editor-content .md-alert {
+  --alert-color: #38bdf8;
+  margin: 0.9em 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--alert-color);
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.editor-content .md-alert-tip { --alert-color: #22c55e; background: rgba(34, 197, 94, 0.08); }
+.editor-content .md-alert-important { --alert-color: #a855f7; background: rgba(168, 85, 247, 0.08); }
+.editor-content .md-alert-warning { --alert-color: #f59e0b; background: rgba(245, 158, 11, 0.09); }
+.editor-content .md-alert-caution { --alert-color: #ef4444; background: rgba(239, 68, 68, 0.09); }
+
+[data-theme="light"] .editor-content .md-alert { --alert-color: #0284c7; }
+[data-theme="light"] .editor-content .md-alert-tip { --alert-color: #16a34a; }
+[data-theme="light"] .editor-content .md-alert-important { --alert-color: #9333ea; }
+[data-theme="light"] .editor-content .md-alert-warning { --alert-color: #d97706; }
+[data-theme="light"] .editor-content .md-alert-caution { --alert-color: #dc2626; }
+
+.editor-content .md-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.95em;
+  color: var(--alert-color);
+  margin-bottom: 4px;
+}
+
+.editor-content .md-alert-body > :last-child {
+  margin-bottom: 0;
+}
+
+/* Footnotes */
+.editor-content .md-footnote-ref a,
+.editor-content .md-footnote-backref {
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0 2px;
+}
+
+.editor-content .md-footnotes {
+  margin-top: 1.4em;
+  font-size: 0.9em;
+  color: var(--col-text-muted);
+}
+
+.editor-content .md-footnotes-list {
+  padding-left: 20px;
+}

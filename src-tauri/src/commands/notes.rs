@@ -27,15 +27,16 @@ fn save_registry(root: &Path, reg: &NotesRegistry) -> Result<(), String> {
 }
 
 fn extract_title_and_snippet(content: &str, fallback_name: &str) -> (String, String) {
-    let lines: Vec<&str> = content.lines().map(|l| l.trim()).filter(|l| !l.is_empty()).collect();
-    if lines.is_empty() { return (fallback_name.to_string(), String::new()); }
-    let raw_title = lines[0].trim_start_matches('#').trim();
-    let title = if raw_title.starts_with("file:///") || raw_title.contains('/') || raw_title.contains('\\') {
-        raw_title.trim_start_matches("file:///").split(['/', '\\']).filter(|s| !s.is_empty()).last().unwrap_or(fallback_name).to_string()
-    } else if raw_title.is_empty() { fallback_name.to_string() } else { raw_title.to_string() };
-    let body = if lines.len() > 1 { lines[1..].join(" ") } else { String::new() };
-    let snippet = if body.chars().count() > 120 { body.chars().take(120).collect::<String>() + "..." } else { body };
-    (title, snippet)
+    let raw: Vec<&str> = content.lines().map(|l| l.trim()).collect();
+    let fm_end = if raw.first() == Some(&"---") { raw.iter().take(26).skip(1).position(|l| *l == "---" || *l == "...").map(|o| o + 1).filter(|&e| e > 1 && raw[1..e].iter().all(|l| l.is_empty() || l.split_once(':').map_or(false, |(k, _)| !k.trim().is_empty() && !k.trim().contains(' ')))) } else { None };
+    let fm_title = fm_end.and_then(|e| raw[1..e].iter().find_map(|l| l.split_once(':').filter(|(k, _)| k.trim().eq_ignore_ascii_case("title")).map(|(_, v)| v.trim().trim_matches(|c| c == '"' || c == '\'').to_string())).filter(|s| !s.is_empty()));
+    let lines: Vec<&str> = raw.get(fm_end.map_or(0, |e| e + 1)..).unwrap_or(&[]).iter().copied().filter(|l| !l.is_empty()).collect();
+    let raw_t = fm_title.as_deref().or_else(|| lines.first().copied()).unwrap_or("").trim_start_matches('#').trim();
+    let title = if raw_t.starts_with("file:///") || raw_t.contains('/') || raw_t.contains('\\') {
+        raw_t.trim_start_matches("file:///").split(['/', '\\']).filter(|s| !s.is_empty()).last().unwrap_or(fallback_name).to_string()
+    } else if raw_t.is_empty() { fallback_name.to_string() } else { raw_t.to_string() };
+    let body = if fm_title.is_some() { lines.join(" ") } else if lines.len() > 1 { lines[1..].join(" ") } else { String::new() };
+    let snippet = if body.chars().count() > 120 { body.chars().take(120).collect::<String>() + "..." } else { body }; (title, snippet)
 }
 
 fn current_timestamp() -> u64 { SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64 }
