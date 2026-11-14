@@ -997,6 +997,28 @@ body.is-mobile[data-theme="light"] .mobile-about-btn {
   color: #fff;
 }
 
+.mobile-update-row {
+  padding: 6px 0 2px 0;
+  border-top: 1px solid var(--col-border);
+}
+
+.mobile-update-btn {
+  height: 34px;
+  padding: 0 12px;
+  flex-shrink: 0;
+}
+
+.mobile-update-btn.has-update {
+  background: var(--col-accent);
+  border-color: var(--col-accent);
+  color: #fff;
+}
+
+.mobile-drawer-update {
+  color: var(--col-accent);
+  font-weight: 600;
+}
+
 .mobile-about-meta {
   font-size: 11px;
   color: var(--col-text-dim);

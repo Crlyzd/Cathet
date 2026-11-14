@@ -8,6 +8,7 @@ export interface MobileDrawerState {
   canSave: boolean;
   canUndo: boolean;
   canRedo: boolean;
+  updateVersion?: string | null;
 }
 
 export interface MobileDrawerCallbacks {
@@ -20,6 +21,7 @@ export interface MobileDrawerCallbacks {
   onToggleDualPane: () => void;
   onToggleMarkdown: () => void;
   onOpenSettings: () => void;
+  onOpenUpdate?: () => void;
 }
 
 /**
@@ -131,6 +133,15 @@ export class MobileMenuDrawerComponent {
             <span>${t("menu.settings")}</span>
           </div>
         </div>
+        ${state.updateVersion ? `
+        <div class="mobile-drawer-divider"></div>
+        <div class="mobile-drawer-item mobile-drawer-update" id="drawer-item-update">
+          <div class="mobile-drawer-item-left">
+            <span>${icons.external}</span>
+            <span>${t("settings.getUpdate", { version: state.updateVersion })}</span>
+          </div>
+          <span class="mobile-drawer-pill-badge active">NEW</span>
+        </div>` : ""}
       </div>
     `;
 
@@ -161,6 +172,9 @@ export class MobileMenuDrawerComponent {
     bindItem("drawer-item-dual", this.callbacks.onToggleDualPane);
     bindItem("drawer-item-markdown", this.callbacks.onToggleMarkdown);
     bindItem("drawer-item-settings", this.callbacks.onOpenSettings);
+    if (state.updateVersion && this.callbacks.onOpenUpdate) {
+      bindItem("drawer-item-update", this.callbacks.onOpenUpdate);
+    }
   }
 
   hideInstant(): void {

@@ -1,9 +1,8 @@
 import { icons } from "../utils/monochromeIcons";
-import { APP_VERSION } from "../version";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { SUPPORTED_LOCALES } from "../locales";
 import { t } from "../services/i18nService";
-import { attachHeartSprout } from "../utils/heartSprout";
+import { UpdateInfo } from "../services/updateService";
+import { bindMobileAboutEvents, renderMobileAboutCard } from "./settings/MobileAboutCard";
 
 export interface MobileSettingsState {
   theme: "dark" | "light";
@@ -13,6 +12,8 @@ export interface MobileSettingsState {
   snapScroll: boolean;
   highRefreshRate: boolean;
   fonts: { id: string; name: string }[];
+  updateInfo?: UpdateInfo | null;
+  isCheckingUpdate?: boolean;
 }
 
 export interface MobileSettingsCallbacks {
@@ -23,6 +24,8 @@ export interface MobileSettingsCallbacks {
   onSnapScrollChange: (enabled: boolean) => void;
   onHighRefreshRateChange: (enabled: boolean) => void;
   onOpenTutorial: () => void;
+  onCheckUpdate?: () => void;
+  onOpenUpdate?: () => void;
   onClose: () => void;
 }
 
@@ -53,6 +56,27 @@ export class MobileSettingsView {
     if (chkSnap) chkSnap.checked = this.state.snapScroll;
     const chkRefresh = this.container.querySelector("#chk-high-refresh") as HTMLInputElement | null;
     if (chkRefresh) chkRefresh.checked = this.state.highRefreshRate;
+    this.syncUpdateRow();
+  }
+
+  private syncUpdateRow(): void {
+    const statusEl = this.container.querySelector("#mobile-update-status");
+    const btnEl = this.container.querySelector("#btn-mobile-update") as HTMLButtonElement | null;
+    if (!statusEl || !btnEl) return;
+    const isChecking = !!this.state.isCheckingUpdate;
+    const hasUpdate = !!this.state.updateInfo?.update_available;
+    statusEl.textContent = isChecking
+      ? t("settings.checkingUpdates")
+      : hasUpdate
+        ? t("settings.updateAvailable", { version: this.state.updateInfo!.latest_version })
+        : t("settings.upToDate");
+    btnEl.textContent = isChecking
+      ? t("settings.checkingUpdates")
+      : hasUpdate
+        ? `${t("settings.getUpdate", { version: this.state.updateInfo!.latest_version })} ↗`
+        : t("settings.checkUpdates");
+    btnEl.classList.toggle("has-update", hasUpdate);
+    btnEl.disabled = isChecking;
   }
 
   private render(): void {
@@ -149,33 +173,7 @@ export class MobileSettingsView {
 
         <!-- About & Support Section -->
         <div>
-          <div class="mobile-settings-section-title">${t("settings.about")}</div>
-          <div class="mobile-settings-card mobile-about-card">
-            <div class="mobile-about-brand">
-              <img src="/app-icon.png" alt="Cathet" decoding="async" />
-              <div>
-                <div class="mobile-about-title">Cathet</div>
-                <div class="mobile-about-version">v${APP_VERSION} (Android)</div>
-              </div>
-            </div>
-            <div class="mobile-about-desc">${t("settings.aboutDesc")}</div>
-            <div class="about-hairline"></div>
-            <div class="about-author-row">
-              <span>Made with</span>
-              <span class="minimal-heart-wrap" id="btn-mobile-sprout-heart" role="button" title="Send love">${icons.heart}</span>
-              <span>by</span>
-              <span class="author-name-text">Kaleksanan Bagus</span>
-            </div>
-            <div class="mobile-about-actions">
-              <button class="mobile-about-btn" id="btn-about-github">${icons.github}<span>GitHub ↗</span></button>
-              <button class="mobile-about-btn" id="btn-about-website">${icons.globe}<span>Website ↗</span></button>
-              <button class="mobile-about-btn" id="btn-about-saweria">${icons.coffee}<span>Saweria ↗</span></button>
-              <button class="mobile-about-btn" id="btn-about-kofi">${icons.coffee}<span>Ko-fi ↗</span></button>
-            </div>
-            <button class="mobile-about-btn" id="btn-about-bug" style="width: 100%; margin-top: 2px;">
-              ${icons.bug}<span>Report an Issue or Bug ↗</span>
-            </button>
-          </div>
+          ${renderMobileAboutCard(this.state.updateInfo, this.state.isCheckingUpdate)}
         </div>
       </div>
     `;
@@ -213,21 +211,11 @@ export class MobileSettingsView {
 
     this.container.querySelector("#row-open-tutorial")?.addEventListener("click", () => this.callbacks.onOpenTutorial());
 
-    const openLink = (id: string, url: string) => {
-      this.container.querySelector(`#${id}`)?.addEventListener("click", () => openUrl(url).catch(console.error));
-    };
-    openLink("btn-about-github", "https://github.com/Crlyzd/Cathet");
-    openLink("btn-about-website", "https://kaleksanan.my.id");
-    openLink("btn-about-saweria", "https://saweria.co/crlyzd");
-    openLink("btn-about-kofi", "https://ko-fi.com/curlyzed");
-    openLink("btn-about-bug", "https://github.com/Crlyzd/Cathet/issues/new");
-
-    const heartBtn = this.container.querySelector("#btn-mobile-sprout-heart") as HTMLElement | null;
-    const aboutCard = this.container.querySelector(".mobile-about-card") as HTMLElement | null;
-    if (heartBtn && aboutCard) {
-      this.heartSproutCleanup?.();
-      this.heartSproutCleanup = attachHeartSprout(heartBtn, aboutCard);
-    }
+    this.heartSproutCleanup?.();
+    this.heartSproutCleanup = bindMobileAboutEvents(this.container, () => {
+      if (this.state.updateInfo?.update_available) this.callbacks.onOpenUpdate?.();
+      else this.callbacks.onCheckUpdate?.();
+    });
   }
 
   destroy(): void {

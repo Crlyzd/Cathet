@@ -1,5 +1,6 @@
 import { icons } from "../../utils/monochromeIcons";
 import { t } from "../../services/i18nService";
+import { globalEventBus } from "../../utils/eventBus";
 
 export interface HomeHeaderCallbacks {
   onSearch: (query: string) => void;
@@ -23,7 +24,11 @@ export class HomeHeaderComponent {
   private countLabelEl!: HTMLElement;
   private btnSelectAll!: HTMLButtonElement;
   private btnThemeToggle!: HTMLButtonElement;
+  private btnUpdate!: HTMLButtonElement;
   private btnExitPrivate?: HTMLButtonElement;
+  private updateHandler = (info: any) => {
+    this.setUpdateAvailable(info?.update_available ? String(info.latest_version || "") : null);
+  };
 
   constructor(container: HTMLElement, callbacks: HomeHeaderCallbacks, initialTheme: "dark" | "light" = "dark") {
     this.callbacks = callbacks;
@@ -33,6 +38,8 @@ export class HomeHeaderComponent {
     this.render();
     container.appendChild(this.element);
     this.bindEvents();
+    this.syncCachedUpdate();
+    globalEventBus.on("update:statusChanged", this.updateHandler);
   }
 
   private render(): void {
@@ -44,9 +51,12 @@ export class HomeHeaderComponent {
           </svg>
         </button>
         <h1 class="home-header-title">Cathet</h1>
-        <button class="home-header-btn btn-theme-toggle" id="home-theme-toggle" title="Toggle Theme">
-          ${this.currentTheme === "dark" ? icons.sun : icons.moon}
-        </button>
+        <div class="home-header-actions">
+          <button class="home-header-btn btn-home-update" id="home-update-btn" title="${t("settings.appUpdates")}" style="display: none;"></button>
+          <button class="home-header-btn btn-theme-toggle" id="home-theme-toggle" title="Toggle Theme">
+            ${this.currentTheme === "dark" ? icons.sun : icons.moon}
+          </button>
+        </div>
       </div>
       <div class="home-header-selection" style="display: none;">
         <div class="home-selection-left">
@@ -78,6 +88,7 @@ export class HomeHeaderComponent {
     this.countLabelEl = this.element.querySelector(".home-selection-count")!;
     this.btnSelectAll = this.element.querySelector(".btn-select-all")!;
     this.btnThemeToggle = this.element.querySelector("#home-theme-toggle")!;
+    this.btnUpdate = this.element.querySelector("#home-update-btn")!;
     this.btnExitPrivate = this.element.querySelector("#home-private-back") as HTMLButtonElement;
   }
 
@@ -104,6 +115,32 @@ export class HomeHeaderComponent {
     this.btnExitPrivate?.addEventListener("click", () => {
       this.callbacks.onExitPrivateNotes?.();
     });
+
+    this.btnUpdate.addEventListener("click", () => {
+      globalEventBus.emit("update:openAndroidUrl");
+    });
+  }
+
+  private syncCachedUpdate(): void {
+    try {
+      const saved = localStorage.getItem("cathet_latest_update");
+      if (saved) {
+        const info = JSON.parse(saved);
+        if (info?.update_available && info?.latest_version) {
+          this.setUpdateAvailable(String(info.latest_version));
+        }
+      }
+    } catch (_) {}
+  }
+
+  setUpdateAvailable(version: string | null): void {
+    if (!this.btnUpdate) return;
+    if (version) {
+      this.btnUpdate.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>v${version}</span>`;
+      this.btnUpdate.style.display = "flex";
+    } else {
+      this.btnUpdate.style.display = "none";
+    }
   }
 
   setTheme(theme: "dark" | "light"): void {
@@ -143,6 +180,7 @@ export class HomeHeaderComponent {
   }
 
   destroy(): void {
+    globalEventBus.off("update:statusChanged", this.updateHandler);
     this.element.remove();
   }
 }

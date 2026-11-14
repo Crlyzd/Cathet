@@ -4,6 +4,8 @@ import { ThemeService } from "../services/themeService";
 import { PreviewService } from "../services/previewService";
 import { DualPaneService } from "../services/dualPaneService";
 import { I18nService } from "../services/i18nService";
+import { UpdateService } from "../services/updateService";
+import { globalEventBus } from "../utils/eventBus";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -25,6 +27,10 @@ export class SettingsModalComponent {
   private previewService = new PreviewService();
   private dualPaneService = new DualPaneService();
   private i18n = I18nService.getInstance();
+  private updateService = new UpdateService();
+  private updateHandler = (info: any) => {
+    this.settingsView?.updateState({ updateInfo: info, isCheckingUpdate: false });
+  };
 
   constructor(callbacks: SettingsModalCallbacks) {
     this.callbacks = callbacks;
@@ -69,6 +75,8 @@ export class SettingsModalComponent {
         snapScroll: this.dualPaneService.getSnapScroll(),
         highRefreshRate: isHighRefresh,
         fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
+        updateInfo: this.updateService.getUpdateInfo(),
+        isCheckingUpdate: false,
       },
       {
         onThemeChange: async (theme) => {
@@ -107,12 +115,19 @@ export class SettingsModalComponent {
           this.hide();
           this.callbacks.onOpenTutorial();
         },
+        onCheckUpdate: async () => {
+          this.settingsView?.updateState({ isCheckingUpdate: true });
+          const info = await this.updateService.checkForUpdates();
+          this.settingsView?.updateState({ updateInfo: info ?? this.updateService.getUpdateInfo(), isCheckingUpdate: false });
+        },
+        onOpenUpdate: () => this.updateService.openAndroidUpdateUrl(),
         onClose: () => this.hide(),
       }
     );
   }
 
   private bindEvents(): void {
+    globalEventBus.on("update:statusChanged", this.updateHandler);
     this.overlay.addEventListener("click", (e) => {
       if (e.target === this.overlay) this.hide();
     });
@@ -139,6 +154,7 @@ export class SettingsModalComponent {
       alwaysPreview: this.previewService.getAlwaysPreview(),
       snapScroll: this.dualPaneService.getSnapScroll(),
       highRefreshRate: localStorage.getItem("cathet:high-refresh") !== "false",
+      updateInfo: this.updateService.getUpdateInfo(),
     });
 
     this.overlay.classList.add("visible");
@@ -162,6 +178,7 @@ export class SettingsModalComponent {
   }
 
   destroy(): void {
+    globalEventBus.off("update:statusChanged", this.updateHandler);
     this.settingsView?.destroy();
     this.overlay.remove();
   }
