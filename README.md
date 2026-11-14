@@ -13,14 +13,14 @@
 
 <!--
 📸 SCREENSHOT SPEC #01: HERO BANNER
-- Target File: docs/screenshots/hero-crossplatform-showcase.png
+- Target File: docs/screenshots/hero-crossplatform-showcase.jpg
 - Platform: Multi-Platform Composite (Windows Desktop + Android Mobile + Linux)
 - Theme: Dark Glass / Acrylic
 - Aspect Ratio / Dimensions: 1920x800 or 1600x700 (Widescreen banner)
 - State to Capture: Layered visual showcase showing Windows Acrylic frosted window, Android phone running Cathet Home/Notes, and Linux desktop side-by-side over a vibrant, stylish backdrop.
 -->
 <p align="center">
-  <img src="docs/screenshots/hero-crossplatform-showcase.png" alt="Cathet Cross-Platform Showcase" width="900" style="max-width: 100%; border-radius: 12px; box-shadow: 0 16px 48px rgba(0,0,0,0.4);" />
+  <img src="docs/screenshots/hero-crossplatform-showcase.jpg" alt="Cathet Cross-Platform Showcase" width="900" style="max-width: 100%; border-radius: 12px; box-shadow: 0 16px 48px rgba(0,0,0,0.4);" />
 </p>
 
 *Clean, distraction-free writing that looks right at home on your desktop and phone.*
@@ -72,27 +72,27 @@ Switch seamlessly between raw distraction-free editing and rendered GitHub Flavo
       <td width="50%" align="center">
         <!--
         📸 SCREENSHOT SPEC #02: WINDOWS ACRYLIC DARK EDITOR
-        - Target File: docs/screenshots/windows-acrylic-dark-editor.png
+        - Target File: docs/screenshots/windows-acrylic-dark-editor.webp
         - Platform: Windows 11 (x64 / ARM64)
         - Theme: Dark Mode
         - Aspect Ratio: 1280x720 window crop
         - State to Capture: Main editor window in Edit Mode floating over a colorful wallpaper.
         - Text Content: Markdown headings (`# Project Notes`), bullet lists, checklist items (`- [x] Done`, `- [ ] Next`), and a short code snippet. Frosted top bar and frameless window controls clearly visible.
         -->
-        <img src="docs/screenshots/windows-acrylic-dark-editor.png" alt="Windows Dark Mode - Acrylic Scratchpad Editor" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);" /><br/>
+        <img src="docs/screenshots/windows-acrylic-dark-editor.webp" alt="Windows Dark Mode - Acrylic Scratchpad Editor" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);" /><br/>
         <b>Dark Mode — Hardware-Accelerated Acrylic Editor</b>
       </td>
       <td width="50%" align="center">
         <!--
         📸 SCREENSHOT SPEC #03: WINDOWS PREVIEW LIGHT
-        - Target File: docs/screenshots/windows-preview-light.png
+        - Target File: docs/screenshots/windows-preview-light.webp
         - Platform: Windows 11 (x64 / ARM64)
         - Theme: Light Mode
         - Aspect Ratio: 1280x720 window crop
         - State to Capture: Markdown Preview Mode (`Ctrl+M`) active on translucent light frosted glass.
         - Text Content: Rendered typography: styled headers, clickable links, formatted markdown table, blockquotes, and syntax-highlighted code block.
         -->
-        <img src="docs/screenshots/windows-preview-light.png" alt="Windows Light Mode - Rendered Markdown Preview" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" /><br/>
+        <img src="docs/screenshots/windows-preview-light.webp" alt="Windows Light Mode - Rendered Markdown Preview" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" /><br/>
         <b>Light Mode — Rendered Markdown Preview (`Ctrl+M`)</b>
       </td>
     </tr>
@@ -105,14 +105,14 @@ Split your window into two panes to draft and preview simultaneously, compare do
 
 <!--
 📸 SCREENSHOT SPEC #04: WINDOWS DUAL-PANE HORIZONTAL
-- Target File: docs/screenshots/windows-dualpane-horizontal.png
+- Target File: docs/screenshots/windows-dualpane-horizontal.webp
 - Platform: Windows 11 Desktop
 - Theme: Dark Mode
 - Aspect Ratio: 1440x810 or 1280x720 window crop
 - State to Capture: Dual-Pane mode active (`Ctrl+D`). Left pane in Edit mode with markdown syntax; Right pane in Preview mode with rendered output. Central frosted glass splitter with visible `Locked Standard` badge.
 -->
 <p align="center">
-  <img src="docs/screenshots/windows-dualpane-horizontal.png" alt="Windows Desktop Dual Pane Mode" width="850" style="max-width: 100%; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.35);" />
+  <img src="docs/screenshots/windows-dualpane-horizontal.webp" alt="Windows Desktop Dual Pane Mode" width="850" style="max-width: 100%; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.35);" />
 </p>
 
 ### Collapsible Image Pills & Frosted Context Menus
@@ -125,13 +125,13 @@ Large pasted clipboard images are compressed to WebP in-memory and folded into c
       <td width="50%" align="center">
         <!--
         📸 SCREENSHOT SPEC #05: WINDOWS BASE64 PILL BADGE
-        - Target File: docs/screenshots/windows-base64-pill-badge.png
+        - Target File: docs/screenshots/windows-base64-pill-badge.webp
         - Platform: Windows 11 Desktop
         - Theme: Dark Mode
         - Aspect Ratio: ~800x450 close-up crop
         - State to Capture: Edit mode with several lines of text and an inline collapsible pill badge: `[ 📷 WEBP ~245 KB ▾ ]`.
         -->
-        <img src="docs/screenshots/windows-base64-pill-badge.png" alt="Collapsible In-Memory Base64 Image Pill" width="430" style="border-radius: 8px;" /><br/>
+        <img src="docs/screenshots/windows-base64-pill-badge.webp" alt="Collapsible In-Memory Base64 Image Pill" width="430" style="border-radius: 8px;" /><br/>
         <b>In-Memory Base64 Collapsible Image Badge</b>
       </td>
       <td width="50%" align="center">
@@ -215,13 +215,13 @@ Cathet on Android brings desktop-class markdown editing to your phone with high-
       <td width="33%" align="center">
         <!--
         📸 SCREENSHOT SPEC #11: ANDROID VAULT ROTARY DIAL
-        - Target File: docs/screenshots/android-vault-rotary-dial.png
+        - Target File: docs/screenshots/android-vault-rotary-dial.webp
         - Platform: Android Phone
         - Theme: Dark Mode
         - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
         - State to Capture: Private Notes unlock gesture in action. Pull-down and drag-right gesture revealing the mechanical safe tumbler HUD at top of screen with key dial rotated 90° and cardinal ticks aligned.
         -->
-        <img src="docs/screenshots/android-vault-rotary-dial.png" alt="Android Rotary Safe Tumbler Dial HUD" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <img src="docs/screenshots/android-vault-rotary-dial.webp" alt="Android Rotary Safe Tumbler Dial HUD" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
         <b>2. Rotary Tumbler Vault HUD</b>
       </td>
       <td width="33%" align="center">
@@ -248,37 +248,37 @@ Cathet on Android brings desktop-class markdown editing to your phone with high-
       <td width="33%" align="center">
         <!--
         📸 SCREENSHOT SPEC #13: ANDROID EDITOR GBOARD IMAGE
-        - Target File: docs/screenshots/android-editor-gboard-image.png
+        - Target File: docs/screenshots/android-editor-gboard-image.webp
         - Platform: Android Phone
         - Theme: Dark Mode
         - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
         - State to Capture: Editor active with Gboard keyboard open. User inserting a sticker/GIF via Gboard Commit Content API, showing image rendered directly inline with note markdown text.
         -->
-        <img src="docs/screenshots/android-editor-gboard-image.png" alt="Android Gboard Commit Content Image Pasting" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <img src="docs/screenshots/android-editor-gboard-image.webp" alt="Android Gboard Commit Content Image Pasting" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
         <b>4. Gboard Sticker & Image Commit</b>
       </td>
       <td width="33%" align="center">
         <!--
         📸 SCREENSHOT SPEC #14: ANDROID IN-DOC SEARCH
-        - Target File: docs/screenshots/android-in-doc-search.png
+        - Target File: docs/screenshots/android-in-doc-search.webp
         - Platform: Android Phone
         - Theme: Dark Mode
         - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
         - State to Capture: In-document search ribbon active at top of editor. Search query typed, matches highlighted with CSS Custom Highlight API, Gboard keyboard remaining smoothly focused.
         -->
-        <img src="docs/screenshots/android-in-doc-search.png" alt="Android Focus-Preserving In-Doc Search" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <img src="docs/screenshots/android-in-doc-search.webp" alt="Android Focus-Preserving In-Doc Search" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
         <b>5. Focus-Preserving Search</b>
       </td>
       <td width="33%" align="center">
         <!--
         📸 SCREENSHOT SPEC #15: ANDROID DUAL-PANE VERTICAL
-        - Target File: docs/screenshots/android-dualpane-vertical.png
+        - Target File: docs/screenshots/android-dualpane-vertical.webp
         - Platform: Android Phone
         - Theme: Dark Mode
         - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
         - State to Capture: Mobile Dual-Pane stacked view active. Top pane: Edit mode (43%); Bottom pane: Rendered Preview (57%); touch dock controls and central scroll-sync splitter clearly visible.
         -->
-        <img src="docs/screenshots/android-dualpane-vertical.png" alt="Android Vertical Stacked Dual Pane" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <img src="docs/screenshots/android-dualpane-vertical.webp" alt="Android Vertical Stacked Dual Pane" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
         <b>6. Mobile Stacked Dual-Pane</b>
       </td>
     </tr>
@@ -316,13 +316,13 @@ Access Settings via `Ctrl + ,` (or the top-left `●` dot) on Desktop, or tap th
       <td width="50%" align="center">
         <!--
         📸 SCREENSHOT SPEC #16: ANDROID SETTINGS BOTTOMSHEET
-        - Target File: docs/screenshots/android-settings-bottomsheet.png
+        - Target File: docs/screenshots/android-settings-bottomsheet.webp
         - Platform: Android Phone
         - Theme: Dark Mode
         - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
         - State to Capture: Android 120fps slide-up bottom sheet Settings view open. Displaying High Refresh Rate toggle (120Hz/144Hz unlock), font options, and appearance controls over dimmed backdrop scrim.
         -->
-        <img src="docs/screenshots/android-settings-bottomsheet.png" alt="Android Slide-Up Settings Bottom Sheet" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <img src="docs/screenshots/android-settings-bottomsheet.webp" alt="Android Slide-Up Settings Bottom Sheet" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
         <b>Android 120fps Slide-Up Settings Sheet</b>
       </td>
     </tr>
@@ -334,13 +334,13 @@ Access Settings via `Ctrl + ,` (or the top-left `●` dot) on Desktop, or tap th
 <div align="center">
   <!--
   📸 SCREENSHOT SPEC #17: ANDROID THEME CIRCULAR REVEAL
-  - Target File: docs/screenshots/android-theme-circular-reveal.png
+  - Target File: docs/screenshots/android-theme-circular-reveal.webp
   - Platform: Android Phone / Desktop
   - Theme: Theme Switching Transition (Dark to Light or Light to Dark)
   - Aspect Ratio: 1080x2400 (Mobile Portrait) or 1280x720 (Desktop)
   - State to Capture: Midway freeze of hardware-accelerated `document.startViewTransition` with a circular expanding clip mask revealing the opposite theme.
   -->
-  <img src="docs/screenshots/android-theme-circular-reveal.png" alt="Circular Clip-Path Theme Reveal Transition" width="550" style="max-width: 100%; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);" /><br/>
+  <img src="docs/screenshots/android-theme-circular-reveal.webp" alt="Circular Clip-Path Theme Reveal Transition" width="550" style="max-width: 100%; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);" /><br/>
   <b>Hardware-Accelerated Circular Theme Reveal (`document.startViewTransition`)</b>
 </div>
 
@@ -452,23 +452,23 @@ For contributors or when refreshing screenshots, all image assets live in `docs/
 
 | # | Asset Filename | Platform | Theme | Captures What |
 |---|---|---|---|---|
-| 01 | `hero-crossplatform-showcase.png` | Composite | Dark | Wide banner showing Windows, Android, and Linux running Cathet |
-| 02 | `windows-acrylic-dark-editor.png` | Windows 11 | Dark | Main editor in Edit mode over wallpaper with frosted Acrylic backdrop |
-| 03 | `windows-preview-light.png` | Windows 11 | Light | Rendered Markdown preview mode on light frosted glass |
-| 04 | `windows-dualpane-horizontal.png` | Windows 11 | Dark | Side-by-side Dual-Pane mode (`Ctrl+D`) with splitter badge |
-| 05 | `windows-base64-pill-badge.png` | Windows 11 | Dark | Collapsible `[ 📷 WEBP ~245 KB ▾ ]` pill badge inline with text |
+| 01 | `hero-crossplatform-showcase.jpg` | Composite | Dark | Wide banner showing Windows, Android, and Linux running Cathet |
+| 02 | `windows-acrylic-dark-editor.webp` | Windows 11 | Dark | Main editor in Edit mode over wallpaper with frosted Acrylic backdrop |
+| 03 | `windows-preview-light.webp` | Windows 11 | Light | Rendered Markdown preview mode on light frosted glass |
+| 04 | `windows-dualpane-horizontal.webp` | Windows 11 | Dark | Side-by-side Dual-Pane mode (`Ctrl+D`) with splitter badge |
+| 05 | `windows-base64-pill-badge.webp` | Windows 11 | Dark | Collapsible `[ 📷 WEBP ~245 KB ▾ ]` pill badge inline with text |
 | 06 | `windows-settings-modal.png` | Windows 11 | Dark | Dedicated 350x318 frosted glass desktop Settings window |
 | 07 | `windows-context-menu-glass.png` | Windows 11 | Dark | Custom frosted glass right-click context menu |
 | 08 | `linux-gnome-solid-slate.png` | Linux (GNOME) | Dark | WebKitGTK solid slate canvas (`#12141c`) default mode |
 | 09 | `linux-kde-translucent-blur.png` | Linux (KDE) | Dark | Translucent glass mode with KWin force-blur effect |
 | 10 | `android-home-dashboard.png` | Android | Dark | Notes Home dashboard with category tabs, search, and note cards |
-| 11 | `android-vault-rotary-dial.png` | Android | Dark | Mechanical rotary safe tumbler dial HUD during unlock gesture |
+| 11 | `android-vault-rotary-dial.webp` | Android | Dark | Mechanical rotary safe tumbler dial HUD during unlock gesture |
 | 12 | `android-home-multiselect.png` | Android | Dark | Notes Home multi-select mode with top action bar and selected cards |
-| 13 | `android-editor-gboard-image.png` | Android | Dark | Gboard open pasting stickers/GIFs via Commit Content API |
-| 14 | `android-in-doc-search.png` | Android | Dark | In-document search ribbon with CSS highlighted matches and keyboard open |
-| 15 | `android-dualpane-vertical.png` | Android | Dark | Mobile vertical stacked dual-pane with touch dock controls |
-| 16 | `android-settings-bottomsheet.png`| Android | Dark | 120fps slide-up bottom sheet settings view |
-| 17 | `android-theme-circular-reveal.png`| Android/PC | Trans | Expanding circular clip-path transition mask between themes |
+| 13 | `android-editor-gboard-image.webp` | Android | Dark | Gboard open pasting stickers/GIFs via Commit Content API |
+| 14 | `android-in-doc-search.webp` | Android | Dark | In-document search ribbon with CSS highlighted matches and keyboard open |
+| 15 | `android-dualpane-vertical.webp` | Android | Dark | Mobile vertical stacked dual-pane with touch dock controls |
+| 16 | `android-settings-bottomsheet.webp`| Android | Dark | 120fps slide-up bottom sheet settings view |
+| 17 | `android-theme-circular-reveal.webp`| Android/PC | Trans | Expanding circular clip-path transition mask between themes |
 
 </details>
 
