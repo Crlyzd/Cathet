@@ -9,11 +9,13 @@ import { attachTaskCheckboxListener } from "../utils/taskListHandler";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { attachTouchZoom, TouchZoomOptions } from "../utils/touchZoomHandler";
 import { PlatformService } from "../services/platformService";
+import { EditorHistory } from "../utils/editorHistory";
 
 export class EditorComponent {
   private container: HTMLElement;
   private wrapperEl!: HTMLElement;
   private editorEl!: HTMLElement;
+  private history!: EditorHistory;
   private zoomLevel: number = 100;
   private isMarkdownPreview: boolean = false;
   private rawContent: string = "";
@@ -36,14 +38,10 @@ export class EditorComponent {
   }
 
   private render(): void {
-    this.container.innerHTML = `
-      <div class="editor-wrapper">
-        <div class="editor-content" contenteditable="true" spellcheck="false"></div>
-      </div>
-    `;
-
+    this.container.innerHTML = `<div class="editor-wrapper"><div class="editor-content" contenteditable="true" spellcheck="false"></div></div>`;
     this.wrapperEl = this.container.querySelector(".editor-wrapper")!;
     this.editorEl = this.container.querySelector(".editor-content")!;
+    this.history = new EditorHistory(this.editorEl, () => this.isMarkdownPreview, (text) => { this.rawContent = text; });
     this.bindEvents();
   }
 
@@ -54,9 +52,7 @@ export class EditorComponent {
     // Handle paste: images, rich HTML (tables/code), TSV, and quoted paths
     this.editorEl.addEventListener("paste", (e: ClipboardEvent) => {
       if (this.isMarkdownPreview) return;
-      handleEditorPaste(e, this.editorEl, (newContent) => {
-        this.rawContent = newContent;
-      });
+      handleEditorPaste(e, this.editorEl, (newContent) => this.setRawContent(newContent));
     });
 
     // Ctrl + MouseWheel Zooming
@@ -104,6 +100,7 @@ export class EditorComponent {
   setTouchZoomOptions(options?: TouchZoomOptions): void { this.touchZoomOptions = options; }
   destroy(): void {
     window.removeEventListener("wheel", this.wheelHandler);
+    this.history.destroy();
     if (this.touchZoomCleanup) {
       this.touchZoomCleanup();
       this.touchZoomCleanup = null;
@@ -135,6 +132,7 @@ export class EditorComponent {
         this.editorEl.innerText = this.rawContent;
       }
     }
+    this.history.reset(content);
     this.editorEl.blur();
     (document.activeElement as HTMLElement)?.blur();
     window.getSelection()?.removeAllRanges();
@@ -154,6 +152,7 @@ export class EditorComponent {
     this.editorEl.innerHTML = "";
     this.editorEl.classList.remove("markdown-preview");
     this.editorEl.setAttribute("contenteditable", "true");
+    this.history.reset("");
   }
 
   toggleMarkdownPreview(): boolean {
@@ -228,22 +227,23 @@ export class EditorComponent {
     }
   }
 
-  undo(): void { if (!this.isMarkdownPreview) { this.editorEl.focus(); document.execCommand("undo", false); } }
-  redo(): void { if (!this.isMarkdownPreview) { this.editorEl.focus(); document.execCommand("redo", false); } }
+  undo(): void { if (!this.isMarkdownPreview) this.history.undo(); }
+  redo(): void { if (!this.isMarkdownPreview) this.history.redo(); }
+  canUndo(): boolean { return !this.isMarkdownPreview && this.history.canUndo(); }
+  canRedo(): boolean { return !this.isMarkdownPreview && this.history.canRedo(); }
 
   async cut(): Promise<void> {
-    await editorCut(this.editorEl, this.getSelectedText(), this.isMarkdownPreview, (newContent) => {
-      this.rawContent = newContent;
-    });
+    await editorCut(this.editorEl, this.getSelectedText(), this.isMarkdownPreview, (c) => this.setRawContent(c));
   }
   async copy(): Promise<void> { await editorCopy(this.getSelectedText()); }
   async paste(): Promise<void> {
-    await editorPaste(this.editorEl, this.isMarkdownPreview, (newContent) => {
-      this.rawContent = newContent;
-    });
+    await editorPaste(this.editorEl, this.isMarkdownPreview, (c) => this.setRawContent(c));
   }
 
   focus(): void { this.editorEl.focus(); }
   blur(): void { this.editorEl.blur(); try { window.getSelection()?.removeAllRanges(); } catch (_) {} }
-  setRawContent(content: string): void { this.rawContent = content; }
+  setRawContent(content: string): void {
+    this.rawContent = content;
+    if (!this.isMarkdownPreview) this.history.record(true);
+  }
 }
