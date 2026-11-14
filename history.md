@@ -75,6 +75,18 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-14: Fix Nested Task List Indentation in `markdown-ext.css`
+- **Summary**: Reset `margin-left: 0` on nested `li.task-list-item` elements inside `ul ul` / `ol ol` / `ul ol` / `ol ul` in `src-ui/styles/markdown-ext.css` so nested task checkboxes indent cleanly by 20–22px per level instead of being cancelled out by `editor.css`'s `-18px` top-level task gutter offset.
+- **Affected Files**: `src-ui/styles/markdown-ext.css`, `history.md`
+
+### 2026-11-14: Update `tutorial.md` with Full Tier 2 Markdown & v5.5.0 Feature Coverage
+- **Summary**: Expanded `src-ui/src/assets/tutorial.md` to live-demonstrate YAML frontmatter pills, all 5 GitHub Alerts (`NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`), indented nested & numbered task lists, nested blockquotes, reference links, autolinks, escaped table pipes, `~sub~`/`^sup^`, `[^1]` footnotes, code block Copy headers, in-document search (`Ctrl+F`/`F3`), Linux Desktop support, Android Private Vault & folder wiggle mode, the 5 active locales, and all 5 desktop backdrop modes.
+- **Affected Files**: `src-ui/src/assets/tutorial.md`, `history.md`
+
+### 2026-11-14: Tier 2 Extended Markdown & Modern GFM Upgrade
+- **Summary**: Upgraded Cathet's zero-dependency Markdown pipeline cleanly without altering Base64 pills (`base64Fold.ts`), inline `<svg>` rendering, local/web image resolution, broken-image glass cards, or task-list toggling. Added GitHub Alerts (`[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`), indented nested lists/task checkboxes, multi-line & nested blockquotes, fenced code language headers with one-click Copy button, `~~~` fences, display math (`$$...$$`), GFM footnotes (`[^1]`) with smooth anchor jumping, reference links (`[text][id]`), autolinks, `~sub~`/`^sup^`/`***bold-italic***`, backslash character escapes, escaped table pipe protection (`\|`), Setext headings, YAML frontmatter badge rendering + Android `notes.rs` title extraction, clipboard `sub`/`sup`/code-language paste conversion (`htmlToMarkdown.ts`), and Offline Guide showcase (`tutorial.md`).
+- **Affected Files**: `src-ui/src/utils/{markdown.ts (243), markdownBlocks.ts (196), markdownInline.ts (187), markdownTable.ts (109), markdownSanitizer.ts (95), taskListHandler.ts (78), htmlToMarkdown.ts (249)}`, `src-ui/styles/markdown-ext.css (190)`, `src-ui/src/assets/tutorial.md (213)`, `src-tauri/src/commands/notes.rs (250)`, `index.html (39)`, `AGENTS.md`, `history.md`
+
 ### 2026-11-14: Convert `docs/show/` Showcase Videos to Animated WebP & Apply to `README.md`
 - **Summary**: Converted 12 `.mp4` screen recordings from `docs/show/` into looping animated `.webp` assets (`15 fps`, `libwebp` `q:v 75`, max `960px` desktop / `540px` mobile width) in `docs/screenshots/` via `ffmpeg`, copied/normalized 4 static showcase images (`hero-crossplatform-showcase.jpg`, `android-home-dashboard.jpg`, `linux-kde-translucent-blur.png`, `windows-context-menu-glass.png`), removed the 14 superseded `.png` placeholders, and updated all `<img>` tags, spec comments, and inventory table entries in `README.md`.
 - **Affected Files**: `README.md`, `docs/screenshots/*` (16 updated assets), `history.md`
