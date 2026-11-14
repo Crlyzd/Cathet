@@ -75,6 +75,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-14: Advance Caret to New Line After Pasting Image Pills
+- **Summary**: Updated `insertHtmlAtCaretOrEnd()` in `src-ui/src/utils/editorPasteHandler.ts` to anchor collapsed selection inside trailing `Text` nodes (`setStart`) rather than at parent container boundaries adjacent to `contenteditable="false"` pills, and updated `processAndInsertImageFile()` to insert a trailing newline via `document.execCommand("insertText", false, "\n")` (with `insertHtmlAtCaretOrEnd` fallback) so pasted/committed images leave the caret on a new line below `![Pasted Image]([...])` on both Desktop and Android.
+- **Affected Files**: `src-ui/src/utils/editorPasteHandler.ts (249)`, `history.md`
+
 ### 2026-11-14: Fix Nested Task List Indentation in `markdown-ext.css`
 - **Summary**: Reset `margin-left: 0` on nested `li.task-list-item` elements inside `ul ul` / `ol ol` / `ul ol` / `ol ul` in `src-ui/styles/markdown-ext.css` so nested task checkboxes indent cleanly by 20–22px per level instead of being cancelled out by `editor.css`'s `-18px` top-level task gutter offset.
 - **Affected Files**: `src-ui/styles/markdown-ext.css`, `history.md`
@@ -90,6 +94,10 @@ This document serves as the living project documentation and institutional memor
 ### 2026-11-14: Convert `docs/show/` Showcase Videos to Animated WebP & Apply to `README.md`
 - **Summary**: Converted 12 `.mp4` screen recordings from `docs/show/` into looping animated `.webp` assets (`15 fps`, `libwebp` `q:v 75`, max `960px` desktop / `540px` mobile width) in `docs/screenshots/` via `ffmpeg`, copied/normalized 4 static showcase images (`hero-crossplatform-showcase.jpg`, `android-home-dashboard.jpg`, `linux-kde-translucent-blur.png`, `windows-context-menu-glass.png`), removed the 14 superseded `.png` placeholders, and updated all `<img>` tags, spec comments, and inventory table entries in `README.md`.
 - **Affected Files**: `README.md`, `docs/screenshots/*` (16 updated assets), `history.md`
+
+### 2026-11-14: Tier 2 Markdown Context Menu, `Ctrl+Alt` Shortcuts & Mobile Format Bar
+- **Summary**: Added Tier 2 Extended Markdown formatting actions (`subscript`, `superscript`, `displayMath`, `footnote` with auto-numbering `[^N]` + `\n\n[^N]: ` bottom append, `details`, `frontmatter`, and 5 `alert*` callouts) via table-driven `BLOCK_SNIPPETS` and `insertAutoFootnote` in `formatUtils.ts`; wired `Ctrl+Alt+S/P/M/A/F/D/Y` in `shortcuts.ts`; added nested **Alert / Callout** submenu and Tier 2 entries to Desktop Right-Click `Format` menu (`contextMenuItems.ts`) and Android `Aa` ribbon (`MobileFormatBar.ts`); documented shortcuts in `tutorial.md` and localized 12 new `context.*` keys across all 5 locales.
+- **Affected Files**: `src-ui/src/utils/formatUtils.ts` (~239 lines), `src-ui/src/utils/shortcuts.ts` (~121 lines), `src-ui/src/utils/contextMenuItems.ts` (~166 lines), `src-ui/src/components/MobileFormatBar.ts` (~106 lines), `src-ui/src/assets/tutorial.md` (~181 lines), `src-ui/src/locales/{en,id,jv-krama,jv-malang,jv-ngoko}.json`
 
 ### 2026-11-13: Upgrade README Screenshot Placeholders with Visual Blueprint Cards
 - **Summary**: Upgraded all 17 blank black screenshot placeholders (`docs/screenshots/*.png`) into high-contrast, informative visual blueprint cards. Each card clearly displays its Spec Number (`📸 SCREENSHOT SPEC #01` to `#17`), target asset filename in bold monospace, platform badge (Windows 11, Linux Desktop, or Android Mobile), view description subtitle, and exact aspect ratio dimensions (960×540 for 16:9 landscape, 540×1170 for 9:19.5 portrait).

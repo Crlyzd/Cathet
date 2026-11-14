@@ -170,6 +170,7 @@ Cathet natively renders single-line and multi-line `<svg>` vector graphics using
 
 - **5 Desktop Backdrops**: Choose *Acrylic*, *Mica*, *Mica Alt*, *Pure Transparent*, or *Solid Opaque* with custom tint/solid color pickers and opacity/blur sliders.
 - **Typography & Circular Theme Reveal**: Curated offline fonts and 420ms circular `startViewTransition` dark/light reveal.
+- **Extended Markdown Shortcuts (`Ctrl + Alt`)**: `S` Subscript, `P` Superscript, `A` Alert Note, `M` Display Math, `F` Auto-Footnote, `D` Details, `Y` YAML Frontmatter (also in Right-Click **Format** & Android `Aa` bar).
 - **100% Offline & Private**: Zero telemetry, self-healing Windows file associations, and GitHub auto-updates.
 
 ---
