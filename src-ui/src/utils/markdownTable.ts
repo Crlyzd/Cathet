@@ -76,8 +76,20 @@ export function parseTable(
 function parseTableCells(rowStr: string): string[] {
   let s = rowStr.trim();
   if (s.startsWith("|")) s = s.slice(1);
-  if (s.endsWith("|")) s = s.slice(0, -1);
-  return s.split("|").map((c) => c.trim());
+  // Mask escaped backslashes and escaped pipes before stripping optional trailing pipe
+  let masked = s
+    .replace(/`[^`]*`/g, (m) => m.replace(/\|/g, "§§§CODEPIPE§§§"))
+    .replace(/\\\\/g, "§§§DBBS§§§")
+    .replace(/\\\|/g, "§§§ESCPIPE§§§");
+  if (masked.endsWith("|")) masked = masked.slice(0, -1);
+
+  return masked.split("|").map((c) =>
+    c
+      .replace(/§§§CODEPIPE§§§/g, "|")
+      .replace(/§§§ESCPIPE§§§/g, "\\|")
+      .replace(/§§§DBBS§§§/g, "\\\\")
+      .trim()
+  );
 }
 
 function isTableDelimiter(rowStr: string): boolean {

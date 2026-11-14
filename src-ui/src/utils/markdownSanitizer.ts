@@ -4,9 +4,9 @@
  */
 
 const ALLOWED_TAGS = new Set([
-  "a", "b", "blockquote", "br", "code", "dd", "del", "details", "div", "dl", "dt",
+  "a", "b", "blockquote", "br", "button", "code", "dd", "del", "details", "div", "dl", "dt",
   "em", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "input", "ins",
-  "kbd", "li", "mark", "ol", "p", "pre", "q", "rp", "rt", "ruby", "s", "samp", "small",
+  "kbd", "li", "mark", "ol", "p", "pre", "q", "rp", "rt", "ruby", "s", "samp", "section", "small",
   "span", "strike", "strong", "sub", "summary", "sup", "table", "tbody", "td",
   "tfoot", "th", "thead", "tr", "u", "ul", "var", "wbr",
   // Safe SVG vector graphic elements (scripts and foreignObject strictly prohibited)
@@ -15,7 +15,7 @@ const ALLOWED_TAGS = new Set([
 ]);
 
 const ALLOWED_ATTRS = new Set([
-  "align", "alt", "checked", "class", "data-line", "dir", "disabled", "height", "href", "id", "loading",
+  "align", "alt", "aria-label", "checked", "class", "data-line", "dir", "disabled", "height", "href", "id", "loading",
   "name", "open", "rel", "src", "style", "target", "title", "type", "width",
   // SVG styling, geometry, and presentation attributes
   "viewbox", "xmlns", "fill", "fill-rule", "fill-opacity", "stroke", "stroke-width",
@@ -69,10 +69,16 @@ function cleanNode(node: Node): void {
         }
       }
 
-      // Enforce safe link attributes
+      // Enforce safe link attributes (keep internal #fragment anchor links in-document)
       if (tag === "a" && el.hasAttribute("href")) {
-        el.setAttribute("target", "_blank");
-        el.setAttribute("rel", "noopener noreferrer");
+        const hrefVal = (el.getAttribute("href") || "").trim();
+        if (!hrefVal.startsWith("#")) {
+          el.setAttribute("target", "_blank");
+          el.setAttribute("rel", "noopener noreferrer");
+        } else {
+          el.removeAttribute("target");
+          el.removeAttribute("rel");
+        }
       }
 
       // Enforce lazy loading and responsive images

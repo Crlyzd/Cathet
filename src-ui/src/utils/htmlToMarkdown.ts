@@ -5,7 +5,7 @@
 
 export function isHtmlFormatted(html: string): boolean {
   if (!html) return false;
-  return /<(table|tr|td|th|pre|code|h[1-6]|ul|ol|li|blockquote|strong|b|em|i|a|img|div|details|summary)\b/i.test(html);
+  return /<(table|tr|td|th|pre|code|h[1-6]|ul|ol|li|blockquote|strong|b|em|i|a|img|div|details|summary|sub|sup)\b/i.test(html);
 }
 
 export function tsvToMarkdownTable(text: string): string | null {
@@ -84,17 +84,12 @@ function nodeToMarkdown(node: Node): string {
       return convertTable(el) + "\n\n";
 
     case "h1":
-      return `\n# ${childrenMd().trim()}\n\n`;
     case "h2":
-      return `\n## ${childrenMd().trim()}\n\n`;
     case "h3":
-      return `\n### ${childrenMd().trim()}\n\n`;
     case "h4":
-      return `\n#### ${childrenMd().trim()}\n\n`;
     case "h5":
-      return `\n##### ${childrenMd().trim()}\n\n`;
     case "h6":
-      return `\n###### ${childrenMd().trim()}\n\n`;
+      return `\n${"#".repeat(Number(tag[1]))} ${childrenMd().trim()}\n\n`;
 
     case "p":
       return `${childrenMd().trim()}\n\n`;
@@ -126,6 +121,16 @@ function nodeToMarkdown(node: Node): string {
       return text ? `~~${text}~~` : "";
     }
 
+    case "sub": {
+      const text = childrenMd().trim();
+      return text ? `~${text}~` : "";
+    }
+
+    case "sup": {
+      const text = childrenMd().trim();
+      return text ? `^${text}^` : "";
+    }
+
     case "code": {
       if (el.parentElement?.tagName.toLowerCase() === "pre") {
         return el.textContent || "";
@@ -135,8 +140,12 @@ function nodeToMarkdown(node: Node): string {
     }
 
     case "pre": {
+      const codeEl = el.querySelector("code");
+      const cls = `${codeEl?.className || ""} ${el.className || ""}`;
+      const langMatch = cls.match(/language-([a-zA-Z0-9_-]+)/i);
+      const lang = langMatch ? langMatch[1] : "";
       const code = el.textContent || "";
-      return `\n\`\`\`\n${code.replace(/\r?\n$/, "")}\n\`\`\`\n\n`;
+      return `\n\`\`\`${lang}\n${code.replace(/\r?\n$/, "")}\n\`\`\`\n\n`;
     }
 
     case "blockquote":

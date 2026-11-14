@@ -1,58 +1,151 @@
 /**
- * Lightweight Markdown parser for Cathet.
+ * Lightweight, zero-dependency Markdown parser for Cathet (CommonMark + GFM + Extended).
  */
 import { sanitizeHtml } from "./markdownSanitizer";
-import { resolveImageSrc } from "./imagePathResolver";
 import { parseTable } from "./markdownTable";
+import {
+  createMarkdownContext,
+  escapeHtml,
+  formatInline,
+  MarkdownDocContext,
+} from "./markdownInline";
+import {
+  parseBlockquoteOrAlert,
+  parseFrontmatter,
+  parseListBlock,
+  renderCodeBlock,
+} from "./markdownBlocks";
+
+function collectDefinitions(
+  lines: string[],
+  startLine: number,
+  ctx: MarkdownDocContext
+): Set<number> {
+  const skipLines = new Set<number>();
+  let fenceChar = "";
+  let fenceLen = 0;
+
+  for (let i = startLine; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    const fenceMatch = trimmed.match(/^(`{3,}|~{3,})(.*)$/);
+    if (fenceMatch) {
+      const ch = fenceMatch[1][0];
+      const len = fenceMatch[1].length;
+      if (!fenceChar) {
+        fenceChar = ch;
+        fenceLen = len;
+      } else if (ch === fenceChar && len >= fenceLen && !fenceMatch[2].trim()) {
+        fenceChar = "";
+        fenceLen = 0;
+      }
+      continue;
+    }
+    if (fenceChar) continue;
+
+    // Footnote definition: [^id]: text (plus indented continuation lines)
+    const fnMatch = lines[i].match(/^\s*\[\^([^\]]+)\]:\s*(.*)$/);
+    if (fnMatch) {
+      const key = fnMatch[1].trim().toLowerCase();
+      const parts = [fnMatch[2].trim()];
+      skipLines.add(i);
+      while (i + 1 < lines.length && /^(?: {2,}|\t)\S/.test(lines[i + 1])) {
+        i++;
+        parts.push(lines[i].trim());
+        skipLines.add(i);
+      }
+      ctx.footnotes.set(key, parts.filter(Boolean).join(" "));
+      continue;
+    }
+
+    // Reference link definition: [id]: url "optional title"
+    const linkMatch = lines[i].match(/^\s*\[(?!\^)([^\]]+)\]:\s*(\S+)(?:\s+(?:"([^"]*)"|'([^']*)'|\(([^)]*)\)))?\s*$/);
+    if (linkMatch) {
+      const key = linkMatch[1].trim().toLowerCase();
+      const url = linkMatch[2].replace(/^<|>$/g, "");
+      const title = linkMatch[3] ?? linkMatch[4] ?? linkMatch[5];
+      ctx.linkDefs.set(key, { url, title });
+      skipLines.add(i);
+    }
+  }
+
+  return skipLines;
+}
 
 export function parseMarkdown(md: string, documentPath?: string | null): string {
   if (!md) return "";
 
   const lines = md.split(/\r?\n/);
+  const ctx = createMarkdownContext(documentPath);
+  const fm = parseFrontmatter(lines);
+  const startLine = fm ? fm.nextIndex + 1 : 0;
+  const skipLines = collectDefinitions(lines, startLine, ctx);
+  const formatFn = (t: string) => formatInline(t, ctx);
+
   const out: string[] = [];
-  let inCodeBlock = false;
+  if (fm) out.push(fm.html);
+
+  let fenceChar = "";
+  let fenceLen = 0;
+  let codeLang = "";
   let codeBuffer: string[] = [];
-  let inUl = false;
-  let inOl = false;
 
-  const closeLists = () => {
-    if (inUl) { out.push("</ul>"); inUl = false; }
-    if (inOl) { out.push("</ol>"); inOl = false; }
-  };
-
-  for (let i = 0; i < lines.length; i++) {
+  for (let i = startLine; i < lines.length; i++) {
     const raw = lines[i];
+    const trimmed = raw.trim();
 
-    // Fenced Code Blocks ```
-    if (raw.trim().startsWith("```")) {
-      if (inCodeBlock) {
-        out.push(`<pre><code>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`);
-        codeBuffer = [];
-        inCodeBlock = false;
-      } else {
-        closeLists();
-        inCodeBlock = true;
+    // Fenced Code Blocks (``` or ~~~ with optional language header)
+    const fenceMatch = trimmed.match(/^(`{3,}|~{3,})(.*)$/);
+    if (fenceMatch) {
+      const ch = fenceMatch[1][0];
+      const len = fenceMatch[1].length;
+      if (!fenceChar) {
+        fenceChar = ch;
+        fenceLen = len;
+        codeLang = fenceMatch[2].trim().split(/\s+/)[0] || "";
+        continue;
       }
-      continue;
+      if (ch === fenceChar && len >= fenceLen && !fenceMatch[2].trim()) {
+        out.push(renderCodeBlock(codeBuffer, codeLang));
+        codeBuffer = [];
+        fenceChar = "";
+        fenceLen = 0;
+        codeLang = "";
+        continue;
+      }
     }
 
-    if (inCodeBlock) {
+    if (fenceChar) {
       codeBuffer.push(raw);
       continue;
     }
 
-    const trimmed = raw.trim();
+    if (skipLines.has(i)) continue;
 
     // Blank line
     if (trimmed === "") {
-      closeLists();
       out.push('<div class="md-spacer"></div>');
+      continue;
+    }
+
+    // Display Math Block ($$ ... $$ single-line or multi-line)
+    const singleMath = trimmed.match(/^\$\$(.+)\$\$$/);
+    if (singleMath) {
+      out.push(`<div class="md-math-block"><code class="md-math">${escapeHtml(singleMath[1].trim())}</code></div>`);
+      continue;
+    }
+    if (trimmed === "$$") {
+      const mathLines: string[] = [];
+      while (i + 1 < lines.length) {
+        i++;
+        if (lines[i].trim() === "$$") break;
+        mathLines.push(lines[i]);
+      }
+      out.push(`<div class="md-math-block"><code class="md-math">${escapeHtml(mathLines.join("\n"))}</code></div>`);
       continue;
     }
 
     // Raw SVG vector graphic blocks (single-line or multi-line)
     if (/^<svg\b/i.test(trimmed)) {
-      closeLists();
       if (trimmed.includes("</svg>")) {
         out.push(trimmed);
       } else {
@@ -67,17 +160,15 @@ export function parseMarkdown(md: string, documentPath?: string | null): string 
       continue;
     }
 
-    // Block HTML containers (e.g. <div>, </div>, <p>, </p>, <br/>, <details>, </details>, <summary>, <img...>)
-    if (/^<\/?(div|p|br|hr|img|details|summary|table|thead|tbody|tr|th|td|blockquote)\b/i.test(trimmed)) {
-      closeLists();
-      out.push(formatInline(trimmed, documentPath));
+    // Block HTML containers (e.g. <div>, <p>, <details>, <summary>, <img...>)
+    if (/^<\/?(div|p|br|hr|img|details|summary|table|thead|tbody|tr|th|td|blockquote|section|h[1-6])\b/i.test(trimmed)) {
+      out.push(formatFn(trimmed));
       continue;
     }
 
     // Tables: GFM Markdown Pipe Table & TSV paste table
-    const tableResult = parseTable(lines, i, formatInline, documentPath);
+    const tableResult = parseTable(lines, i, formatFn, documentPath);
     if (tableResult) {
-      closeLists();
       out.push(tableResult.html);
       i = tableResult.nextIndex;
       continue;
@@ -85,118 +176,68 @@ export function parseMarkdown(md: string, documentPath?: string | null): string 
 
     // Horizontal Rule
     if (/^(\*{3,}|-{3,}|_{3,})$/.test(trimmed)) {
-      closeLists();
       out.push("<hr />");
       continue;
     }
 
-    // Headings # .. ######
+    // ATX Headings # .. ######
     const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
     if (headingMatch) {
-      closeLists();
       const level = headingMatch[1].length;
-      out.push(`<h${level}>${formatInline(headingMatch[2], documentPath)}</h${level}>`);
+      out.push(`<h${level}>${formatFn(headingMatch[2])}</h${level}>`);
       continue;
     }
 
-    // Blockquote
-    if (trimmed.startsWith("> ")) {
-      closeLists();
-      out.push(`<blockquote>${formatInline(trimmed.slice(2), documentPath)}</blockquote>`);
+    // Blockquotes & GitHub Alerts ([!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION])
+    if (/^\s*>/.test(raw)) {
+      const qRes = parseBlockquoteOrAlert(lines, i, formatFn);
+      out.push(qRes.html);
+      i = qRes.nextIndex;
       continue;
     }
 
-    // Unordered List & Task Lists
-    if (/^[-*+]\s+/.test(trimmed)) {
-      if (inOl) { out.push("</ol>"); inOl = false; }
-      if (!inUl) { out.push("<ul>"); inUl = true; }
-      const itemText = trimmed.replace(/^[-*+]\s+/, "");
-      const taskMatch = itemText.match(/^\[([ xX])\]\s+(.*)$/);
-      if (taskMatch) {
-        const isChecked = taskMatch[1].toLowerCase() === "x";
-        const checkedAttr = isChecked ? " checked" : "";
-        out.push(`<li class="task-list-item"><input type="checkbox" class="task-checkbox" data-line="${i}"${checkedAttr} /> ${formatInline(taskMatch[2], documentPath)}</li>`);
-      } else {
-        out.push(`<li>${formatInline(itemText, documentPath)}</li>`);
+    // Unordered, Ordered, Nested & Task Lists
+    if (/^(\s*)([-*+]|\d+\.)\s+/.test(raw)) {
+      const lRes = parseListBlock(lines, i, formatFn);
+      out.push(lRes.html);
+      i = lRes.nextIndex;
+      continue;
+    }
+
+    // Setext Headings (=== or --- underline)
+    if (i + 1 < lines.length && !skipLines.has(i + 1) && !trimmed.includes("|") && !trimmed.startsWith("<")) {
+      const nextTrim = lines[i + 1].trim();
+      if (/^={3,}$/.test(nextTrim)) {
+        out.push(`<h1>${formatFn(trimmed)}</h1>`);
+        i++;
+        continue;
       }
-      continue;
-    }
-
-    // Ordered List
-    const olMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
-    if (olMatch) {
-      if (inUl) { out.push("</ul>"); inUl = false; }
-      if (!inOl) { out.push("<ol>"); inOl = true; }
-      out.push(`<li>${formatInline(olMatch[2], documentPath)}</li>`);
-      continue;
+      if (/^-{3,}$/.test(nextTrim)) {
+        out.push(`<h2>${formatFn(trimmed)}</h2>`);
+        i++;
+        continue;
+      }
     }
 
     // Paragraph
-    closeLists();
-    out.push(`<p>${formatInline(trimmed, documentPath)}</p>`);
+    out.push(`<p>${formatFn(trimmed)}</p>`);
   }
 
-  if (inCodeBlock) {
-    out.push(`<pre><code>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`);
+  if (fenceChar) {
+    out.push(renderCodeBlock(codeBuffer, codeLang));
   }
-  closeLists();
+
+  // Render collected footnotes at the bottom of the document
+  if (ctx.usedFootnotes.length > 0) {
+    const items = ctx.usedFootnotes
+      .map((key, idx) => {
+        const num = idx + 1;
+        const body = ctx.footnotes.get(key) || "";
+        return `<li id="fn-${num}">${formatFn(body)} <a href="#fnref-${num}" class="md-footnote-backref" aria-label="Back to reference">↩</a></li>`;
+      })
+      .join("\n");
+    out.push(`<section class="md-footnotes"><hr /><ol class="md-footnotes-list">\n${items}\n</ol></section>`);
+  }
 
   return sanitizeHtml(out.join("\n"));
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function formatInline(text: string, documentPath?: string | null): string {
-  // 1. Temporarily protect inline code blocks and math formulas
-  const codeSnippets: string[] = [];
-  let s = text.replace(/`([^`]+)`/g, (_, code) => {
-    codeSnippets.push(escapeHtml(code));
-    return `§§§CODE_${codeSnippets.length - 1}§§§`;
-  });
-
-  const mathSnippets: string[] = [];
-  s = s.replace(/\$([^\s$](?:[^$\n]*[^\s$])?)\$/g, (_, math) => {
-    mathSnippets.push(escapeHtml(math));
-    return `§§§MATH_${mathSnippets.length - 1}§§§`;
-  });
-
-  // 2. Strip HTML comments, then escape non-whitelisted raw HTML
-  s = s.replace(/<!--[\s\S]*?-->/g, "");
-  s = s.replace(/<(?!\/?([a-zA-Z1-6]+)\b)/g, "&lt;");
-
-  // 3. Linked image badges: [![alt](imgUrl)](linkUrl)
-  s = s.replace(/\[!\[([^\]]*)\]\(([^)]+)\)\]\(([^)]+)\)/g, (_, alt, imgUrl, linkUrl) => {
-    const resolvedImg = resolveImageSrc(imgUrl, documentPath);
-    return `<a href="${linkUrl}" target="_blank" rel="noopener"><img src="${resolvedImg}" alt="${alt}" loading="lazy" decoding="async" /></a>`;
-  });
-
-  // 4. Standalone Markdown images: ![alt](imgUrl)
-  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, imgUrl) => {
-    const resolvedImg = resolveImageSrc(imgUrl, documentPath);
-    return `<img src="${resolvedImg}" alt="${alt}" loading="lazy" decoding="async" />`;
-  });
-
-  // 5. Standard Markdown links: [text](linkUrl)
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-
-  // 6. Formatting: Highlight, Bold, Italic, Strikethrough
-  s = s.replace(/==([^=]+)==/g, "<mark>$1</mark>");
-  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  s = s.replace(/__([^_]+)__/g, "<strong>$1</strong>");
-  s = s.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-  s = s.replace(/\b_([^_]+)_\b/g, "<em>$1</em>");
-  s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
-
-  // 7. Restore inline code and math
-  s = s.replace(/§§§CODE_(\d+)§§§/g, (_, idx) => `<code>${codeSnippets[Number(idx)]}</code>`);
-  s = s.replace(/§§§MATH_(\d+)§§§/g, (_, idx) => `<code class="md-math">${mathSnippets[Number(idx)]}</code>`);
-
-  return s;
 }
