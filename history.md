@@ -75,6 +75,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-15: Ignore Auto-Generated `RustWebView.kt` in `.gitignore`
+- **Summary**: Added `**/gen/android/**/generated/RustWebView.kt` to `.gitignore` and untracked the Gradle-regenerated file from Git (`git rm --cached`) so `applyRustWebViewPatch()` build runs never leave noisy diffs.
+- **Affected Files**: `.gitignore`, `history.md`
+
 ### 2026-11-14: Enable Side-by-Side Dual Pane on Android in Landscape
 - **Summary**: Added keyboard-safe `body.is-landscape` detection (`winW > maxInnerHeight && winW >= 480`) and `cathet:orientation-change` dispatch to `KeyboardTracker`, reset inline `leftPaneEl.style.flex` on orientation change in `DualPaneView`, added `body.is-mobile.is-landscape` side-by-side Dual Pane, vertical `col-resize` splitter, and compact unclipped empty-dropzone styles in `mobile.css`, and scoped mobile bottom-slide animations to `body.is-mobile:not(.is-landscape)` in `dualpane.css`.
 - **Affected Files**: `src-ui/src/utils/keyboardTracker.ts` (95 lines), `src-ui/src/components/dualpane/DualPaneView.ts` (226 lines), `src-ui/styles/mobile.css`, `src-ui/styles/dualpane.css`, `history.md`
