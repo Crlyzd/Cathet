@@ -75,6 +75,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-14: Enable Side-by-Side Dual Pane on Android in Landscape
+- **Summary**: Added keyboard-safe `body.is-landscape` detection (`winW > maxInnerHeight && winW >= 480`) and `cathet:orientation-change` dispatch to `KeyboardTracker`, reset inline `leftPaneEl.style.flex` on orientation change in `DualPaneView`, added `body.is-mobile.is-landscape` side-by-side Dual Pane, vertical `col-resize` splitter, and compact unclipped empty-dropzone styles in `mobile.css`, and scoped mobile bottom-slide animations to `body.is-mobile:not(.is-landscape)` in `dualpane.css`.
+- **Affected Files**: `src-ui/src/utils/keyboardTracker.ts` (95 lines), `src-ui/src/components/dualpane/DualPaneView.ts` (226 lines), `src-ui/styles/mobile.css`, `src-ui/styles/dualpane.css`, `history.md`
+
 ### 2026-11-14: Fix `EditorHistory` Caret Offset Drift Across `contenteditable` `<div>`/`<br>` Lines
 - **Summary**: Fixed `getCaretOffset()` in `src-ui/src/utils/editorHistory.ts` (247 lines) to walk `<div>`/`<p>`/`<br>`/`b64-pill-container` nodes instead of `Range.toString().length` (which stripped `<div>`/`<br>` newlines and caused caret restoration after Undo to jump onto earlier lines), and increased typing coalesce debounce from 350ms to 500ms.
 - **Affected Files**: `src-ui/src/utils/editorHistory.ts`, `history.md`
