@@ -29,12 +29,12 @@
 
 ---
 
-> **cath·et** `/tʃaˈʈət/` *(cha-thet / chah-tuht)* • **verb & noun**
->
-> *Origin:* Javanese (**ꦕꦛꦼꦠ꧀**, *basa Jawa*), cognate to Indonesian *catat*.
-> 1. **(Verb)** To write down, to jot down, to note, or to record.
-> 2. **(Noun)** A written note, record, or memorandum (*cathetan*).
-> 3. **(Computing)** A sleek, ultra-lightweight, cross-platform frosted-glass text and markdown editor that just gets out of your way.
+**cath·et** `/tʃaˈʈət/` *(cha-thet / chah-tuht)* • **verb & noun**
+
+*Origin:* Javanese (**ꦕꦛꦼꦠ꧀**, *basa Jawa*), cognate to Indonesian *catat*.
+1. **(Verb)** To write down, to jot down, to note, or to record.
+2. **(Noun)** A written note, record, or memorandum (*cathetan*).
+3. **(Computing)** A sleek, ultra-lightweight, cross-platform frosted-glass text and markdown editor that just gets out of your way.
 
 ---
 
