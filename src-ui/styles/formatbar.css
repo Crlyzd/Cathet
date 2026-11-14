@@ -1,0 +1,210 @@
+/* ============================================================
+   formatbar.css — Desktop Floating Markdown Toolbar & Insets
+   ============================================================ */
+
+#editor-container {
+  flex: 1 1 0%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: padding 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Non-occluding workspace insets */
+#workspace-shell.format-bar-open.format-bar-bottom #editor-container {
+  padding-bottom: 48px;
+}
+
+#workspace-shell.format-bar-open.format-bar-top:not(.is-dual-pane) #editor-container {
+  padding-top: 44px;
+}
+
+#workspace-shell.format-bar-open.format-bar-top.is-dual-pane .dualpane-editor-host {
+  padding-top: 44px;
+}
+
+#workspace-shell.format-bar-open.format-bar-left:not(.is-dual-pane) #editor-container {
+  padding-left: 48px;
+}
+
+#workspace-shell.format-bar-open.format-bar-left.is-dual-pane .dualpane-pane-left .dualpane-editor-host {
+  padding-left: 48px;
+}
+
+/* Prevent DesktopSearchBar collision when Top toolbar is active in single-pane */
+#workspace-shell.format-bar-open.format-bar-top:not(.is-dual-pane) .desktop-search-bar {
+  top: calc(var(--top-bar-height) + 46px);
+}
+
+/* Floating Frosted Glass Pill */
+.floating-format-bar {
+  position: absolute;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: var(--col-menu-bg);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--col-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.40);
+  max-width: calc(100% - 20px);
+  max-height: calc(100% - 42px);
+  animation: formatBarIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .floating-format-bar {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+}
+
+@keyframes formatBarIn {
+  from { opacity: 0; scale: 0.96; }
+  to { opacity: 1; scale: 1; }
+}
+
+.floating-format-bar.pos-top {
+  top: calc(var(--top-bar-height) + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  flex-direction: row;
+}
+
+#workspace-shell.is-dual-pane .floating-format-bar.pos-top {
+  top: calc(var(--top-bar-height) + 34px);
+}
+
+.floating-format-bar.pos-bottom {
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  flex-direction: row;
+}
+
+.floating-format-bar.pos-left {
+  left: 8px;
+  top: calc(var(--top-bar-height) + 8px);
+  bottom: 8px;
+  flex-direction: column;
+  padding: 6px 4px;
+  max-height: none;
+}
+
+#workspace-shell.is-dual-pane .floating-format-bar.pos-left {
+  top: calc(var(--top-bar-height) + 34px);
+}
+
+.floating-format-scroll {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow: auto;
+  scrollbar-width: none;
+  min-width: 0;
+  min-height: 0;
+}
+
+.floating-format-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.floating-format-bar.pos-left .floating-format-scroll {
+  flex-direction: column;
+}
+
+.floating-format-btn,
+.floating-format-close {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--col-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.floating-format-btn:hover,
+.floating-format-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--col-text);
+}
+
+[data-theme="light"] .floating-format-btn:hover,
+[data-theme="light"] .floating-format-close:hover {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.floating-format-btn svg,
+.floating-format-close svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.floating-format-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--col-divider-subtle);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.floating-format-bar.pos-left .floating-format-divider {
+  width: 14px;
+  height: 1px;
+  margin: 2px 0;
+}
+
+.floating-format-pane-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: rgba(56, 189, 248, 0.18);
+  color: var(--col-accent);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* 5-Type Alert Popover */
+.floating-alert-popover {
+  position: absolute;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  min-width: 118px;
+  background: var(--col-menu-bg);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--col-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.floating-alert-item {
+  border: none;
+  background: transparent;
+  color: var(--col-text);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  text-align: left;
+  padding: 5px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.floating-alert-item:hover {
+  background: var(--col-menu-sel);
+  color: #ffffff;
+}

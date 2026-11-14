@@ -5,8 +5,9 @@
 .dualpane-container {
   display: flex;
   flex-direction: row;
+  flex: 1 1 0%;
   width: 100%;
-  height: calc(100vh - var(--top-bar-height));
+  height: 100%;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
