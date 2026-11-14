@@ -12,6 +12,7 @@ export class KeyboardTracker {
   private lastInnerWidth: number = typeof window !== "undefined" ? window.innerWidth : 0;
   private nativeImeDp: number = 0;
   private isKeyboardOpen: boolean = false;
+  private isLandscape: boolean = false;
   private currentInsetPx: number = 0;
   private boundUpdate: () => void;
 
@@ -55,6 +56,13 @@ export class KeyboardTracker {
     // Avoid double-offsetting if layout viewport (innerHeight) already shrank for IME
     const insetPx = Math.max(vvShrink, Math.max(0, this.nativeImeDp - layoutShrink));
     const isOpen = this.nativeImeDp > 80 || layoutShrink + vvShrink > 100;
+    const nextLandscape = winW > this.maxInnerHeight && winW >= 480;
+
+    if (nextLandscape !== this.isLandscape) {
+      this.isLandscape = nextLandscape;
+      document.body.classList.toggle("is-landscape", nextLandscape);
+      window.dispatchEvent(new CustomEvent("cathet:orientation-change", { detail: { isLandscape: nextLandscape } }));
+    }
 
     if (insetPx !== this.currentInsetPx || isOpen !== this.isKeyboardOpen) {
       this.currentInsetPx = insetPx;

@@ -775,11 +775,11 @@ body.is-dragging .dualpane-empty {
   will-change: opacity;
 }
 
-body.is-mobile .dualpane-pane-right.entering {
+body.is-mobile:not(.is-landscape) .dualpane-pane-right.entering {
   animation-name: dualPaneEnterBottom;
 }
 
-body.is-mobile .dualpane-pane-right.exiting {
+body.is-mobile:not(.is-landscape) .dualpane-pane-right.exiting {
   animation-name: dualPaneExitBottom;
 }
 

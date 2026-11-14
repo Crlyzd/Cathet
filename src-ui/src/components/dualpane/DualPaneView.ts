@@ -40,6 +40,7 @@ export class DualPaneView {
   private callbacks: DualPaneCallbacks;
   private embeddedHomeLeft: any = null;
   private embeddedHomeRight: any = null;
+  private onOrientationChange = (): void => { this.leftPaneEl.style.flex = ""; };
 
   constructor(container: HTMLElement, editorLeft: EditorComponent, callbacks: DualPaneCallbacks) {
     this.container = container;
@@ -102,6 +103,7 @@ export class DualPaneView {
     this.rightPaneEl.addEventListener("mousedown", () => this.setActivePane("right"));
     this.leftPaneEl.addEventListener("touchstart", () => this.setActivePane("left"), { passive: true });
     this.rightPaneEl.addEventListener("touchstart", () => this.setActivePane("right"), { passive: true });
+    window.addEventListener("cathet:orientation-change", this.onOrientationChange);
   }
 
   setSplitRatio(pct: number): void { this.leftPaneEl.style.flex = `0 0 ${pct}%`; }
@@ -206,6 +208,7 @@ export class DualPaneView {
   }
 
   destroy(): void {
+    window.removeEventListener("cathet:orientation-change", this.onOrientationChange);
     this.clearEmbeddedHome("left");
     this.clearEmbeddedHome("right");
     this.editorLeft.setTouchZoomOptions(undefined);
