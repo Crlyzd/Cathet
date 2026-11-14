@@ -8,6 +8,7 @@ import { t } from "../../services/i18nService";
 import { initAutoScroll } from "../../utils/autoScroll";
 import { attachSliderWheel } from "../../utils/sliderWheel";
 import { WindowsBackdropType, BackdropService } from "../../services/backdropService";
+import { FormatBarPosition } from "../../services/formatBarService";
 import { APP_VERSION } from "../../version";
 import {
   renderAppearanceAccordion, renderEditorAccordion, renderSystemAccordion,
@@ -21,6 +22,7 @@ export interface SettingsPaneCallbacks {
   onAlwaysOnTopChange: (enabled: boolean) => void;
   onAlwaysPreviewChange: (enabled: boolean) => void;
   onSnapScrollChange: (enabled: boolean) => void;
+  onFormatBarPositionChange?: (pos: FormatBarPosition) => void;
   onLinuxBackdropChange?: (mode: "solid" | "blur") => void;
   onWindowsBackdropChange?: (mode: WindowsBackdropType) => void;
   onBackdropOpacityChange?: (percent: number) => void;
@@ -39,6 +41,7 @@ export interface SettingsPaneState {
   isAlwaysOnTop: boolean;
   alwaysPreview: boolean;
   snapScroll: boolean;
+  formatBarPosition?: FormatBarPosition;
   linuxBackdrop?: "solid" | "blur";
   windowsBackdrop?: WindowsBackdropType;
   backdropOpacity?: number;
@@ -92,6 +95,12 @@ export class SettingsPaneComponent {
     if (partial.solidColor !== undefined && !partial.windowsBackdrop && !partial.theme) return;
     if (partial.fontId !== undefined && !partial.theme) return this.updateFontUI(partial.fontId);
     if (partial.locale !== undefined && !partial.theme) return this.updateLanguageUI(partial.locale);
+    if (partial.formatBarPosition !== undefined && !partial.theme) {
+      (["top", "bottom", "left"] as const).forEach((p) => {
+        this.container.querySelector(`#btn-format-pos-${p}`)?.classList.toggle("active", p === partial.formatBarPosition);
+      });
+      return;
+    }
     if (partial.windowsBackdrop !== undefined && !partial.theme) {
       this.updateBackdropUI(partial.windowsBackdrop);
       if (partial.backdropOpacity !== undefined) this.updateOpacityState(partial.backdropOpacity);
@@ -186,6 +195,9 @@ export class SettingsPaneComponent {
     const onClk = (id: string, fn: () => void) => this.container.querySelector(id)?.addEventListener("click", fn);
     onClk("#btn-theme-dark", () => this.state.theme !== "dark" && this.callbacks.onThemeChange("dark"));
     onClk("#btn-theme-light", () => this.state.theme !== "light" && this.callbacks.onThemeChange("light"));
+    (["top", "bottom", "left"] as const).forEach((pos) => {
+      onClk(`#btn-format-pos-${pos}`, () => this.callbacks.onFormatBarPositionChange?.(pos));
+    });
     onClk("#btn-backdrop-solid", () => { this.toggleSolidUI(true); this.callbacks.onLinuxBackdropChange?.("solid"); });
     onClk("#btn-backdrop-blur", () => { this.toggleSolidUI(false); this.callbacks.onLinuxBackdropChange?.("blur"); });
 

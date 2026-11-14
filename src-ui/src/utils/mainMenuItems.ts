@@ -4,6 +4,7 @@ import { t } from "../services/i18nService";
 export interface MainMenuContext {
   isMarkdownPreview: boolean;
   isDualPane: boolean;
+  isFormatBarVisible?: boolean;
   hasUpdate: boolean;
   isUpToDate: boolean;
   onNewWindow: () => void;
@@ -13,6 +14,7 @@ export interface MainMenuContext {
   onFind: () => void;
   onToggleDualPane: () => void;
   onToggleMarkdown: () => void;
+  onToggleFormatBar?: () => void;
   onOpenSettings: () => void;
   onQuit: () => void;
 }
@@ -43,6 +45,13 @@ export function buildMainMenuItems(ctx: MainMenuContext): MenuItem[] {
       isActive: ctx.isMarkdownPreview,
       action: ctx.onToggleMarkdown,
     },
+    ...(ctx.onToggleFormatBar ? [{
+      id: "toggle_format_bar",
+      label: t("menu.formatToolbar") || "Format Toolbar",
+      shortcut: "Ctrl+/",
+      isActive: !!ctx.isFormatBarVisible,
+      action: ctx.onToggleFormatBar,
+    }] : []),
     { id: "div_settings", label: "", isDivider: true },
     { id: "settings", label: t("menu.settings"), shortcut: "Ctrl+,", isGlowing: ctx.hasUpdate, action: ctx.onOpenSettings },
     { id: "div_quit", label: "", isDivider: true },

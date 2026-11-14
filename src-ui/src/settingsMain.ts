@@ -12,6 +12,7 @@ import { DualPaneService } from "./services/dualPaneService";
 import { I18nService } from "./services/i18nService";
 import { PlatformService } from "./services/platformService";
 import { BackdropService } from "./services/backdropService";
+import { FormatBarService, FormatBarPosition } from "./services/formatBarService";
 import { APP_VERSION } from "./version";
 
 class SettingsApp {
@@ -22,6 +23,7 @@ class SettingsApp {
   private previewService = new PreviewService();
   private dualPaneService = new DualPaneService();
   private backdropService = BackdropService.getInstance();
+  private formatBarService = FormatBarService.getInstance();
   private i18n = I18nService.getInstance();
   private tabsComponent: SettingsTabsComponent;
   private currentWindow = getCurrentWindow();
@@ -49,6 +51,7 @@ class SettingsApp {
         isAlwaysOnTop: this.isAlwaysOnTop,
         alwaysPreview: this.previewService.getAlwaysPreview(),
         snapScroll: this.dualPaneService.getSnapScroll(),
+        formatBarPosition: this.formatBarService.getPosition(),
         fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
         updateAvailable: !!updateInfo?.update_available,
         latestVersion: updateInfo?.latest_version,
@@ -65,6 +68,7 @@ class SettingsApp {
         onAlwaysOnTopChange: (enabled) => this.handleAlwaysOnTopChange(enabled),
         onAlwaysPreviewChange: (enabled) => this.handleAlwaysPreviewChange(enabled),
         onSnapScrollChange: (enabled) => this.handleSnapScrollChange(enabled),
+        onFormatBarPositionChange: (pos) => this.handleFormatBarPositionChange(pos),
         onWindowsBackdropChange: async (mode) => {
           await this.backdropService.setWindowsBackdrop(mode);
           this.tabsComponent.updateState({ windowsBackdrop: mode, backdropOpacity: this.backdropService.getOpacityPercent(mode) });
@@ -126,6 +130,7 @@ class SettingsApp {
   private async handleAlwaysOnTopChange(en: boolean): Promise<void> { this.tabsComponent.updateState({ isAlwaysOnTop: (this.isAlwaysOnTop = en) }); await invoke("set_always_on_top", { enabled: en }).catch(console.error); await emit("cathet:ontop-change", en); }
   private async handleAlwaysPreviewChange(en: boolean): Promise<void> { this.previewService.setAlwaysPreview(en); this.tabsComponent.updateState({ alwaysPreview: en }); await emit("cathet:always-preview-change", en); }
   private async handleSnapScrollChange(en: boolean): Promise<void> { this.dualPaneService.setSnapScroll(en); this.tabsComponent.updateState({ snapScroll: en }); await emit("cathet:snap-scroll-change", en); }
+  private async handleFormatBarPositionChange(pos: FormatBarPosition): Promise<void> { this.formatBarService.setPosition(pos); this.tabsComponent.updateState({ formatBarPosition: pos }); await emit("cathet:format-bar-pos-change", pos); }
 
   private async syncAlwaysOnTop(): Promise<void> {
     try {

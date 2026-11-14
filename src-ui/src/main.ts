@@ -4,6 +4,7 @@ import { ContextMenuComponent } from "./components/ContextMenu";
 import { EditorComponent } from "./components/Editor";
 import { DropOverlayComponent } from "./components/DropOverlay";
 import { DesktopSearchBarComponent } from "./components/DesktopSearchBar";
+import { FloatingFormatBarComponent } from "./components/FloatingFormatBar";
 import { DualPaneView } from "./components/dualpane/DualPaneView";
 import { showGlassDialog } from "./components/GlassDialog";
 import { FileService, FilePayload } from "./services/fileService";
@@ -14,6 +15,7 @@ import { UpdateService } from "./services/updateService";
 import { DragDropService } from "./services/dragDropService";
 import { PreviewService } from "./services/previewService";
 import { DualPaneService } from "./services/dualPaneService";
+import { FormatBarService } from "./services/formatBarService";
 import { MobileCoordinator } from "./services/mobileCoordinator";
 import { PlatformService } from "./services/platformService";
 import { BackdropService } from "./services/backdropService";
@@ -43,6 +45,8 @@ class CathetApp {
   private editor = new EditorComponent("editor-container");
   private dropOverlay = new DropOverlayComponent("app");
   private desktopSearchBar: DesktopSearchBarComponent | null = null;
+  private floatingFormatBar: FloatingFormatBarComponent | null = null;
+  private formatBarService = FormatBarService.getInstance();
   private dualPaneView: DualPaneView | null = null;
   private mobileCoord: MobileCoordinator | null = null;
   private notesService = new NotesService();
@@ -64,6 +68,16 @@ class CathetApp {
     if (!PlatformService.getInstance().isMobile()) {
       const shell = document.getElementById("workspace-shell") || document.body;
       this.desktopSearchBar = new DesktopSearchBarComponent(shell, () => this.getActiveEditor());
+      this.floatingFormatBar = new FloatingFormatBarComponent(shell, {
+        onFormat: (action) => applyMarkdownFormat(this.getActiveEditor(), action),
+        onClose: () => {
+          this.formatBarService.setVisible(false);
+          this.floatingFormatBar?.setVisible(false);
+        },
+      });
+      this.floatingFormatBar.setPosition(this.formatBarService.getPosition());
+      this.floatingFormatBar.setVisible(this.formatBarService.isVisible());
+      this.floatingFormatBar.setPreviewMode(this.getActiveEditor().getIsMarkdownPreview());
     }
 
     setupKeyboardCommitListener(
@@ -97,6 +111,10 @@ class CathetApp {
         this.dualPaneView?.setSnapScroll(s);
         const isLocked = this.dualPaneView ? this.dualPaneView.isSyncLocked() : true;
         this.mobileCoord?.setSyncState(s ? true : isLocked, s);
+      },
+      onFormatBarPosChanged: (pos) => {
+        this.formatBarService.setPosition(pos);
+        this.floatingFormatBar?.setPosition(pos);
       },
     });
 
@@ -223,6 +241,7 @@ class CathetApp {
       onNewWindow: () => this.windowService.openNewInstance(), onSettings: () => this.windowService.openSettingsWindow(),
       onToggleAlwaysOnTop: async () => { await emit("cathet:ontop-change", (this.isAlwaysOnTop = await this.windowService.toggleAlwaysOnTop())); },
       onToggleDualPane: () => this.toggleDualPane(), onToggleMarkdown: () => this.toggleMarkdown(),
+      onToggleFormatBar: () => this.toggleFormatBar(),
       onToggleBold: () => this.getActiveEditor().toggleBold(), onToggleItalic: () => this.getActiveEditor().toggleItalic(), onToggleUnderline: () => this.getActiveEditor().toggleUnderline(),
       onFormat: (a) => applyMarkdownFormat(this.getActiveEditor(), a),
       onSelectAll: () => this.getActiveEditor().selectAllClean(), onToggleWordWrap: () => this.getActiveEditor().toggleWordWrap(),
@@ -292,6 +311,19 @@ class CathetApp {
     });
   }
 
+  private toggleFormatBar(): void {
+    if (!this.floatingFormatBar) return;
+    const next = this.formatBarService.toggleVisible();
+    this.floatingFormatBar.setVisible(next);
+    this.syncFormatBarState();
+  }
+
+  private syncFormatBarState(): void {
+    if (!this.floatingFormatBar) return;
+    this.floatingFormatBar.setDualPaneState(this.dualPaneService.isDualPane(), this.dualPaneService.getActivePane());
+    this.floatingFormatBar.setPreviewMode(this.getActiveEditor().getIsMarkdownPreview());
+  }
+
   private targetPane(): "left" | "right" {
     if (!this.dualPaneView) return "left";
     if (!this.dualPaneView.getEditorRight()) return "right";
@@ -312,11 +344,13 @@ class CathetApp {
     }
     this.popupMenu.toggle(x, y, buildMainMenuItems({
       isMarkdownPreview: ed.getIsMarkdownPreview(), isDualPane: this.dualPaneService.isDualPane(),
+      isFormatBarVisible: this.formatBarService.isVisible(),
       hasUpdate: this.updateService.hasUpdate(), isUpToDate: !ed.isModified(),
       onNewWindow: () => this.windowService.openNewInstance(), onOpen: () => this.fetchAndApply(() => this.fileService.promptOpen(), this.targetPane()),
       onSave: () => this.saveDocument(false), onSaveAs: () => this.saveDocument(true),
       onFind: () => this.desktopSearchBar?.show(ed.getSelectedText().trim() || undefined),
       onToggleDualPane: () => this.toggleDualPane(), onToggleMarkdown: () => this.toggleMarkdown(),
+      onToggleFormatBar: () => this.toggleFormatBar(),
       onOpenSettings: () => this.windowService.openSettingsWindow(), onQuit: () => this.windowService.close(),
     }));
   }
@@ -442,7 +476,7 @@ class CathetApp {
         },
         onOpenFileRight: async () => { await this.autoSaveRightPane(); await this.fetchAndApply(() => this.fileService.promptOpen(), "right"); },
         onNewRight: async () => { await this.autoSaveRightPane(); this.dualPaneService.setRightPath(null); this.dualPaneView?.mountRightEditor("", null, false, this.fontService.getCurrentFont().family).focus(); this.topBar.setTitle(this.dualPaneService.getFormattedTitle()); },
-        onCloseDualPane: () => this.toggleDualPane(), onActivePaneChange: (p) => this.dualPaneService.setActivePane(p),
+        onCloseDualPane: () => this.toggleDualPane(), onActivePaneChange: (p) => { this.dualPaneService.setActivePane(p); this.syncFormatBarState(); },
         onTitleChange: () => this.topBar.setTitle(this.dualPaneService.getFormattedTitle()),
         onSyncChange: (s) => this.mobileCoord?.setSyncState(s, this.dualPaneService.getSnapScroll()),
         onSnapChange: (snap) => {
@@ -485,6 +519,7 @@ class CathetApp {
     }
     this.mobileCoord?.setDualPaneState(this.dualPaneService.isDualPane());
     this.topBar.setTitle(this.dualPaneService.getFormattedTitle());
+    this.syncFormatBarState();
   }
 
   private toggleMarkdown(): void {
@@ -495,6 +530,7 @@ class CathetApp {
       this.editor.toggleMarkdownPreview();
     }
     this.mobileCoord?.setMarkdownState(this.getActiveEditor().getIsMarkdownPreview());
+    this.syncFormatBarState();
   }
 
   private async applyLoadedFile(res: FilePayload, pane: "left" | "right"): Promise<void> {
@@ -536,6 +572,7 @@ class CathetApp {
     }
     this.mobileCoord?.setMarkdownState(preview);
     this.topBar.setTitle(this.dualPaneService.getFormattedTitle());
+    this.syncFormatBarState();
   }
 
   private async fetchAndApply(action: () => Promise<FilePayload | null>, pane: "left" | "right"): Promise<void> {
@@ -603,6 +640,7 @@ class CathetApp {
     this.dualPaneView?.setLeftPreviewActive(true);
     this.mobileCoord?.setMarkdownState(true);
     this.topBar.setTitle("Cathet Tutorial");
+    this.syncFormatBarState();
   }
 }
 window.addEventListener("DOMContentLoaded", () => { new CathetApp(); });

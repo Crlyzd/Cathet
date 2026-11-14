@@ -2,6 +2,7 @@ import { icons } from "../../utils/monochromeIcons";
 import { t } from "../../services/i18nService";
 import { PlatformService } from "../../services/platformService";
 import { WindowsBackdropType } from "../../services/backdropService";
+import { FormatBarPosition } from "../../services/formatBarService";
 
 const STORAGE_KEY_OPEN_ACCORDIONS = "cathet_open_accordions";
 export const ALL_ACCORDION_IDS = ["appearance", "editor", "system"] as const;
@@ -12,6 +13,7 @@ export interface AccordionRenderState {
   theme: "dark" | "light";
   fontId: string; locale: string;
   isAlwaysOnTop: boolean; alwaysPreview: boolean; snapScroll: boolean;
+  formatBarPosition?: FormatBarPosition;
   linuxBackdrop?: "solid" | "blur"; windowsBackdrop?: WindowsBackdropType;
   backdropOpacity: number; isRegistered?: boolean;
   registeredExePath?: string | null; currentExePath?: string;
@@ -183,6 +185,19 @@ export function renderEditorAccordion(state: AccordionRenderState): string {
             <span class="switch-track"></span>
           </label>
         </div>
+
+        ${!isMobile ? `
+        <div class="setting-item">
+          <div class="setting-meta">
+            <span class="setting-title">${t("settings.formatToolbarPos") || "Format Toolbar"}</span>
+            <span class="setting-subtext"><span class="subtext-content">${t("settings.formatToolbarPosSub") || "Dock position (Ctrl+/)"}</span></span>
+          </div>
+          <div class="pill-toggle-group">
+            <button class="pill-toggle-btn ${state.formatBarPosition === "top" ? "active" : ""}" id="btn-format-pos-top"><span>${t("settings.posTop") || "Top"}</span></button>
+            <button class="pill-toggle-btn ${(state.formatBarPosition || "bottom") === "bottom" ? "active" : ""}" id="btn-format-pos-bottom"><span>${t("settings.posBottom") || "Bottom"}</span></button>
+            <button class="pill-toggle-btn ${state.formatBarPosition === "left" ? "active" : ""}" id="btn-format-pos-left"><span>${t("settings.posLeft") || "Left"}</span></button>
+          </div>
+        </div>` : ""}
       </div>
     </div>
   `;

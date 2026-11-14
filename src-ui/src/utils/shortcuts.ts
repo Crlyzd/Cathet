@@ -19,6 +19,7 @@ export interface ShortcutHandlers {
   onFindNext?: () => void;
   onFindPrevious?: () => void;
   onToggleDualPane?: () => void;
+  onToggleFormatBar?: () => void;
   onFormat?: (action: FormatAction) => void;
 }
 
@@ -60,6 +61,12 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
     if (e.key === "\\") {
       e.preventDefault();
       handlers.onFormat?.("clear");
+      return;
+    }
+
+    if (e.key === "/" && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      handlers.onToggleFormatBar?.();
       return;
     }
 

@@ -6,6 +6,7 @@ import { UpdateService } from "../services/updateService";
 import { PreviewService } from "../services/previewService";
 import { I18nService } from "../services/i18nService";
 import { BackdropService } from "../services/backdropService";
+import { FormatBarPosition } from "../services/formatBarService";
 
 export interface WindowSyncContext {
   themeService: ThemeService;
@@ -18,6 +19,7 @@ export interface WindowSyncContext {
   onLoadTutorial: () => void;
   onSnapScrollChanged?: (enabled: boolean) => void;
   onLanguageChanged?: (locale: string) => void;
+  onFormatBarPosChanged?: (pos: FormatBarPosition) => void;
 }
 
 /**
@@ -50,6 +52,10 @@ export function registerWindowSyncListeners(ctx: WindowSyncContext): void {
 
   listen<boolean>("cathet:snap-scroll-change", (e) => {
     ctx.onSnapScrollChanged?.(e.payload);
+  });
+
+  listen<FormatBarPosition>("cathet:format-bar-pos-change", (e) => {
+    ctx.onFormatBarPosChanged?.(e.payload);
   });
 
   listen<any>("cathet:update-status", (e) => {

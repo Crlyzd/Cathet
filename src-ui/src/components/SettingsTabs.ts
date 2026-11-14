@@ -12,6 +12,7 @@ import { PlatformService } from "../services/platformService";
 import { t } from "../services/i18nService";
 
 import { WindowsBackdropType } from "../services/backdropService";
+import { FormatBarPosition } from "../services/formatBarService";
 
 export interface SettingsTabCallbacks extends SettingsPaneCallbacks {
   onOpenTutorial: () => void;
@@ -25,6 +26,7 @@ export interface SettingsInitialState {
   isAlwaysOnTop: boolean;
   alwaysPreview: boolean;
   snapScroll: boolean;
+  formatBarPosition?: FormatBarPosition;
   linuxBackdrop?: "solid" | "blur";
   windowsBackdrop?: WindowsBackdropType;
   backdropOpacity?: number;
