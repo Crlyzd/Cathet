@@ -75,6 +75,14 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-14: Fix `EditorHistory` Caret Offset Drift Across `contenteditable` `<div>`/`<br>` Lines
+- **Summary**: Fixed `getCaretOffset()` in `src-ui/src/utils/editorHistory.ts` (247 lines) to walk `<div>`/`<p>`/`<br>`/`b64-pill-container` nodes instead of `Range.toString().length` (which stripped `<div>`/`<br>` newlines and caused caret restoration after Undo to jump onto earlier lines), and increased typing coalesce debounce from 350ms to 500ms.
+- **Affected Files**: `src-ui/src/utils/editorHistory.ts`, `history.md`
+
+### 2026-11-14: Fix Broken Undo/Redo with Lossless `EditorHistory` Stack & Mobile Dot Menu Actions
+- **Summary**: Replaced fragile native `document.execCommand("undo" | "redo")` with a dedicated snapshot-based `EditorHistory` (`src-ui/src/utils/editorHistory.ts`, 216 lines) that survives `Ctrl+M` Markdown Preview toggles, Base64 image pastes (`insertHtmlAtCaretOrEnd`), formatting actions, and focus transfers. Updated `Editor.ts` (`canUndo`/`canRedo`), `contextMenuItems.ts` (disabled state gating), `shortcuts.ts` (`Ctrl+Z`, `Ctrl+Shift+Z`, `Ctrl+Y` with `INPUT`/`TEXTAREA` guard), and added Undo/Redo to the Android dot menu (`MobileMenuDrawer.ts`, `mobileCoordinator.ts`, `main.ts`).
+- **Affected Files**: `src-ui/src/utils/editorHistory.ts`, `src-ui/src/components/Editor.ts`, `src-ui/src/utils/contextMenuItems.ts`, `src-ui/src/utils/shortcuts.ts`, `src-ui/src/components/MobileMenuDrawer.ts`, `src-ui/src/services/mobileCoordinator.ts`, `src-ui/src/main.ts`, `history.md`
+
 ### 2026-11-14: Update `AGENTS.md`, `tutorial.md`, and `README.md` with Floating Toolbar & Markdown Superpowers
 - **Summary**: Updated `AGENTS.md` (Rule 5 & Rule 10) with `FloatingFormatBar.ts`, `formatBarService.ts`, and `formatToolbarItems.ts`; added `Ctrl + /` (`Format Toolbar`) to `src-ui/src/assets/tutorial.md`; added a `Markdown Superpowers (Zero-Bloat, 100% Lossless)` showcase section and `SCREENSHOT SPEC #18` (`docs/screenshots/windows-floating-toolbar-markdown.webp`) to `README.md` right after `Why Cathet?`.
 - **Affected Files**: `AGENTS.md`, `src-ui/src/assets/tutorial.md`, `README.md`, `history.md`
