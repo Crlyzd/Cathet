@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { globalEventBus } from "../utils/eventBus";
 import { showGlassDialog } from "../components/GlassDialog";
 
@@ -8,6 +9,7 @@ export interface UpdateInfo {
   current_version: string;
   latest_version: string;
   download_url: string;
+  release_url?: string;
   release_notes: string;
   is_store_package?: boolean;
 }
@@ -24,6 +26,8 @@ export class UpdateService {
   private isDownloading: boolean = false;
   private downloadedExePath: string | null = null;
   private readonly STORAGE_KEY = "cathet_latest_update";
+  private readonly LAST_CHECK_KEY = "cathet_last_update_check";
+  private readonly DEFAULT_RELEASE_URL = "https://github.com/Crlyzd/Cathet/releases/latest";
 
   constructor() {
     try {
@@ -43,6 +47,7 @@ export class UpdateService {
       this.updateInfo = info;
       try {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(info));
+        localStorage.setItem(this.LAST_CHECK_KEY, String(Date.now()));
       } catch (_) {}
       globalEventBus.emit("update:statusChanged", info);
       await emit("cathet:update-status", info).catch(console.error);
@@ -53,6 +58,24 @@ export class UpdateService {
     } finally {
       this.isChecking = false;
     }
+  }
+
+  async checkForUpdatesOccasionally(intervalMs = 86_400_000): Promise<UpdateInfo | null> {
+    try {
+      const last = Number(localStorage.getItem(this.LAST_CHECK_KEY) || "0");
+      if (last > 0 && Date.now() - last < intervalMs) {
+        return this.updateInfo;
+      }
+    } catch (_) {}
+    return this.checkForUpdates();
+  }
+
+  async openAndroidUpdateUrl(): Promise<void> {
+    const targetUrl =
+      this.updateInfo?.download_url ||
+      this.updateInfo?.release_url ||
+      this.DEFAULT_RELEASE_URL;
+    await openUrl(targetUrl).catch(console.error);
   }
 
   setUpdateInfo(info: UpdateInfo | null): void {

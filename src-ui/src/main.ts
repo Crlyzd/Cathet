@@ -99,6 +99,7 @@ class CathetApp {
       await emit("cathet:ontop-change", (this.isAlwaysOnTop = await this.windowService.toggleAlwaysOnTop()));
     });
     globalEventBus.on("update:statusChanged", (i: any) => this.topBar.setUpdateAvailable(!!i?.update_available));
+    globalEventBus.on("update:openAndroidUrl", () => this.updateService.openAndroidUpdateUrl());
 
     registerWindowSyncListeners({
       themeService: this.themeService, fontService: this.fontService, updateService: this.updateService, previewService: this.previewService,
@@ -158,6 +159,7 @@ class CathetApp {
           this.mobileCoord?.setSyncState(true, s);
         }
       },
+      onOpenUpdate: () => this.updateService.openAndroidUpdateUrl(),
       getActiveEditor: () => this.getActiveEditor(),
     });
 
@@ -232,7 +234,10 @@ class CathetApp {
     this.registerShortcuts();
     this.initDragDrop();
     this.loadInitialFile();
-    setTimeout(() => this.updateService.checkForUpdates(), 150);
+    setTimeout(() => {
+      if (PlatformService.getInstance().isMobile()) this.updateService.checkForUpdatesOccasionally();
+      else this.updateService.checkForUpdates();
+    }, 150);
   }
 
   private registerShortcuts(): void {
@@ -343,6 +348,7 @@ class CathetApp {
         canSave: ed.isModified(),
         canUndo: ed.canUndo(),
         canRedo: ed.canRedo(),
+        updateVersion: this.updateService.hasUpdate() ? (this.updateService.getUpdateInfo()?.latest_version || null) : null,
       });
       return;
     }

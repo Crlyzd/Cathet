@@ -20,6 +20,7 @@ export interface MobileCoordinatorActions {
   onFormat?: (action: FormatAction) => void;
   onToggleSync?: (mode: MobileSyncMode) => void;
   onSnapScrollChanged?: (enabled: boolean) => void;
+  onOpenUpdate?: () => void;
   getActiveEditor?: () => any;
 }
 
@@ -87,6 +88,7 @@ export class MobileCoordinator {
           onToggleDualPane: this.actions.onToggleDualPane,
           onToggleMarkdown: this.actions.onToggleMarkdown,
           onOpenSettings: () => this.openSettings(),
+          onOpenUpdate: () => this.actions.onOpenUpdate?.(),
         });
       }
     };

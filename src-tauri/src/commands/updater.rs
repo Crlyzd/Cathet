@@ -22,6 +22,7 @@ pub struct UpdateInfo {
     pub current_version: String,
     pub latest_version: String,
     pub download_url: String,
+    pub release_url: String,
     pub release_notes: String,
     pub is_store_package: bool,
 }
@@ -29,6 +30,7 @@ pub struct UpdateInfo {
 #[derive(Debug, Deserialize)]
 struct GithubRelease {
     tag_name: String,
+    html_url: Option<String>,
     body: Option<String>,
     assets: Vec<GithubAsset>,
 }
@@ -46,6 +48,7 @@ fn empty_update_info() -> UpdateInfo {
         current_version: CURRENT_VERSION.into(),
         latest_version: CURRENT_VERSION.into(),
         download_url: String::new(),
+        release_url: format!("https://github.com/{}/releases/latest", GITHUB_REPO),
         release_notes: String::new(),
         is_store_package: is_msix_packaged(),
     }
@@ -53,39 +56,35 @@ fn empty_update_info() -> UpdateInfo {
 
 #[tauri::command]
 pub async fn check_for_updates() -> Result<UpdateInfo, String> {
-    #[cfg(target_os = "android")]
-    {
+    if is_msix_packaged() {
         return Ok(empty_update_info());
     }
 
-    #[cfg(not(target_os = "android"))]
-    {
-        if is_msix_packaged() {
-            return Ok(empty_update_info());
-        }
+    let url = format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO);
+    let client = reqwest::Client::builder().user_agent("Cathet-Updater").build().map_err(|e| e.to_string())?;
+    let response = client.get(&url).send().await.map_err(|e| format!("Failed to fetch release: {}", e))?;
 
-        let url = format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO);
-        let client = reqwest::Client::builder().user_agent("Cathet-Updater").build().map_err(|e| e.to_string())?;
-        let response = client.get(&url).send().await.map_err(|e| format!("Failed to fetch release: {}", e))?;
-
-        if !response.status().is_success() {
-            return Ok(empty_update_info());
-        }
-
-        let release: GithubRelease = response.json().await.map_err(|e| format!("Failed to parse release: {}", e))?;
-        let latest_tag = release.tag_name.trim_start_matches('v');
-        let has_update = is_newer_version(latest_tag, CURRENT_VERSION);
-        let download_url = find_matching_asset(&release.assets).map(|a| a.browser_download_url.clone()).unwrap_or_default();
-
-        Ok(UpdateInfo {
-            update_available: has_update && !download_url.is_empty(),
-            current_version: CURRENT_VERSION.into(),
-            latest_version: latest_tag.into(),
-            download_url,
-            release_notes: release.body.unwrap_or_default(),
-            is_store_package: false,
-        })
+    if !response.status().is_success() {
+        return Ok(empty_update_info());
     }
+
+    let release: GithubRelease = response.json().await.map_err(|e| format!("Failed to parse release: {}", e))?;
+    let latest_tag = release.tag_name.trim_start_matches('v');
+    let has_update = is_newer_version(latest_tag, CURRENT_VERSION);
+    let download_url = find_matching_asset(&release.assets).map(|a| a.browser_download_url.clone()).unwrap_or_default();
+    let release_url = release
+        .html_url
+        .unwrap_or_else(|| format!("https://github.com/{}/releases/latest", GITHUB_REPO));
+
+    Ok(UpdateInfo {
+        update_available: has_update && !download_url.is_empty(),
+        current_version: CURRENT_VERSION.into(),
+        latest_version: latest_tag.into(),
+        download_url,
+        release_url,
+        release_notes: release.body.unwrap_or_default(),
+        is_store_package: false,
+    })
 }
 
 #[tauri::command]
