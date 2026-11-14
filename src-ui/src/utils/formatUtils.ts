@@ -3,24 +3,12 @@ import { ImageInsertModalComponent } from "../components/ImageInsertModal";
 import { processAndInsertImageFile, insertHtmlAtCaretOrEnd } from "./editorPasteHandler";
 
 export type FormatAction =
-  | "bold"
-  | "italic"
-  | "strike"
-  | "code"
-  | "highlight"
-  | "math"
-  | "h1"
-  | "h2"
-  | "h3"
-  | "bullet"
-  | "number"
-  | "task"
-  | "quote"
-  | "codeblock"
-  | "link"
-  | "image"
-  | "table"
-  | "rule"
+  | "bold" | "italic" | "strike" | "code" | "highlight" | "math"
+  | "subscript" | "superscript"
+  | "h1" | "h2" | "h3" | "bullet" | "number" | "task"
+  | "quote" | "codeblock" | "link" | "image" | "table" | "rule"
+  | "displayMath" | "footnote" | "details" | "frontmatter"
+  | "alertNote" | "alertTip" | "alertImportant" | "alertWarning" | "alertCaution"
   | "clear";
 
 const INLINE_TOKENS: Partial<Record<FormatAction, [string, string]>> = {
@@ -30,6 +18,22 @@ const INLINE_TOKENS: Partial<Record<FormatAction, [string, string]>> = {
   code: ["`", "`"],
   highlight: ["==", "=="],
   math: ["$", "$"],
+  subscript: ["~", "~"],
+  superscript: ["^", "^"],
+};
+
+const BLOCK_SNIPPETS: Partial<Record<FormatAction, { text: string; wrap?: [string, string]; caretBack?: number }>> = {
+  codeblock: { text: "```\n\n```", wrap: ["```\n", "\n```"], caretBack: 4 },
+  table: { text: "\n| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |\n" },
+  rule: { text: "\n---\n" },
+  displayMath: { text: "\n$$\n\n$$\n", wrap: ["\n$$\n", "\n$$\n"], caretBack: 4 },
+  details: { text: "\n<details>\n<summary>Details</summary>\n\n\n\n</details>\n", wrap: ["\n<details>\n<summary>Details</summary>\n\n", "\n\n</details>\n"], caretBack: 12 },
+  frontmatter: { text: "---\ntitle: \ndate: \n---\n\n", caretBack: 13 },
+  alertNote: { text: "\n> [!NOTE]\n> ", wrap: ["\n> [!NOTE]\n> ", ""] },
+  alertTip: { text: "\n> [!TIP]\n> ", wrap: ["\n> [!TIP]\n> ", ""] },
+  alertImportant: { text: "\n> [!IMPORTANT]\n> ", wrap: ["\n> [!IMPORTANT]\n> ", ""] },
+  alertWarning: { text: "\n> [!WARNING]\n> ", wrap: ["\n> [!WARNING]\n> ", ""] },
+  alertCaution: { text: "\n> [!CAUTION]\n> ", wrap: ["\n> [!CAUTION]\n> ", ""] },
 };
 
 const LINE_PREFIXES: Partial<Record<FormatAction, string>> = {
@@ -65,6 +69,7 @@ function ensureEditorSelection(editorEl: HTMLElement): Selection | null {
 
 function stripMarkdownTokens(text: string): string {
   return text
+    .replace(/^>\s+\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/gm, "")
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/^>\s+/gm, "")
     .replace(/^-\s+\[[ xX]\]\s+/gm, "")
@@ -72,7 +77,26 @@ function stripMarkdownTokens(text: string): string {
     .replace(/^\d+\.\s+/gm, "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/(\*\*|~~|==)(.*?)\1/g, "$2")
-    .replace(/(\*|`|\$)(.*?)\1/g, "$2");
+    .replace(/(\*|`|\$|\^|~)(.*?)\1/g, "$2");
+}
+
+function insertAutoFootnote(editor: EditorComponent, editorEl: HTMLElement): void {
+  const existing = editor.getText();
+  const used = new Set<number>();
+  for (const m of existing.matchAll(/\[\^(\d+)\]/g)) {
+    used.add(Number(m[1]));
+  }
+  let nextId = 1;
+  while (used.has(nextId)) nextId++;
+  document.execCommand("insertText", false, `[^${nextId}]`);
+  const updated = editor.getText().replace(/\s+$/, "");
+  editor.setRawContent(`${updated}\n\n[^${nextId}]: `);
+  const range = document.createRange();
+  range.selectNodeContents(editorEl);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel?.removeAllRanges();
+  sel?.addRange(range);
 }
 
 function transformLines(text: string, action: FormatAction): string {
@@ -156,16 +180,25 @@ export function applyMarkdownFormat(editor: EditorComponent, action: FormatActio
     return;
   }
 
-  // 3. Blocks, Inserts & Clear
+  // 3. Table-Driven Block Snippets & Auto-Footnote
+  const snippet = BLOCK_SNIPPETS[action];
+  if (snippet) {
+    if (hasSelection && snippet.wrap) {
+      document.execCommand("insertText", false, `${snippet.wrap[0]}${selectedText}${snippet.wrap[1]}`);
+    } else {
+      document.execCommand("insertText", false, snippet.text);
+      if (snippet.caretBack) moveCaretBackward(snippet.caretBack);
+    }
+    editor.setRawContent(editor.getText());
+    return;
+  }
+  if (action === "footnote") {
+    insertAutoFootnote(editor, editorEl);
+    return;
+  }
+
+  // 4. Special Inserts & Clear
   switch (action) {
-    case "codeblock":
-      if (hasSelection) {
-        document.execCommand("insertText", false, `\`\`\`\n${selectedText}\n\`\`\``);
-      } else {
-        document.execCommand("insertText", false, "```\n\n```");
-        moveCaretBackward(4);
-      }
-      break;
     case "link":
       if (hasSelection) {
         document.execCommand("insertText", false, `[${selectedText}](https://)`);
@@ -196,16 +229,6 @@ export function applyMarkdownFormat(editor: EditorComponent, action: FormatActio
       });
       return;
     }
-    case "table":
-      document.execCommand(
-        "insertText",
-        false,
-        "\n| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |\n"
-      );
-      break;
-    case "rule":
-      document.execCommand("insertText", false, "\n---\n");
-      break;
     case "clear":
       if (hasSelection || expandCollapsedToCurrentLine(sel)) {
         document.execCommand("insertText", false, stripMarkdownTokens(sel.toString()));

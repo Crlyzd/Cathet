@@ -49,7 +49,11 @@ export function insertHtmlAtCaretOrEnd(editorEl: HTMLElement, html: string): voi
   range.insertNode(fragment);
   if (lastChild && sel) {
     const nextRange = document.createRange();
-    nextRange.setStartAfter(lastChild);
+    if (lastChild.nodeType === Node.TEXT_NODE) {
+      nextRange.setStart(lastChild, lastChild.textContent?.length ?? 0);
+    } else {
+      nextRange.setStartAfter(lastChild);
+    }
     nextRange.collapse(true);
     sel.removeAllRanges();
     sel.addRange(nextRange);
@@ -88,6 +92,7 @@ export async function processAndInsertImageFile(
     const pillHtml = createBase64PillHtml(dataUrl);
     const mdImgHtml = `![Pasted Image](${pillHtml})`;
     insertHtmlAtCaretOrEnd(editorEl, mdImgHtml);
+    if (!document.execCommand("insertText", false, "\n")) insertHtmlAtCaretOrEnd(editorEl, "\n");
     onContentUpdated(serializeEditorContent(editorEl));
     return true;
   } catch (err) {

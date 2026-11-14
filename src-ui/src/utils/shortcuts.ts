@@ -65,12 +65,19 @@ export function registerShortcuts(handlers: ShortcutHandlers): () => void {
 
     const key = e.key.toUpperCase();
 
-    // Ctrl + Alt + Key (Headings & Horizontal Rule)
+    // Ctrl + Alt + Key (Headings, Rule & Tier 2 Extended Markdown)
     if (e.altKey && !e.shiftKey) {
-      if (key === "1") { e.preventDefault(); handlers.onFormat?.("h1"); return; }
-      if (key === "2") { e.preventDefault(); handlers.onFormat?.("h2"); return; }
-      if (key === "3") { e.preventDefault(); handlers.onFormat?.("h3"); return; }
-      if (key === "R") { e.preventDefault(); handlers.onFormat?.("rule"); return; }
+      const altActions: Record<string, FormatAction> = {
+        "1": "h1", "2": "h2", "3": "h3", R: "rule",
+        S: "subscript", P: "superscript", M: "displayMath",
+        A: "alertNote", F: "footnote", D: "details", Y: "frontmatter",
+      };
+      const altAction = altActions[key];
+      if (altAction) {
+        e.preventDefault();
+        handlers.onFormat?.(altAction);
+        return;
+      }
     }
 
     // Ctrl + Shift + Key
