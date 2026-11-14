@@ -26,6 +26,7 @@
     "exitDualPane": "Metu Papan Loro",
     "markdownPreview": "Markdown: Delok",
     "markdownEdit": "Markdown: Nulis",
+    "formatToolbar": "Bilah Format",
     "settings": "Setelan",
     "quit": "Metu / Ladub"
   },
@@ -140,6 +141,14 @@
     "downloadUpdate": "Undhuh Anyaran-e",
     "restartInstall": "Baleni terus Pasang",
     "about": "Babagan & Dhukungan",
-    "aboutDesc": "Editor teks & markdown paling entheng apik sak ndunyo, dirancang cek kipa karo cepet."
+    "aboutDesc": "Editor teks & markdown paling entheng apik sak ndunyo, dirancang cek kipa karo cepet.",
+    "formatToolbarPos": "Bilah Format",
+    "formatToolbarPosSub": "Posisi dok (Ctrl+/)",
+    "posTop": "Duwur",
+    "posBottom": "Ngisor",
+    "posLeft": "Kiwo"
+  },
+  "formatBar": {
+    "close": "Tutup (Ctrl+/)"
   }
 }

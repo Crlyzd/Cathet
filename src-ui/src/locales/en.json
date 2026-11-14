@@ -26,6 +26,7 @@
     "exitDualPane": "Exit Dual Pane",
     "markdownPreview": "Markdown: Preview",
     "markdownEdit": "Markdown: Edit",
+    "formatToolbar": "Format Toolbar",
     "settings": "Settings",
     "quit": "Quit"
   },
@@ -140,6 +141,14 @@
     "downloadUpdate": "Download Update",
     "restartInstall": "Restart & Install",
     "about": "About & Support",
-    "aboutDesc": "Lightweight, distraction-free text & markdown editor crafted for speed and elegance."
+    "aboutDesc": "Lightweight, distraction-free text & markdown editor crafted for speed and elegance.",
+    "formatToolbarPos": "Format Toolbar",
+    "formatToolbarPosSub": "Dock position (Ctrl+/)",
+    "posTop": "Top",
+    "posBottom": "Bottom",
+    "posLeft": "Left"
+  },
+  "formatBar": {
+    "close": "Close (Ctrl+/)"
   }
 }

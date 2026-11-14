@@ -26,6 +26,7 @@
     "exitDualPane": "Miyos Panel Kalih",
     "markdownPreview": "Markdown: Pratingal",
     "markdownEdit": "Markdown: Besut",
+    "formatToolbar": "Bilah Format",
     "settings": "Pangaturan",
     "quit": "Miyos"
   },
@@ -140,6 +141,14 @@
     "downloadUpdate": "Undhuh Anyaran",
     "restartInstall": "Wangsul Wiwit & Pasang",
     "about": "Babagan & Panjurung",
-    "aboutDesc": "Piranti panyerat ènthèng tanpa gangguan ingkang dipunrancang kanggé rikat lan éndah."
+    "aboutDesc": "Piranti panyerat ènthèng tanpa gangguan ingkang dipunrancang kanggé rikat lan éndah.",
+    "formatToolbarPos": "Bilah Format",
+    "formatToolbarPosSub": "Papan dok (Ctrl+/)",
+    "posTop": "Nginggil",
+    "posBottom": "Ngandhap",
+    "posLeft": "Kiwa"
+  },
+  "formatBar": {
+    "close": "Tutup (Ctrl+/)"
   }
 }

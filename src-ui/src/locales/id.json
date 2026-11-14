@@ -26,6 +26,7 @@
     "exitDualPane": "Keluar Panel Ganda",
     "markdownPreview": "Markdown: Pratinjau",
     "markdownEdit": "Markdown: Sunting",
+    "formatToolbar": "Bilah Format",
     "settings": "Pengaturan",
     "quit": "Keluar"
   },
@@ -140,7 +141,15 @@
     "downloadUpdate": "Unduh Pembaruan",
     "restartInstall": "Mulai Ulang & Pasang",
     "about": "Tentang & Dukungan",
-    "aboutDesc": "Editor teks & markdown ringan bebas distraksi dirancang untuk kecepatan dan keindahan."
+    "aboutDesc": "Editor teks & markdown ringan bebas distraksi dirancang untuk kecepatan dan keindahan.",
+    "formatToolbarPos": "Bilah Format",
+    "formatToolbarPosSub": "Posisi dok (Ctrl+/)",
+    "posTop": "Atas",
+    "posBottom": "Bawah",
+    "posLeft": "Kiri"
+  },
+  "formatBar": {
+    "close": "Tutup (Ctrl+/)"
   }
 }
 
