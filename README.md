@@ -203,13 +203,13 @@ Cathet on Android brings desktop-class markdown editing to your phone with high-
       <td width="33%" align="center">
         <!--
         📸 SCREENSHOT SPEC #10: ANDROID HOME DASHBOARD
-        - Target File: docs/screenshots/android-home-dashboard.png
+        - Target File: docs/screenshots/android-home-dashboard.jpg
         - Platform: Android Phone (API 24+)
         - Theme: Dark Mode
         - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
         - State to Capture: Android Notes Home view (`HomeView`). Folder category tabs (`All`, `Work`, `Personal`), search bar, note tiles with tag pills, and circular floating `+` action button.
         -->
-        <img src="docs/screenshots/android-home-dashboard.png" alt="Android Notes Home Dashboard" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <img src="docs/screenshots/android-home-dashboard.jpg" alt="Android Notes Home Dashboard" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
         <b>1. Notes Home Dashboard</b>
       </td>
       <td width="33%" align="center">
@@ -227,13 +227,13 @@ Cathet on Android brings desktop-class markdown editing to your phone with high-
       <td width="33%" align="center">
         <!--
         📸 SCREENSHOT SPEC #12: ANDROID HOME MULTISELECT
-        - Target File: docs/screenshots/android-home-multiselect.png
+        - Target File: docs/screenshots/android-home-multiselect.webp
         - Platform: Android Phone
         - Theme: Dark Mode
         - Aspect Ratio: 1080x2400 (Mobile Portrait 9:20)
         - State to Capture: Multi-select batch mode active on Notes Home. Top action bar showing item count, Pin, Hide, Move, Delete icons; multiple note tiles selected with checkmark badges.
         -->
-        <img src="docs/screenshots/android-home-multiselect.png" alt="Android Notes Multi-Select Batch Bar" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
+        <img src="docs/screenshots/android-home-multiselect.webp" alt="Android Notes Multi-Select Batch Bar" width="270" style="border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.35);" /><br/>
         <b>3. Multi-Select Batch Actions</b>
       </td>
     </tr>
@@ -304,13 +304,13 @@ Access Settings via `Ctrl + ,` (or the top-left `●` dot) on Desktop, or tap th
       <td width="50%" align="center">
         <!--
         📸 SCREENSHOT SPEC #06: WINDOWS SETTINGS MODAL
-        - Target File: docs/screenshots/windows-settings-modal.png
+        - Target File: docs/screenshots/windows-settings-modal.webp
         - Platform: Windows 11 Desktop
         - Theme: Dark Mode
         - Aspect Ratio: 700x636 (2x scale of canonical 350x318 window)
         - State to Capture: Dedicated frosted glass Settings window (`settings.html`) open to Personalization tab. Dark/Light theme toggle, font family select, backdrop options, and Always on Top toggle.
         -->
-        <img src="docs/screenshots/windows-settings-modal.png" alt="Windows Desktop Settings Window" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);" /><br/>
+        <img src="docs/screenshots/windows-settings-modal.webp" alt="Windows Desktop Settings Window" width="440" style="border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);" /><br/>
         <b>Desktop Settings Window (350x318 Frosted Glass)</b>
       </td>
       <td width="50%" align="center">
@@ -457,13 +457,13 @@ For contributors or when refreshing screenshots, all image assets live in `docs/
 | 03 | `windows-preview-light.webp` | Windows 11 | Light | Rendered Markdown preview mode on light frosted glass |
 | 04 | `windows-dualpane-horizontal.webp` | Windows 11 | Dark | Side-by-side Dual-Pane mode (`Ctrl+D`) with splitter badge |
 | 05 | `windows-base64-pill-badge.webp` | Windows 11 | Dark | Collapsible `[ 📷 WEBP ~245 KB ▾ ]` pill badge inline with text |
-| 06 | `windows-settings-modal.png` | Windows 11 | Dark | Dedicated 350x318 frosted glass desktop Settings window |
+| 06 | `windows-settings-modal.webp` | Windows 11 | Dark | Dedicated 350x318 frosted glass desktop Settings window |
 | 07 | `windows-context-menu-glass.png` | Windows 11 | Dark | Custom frosted glass right-click context menu |
 | 08 | `linux-gnome-solid-slate.png` | Linux (GNOME) | Dark | WebKitGTK solid slate canvas (`#12141c`) default mode |
 | 09 | `linux-kde-translucent-blur.png` | Linux (KDE) | Dark | Translucent glass mode with KWin force-blur effect |
-| 10 | `android-home-dashboard.png` | Android | Dark | Notes Home dashboard with category tabs, search, and note cards |
+| 10 | `android-home-dashboard.jpg` | Android | Dark | Notes Home dashboard with category tabs, search, and note cards |
 | 11 | `android-vault-rotary-dial.webp` | Android | Dark | Mechanical rotary safe tumbler dial HUD during unlock gesture |
-| 12 | `android-home-multiselect.png` | Android | Dark | Notes Home multi-select mode with top action bar and selected cards |
+| 12 | `android-home-multiselect.webp` | Android | Dark | Notes Home multi-select mode with top action bar and selected cards |
 | 13 | `android-editor-gboard-image.webp` | Android | Dark | Gboard open pasting stickers/GIFs via Commit Content API |
 | 14 | `android-in-doc-search.webp` | Android | Dark | In-document search ribbon with CSS highlighted matches and keyboard open |
 | 15 | `android-dualpane-vertical.webp` | Android | Dark | Mobile vertical stacked dual-pane with touch dock controls |

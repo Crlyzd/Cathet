@@ -76,8 +76,8 @@ This document serves as the living project documentation and institutional memor
 ## Project Changes Log
 
 ### 2026-11-14: Convert `docs/show/` Showcase Videos to Animated WebP & Apply to `README.md`
-- **Summary**: Converted 10 `.mp4` screen recordings from `docs/show/` into looping animated `.webp` assets (`15 fps`, `libwebp` `q:v 75`, max `960px` desktop / `540px` mobile width) in `docs/screenshots/` via `ffmpeg`, copied/normalized 3 static showcase images (`hero-crossplatform-showcase.jpg`, `linux-kde-translucent-blur.png`, `windows-context-menu-glass.png`), removed the 11 superseded `.png` placeholders, and updated all `<img>` tags, spec comments, and inventory table entries in `README.md`.
-- **Affected Files**: `README.md`, `docs/screenshots/*` (13 updated assets), `history.md`
+- **Summary**: Converted 12 `.mp4` screen recordings from `docs/show/` into looping animated `.webp` assets (`15 fps`, `libwebp` `q:v 75`, max `960px` desktop / `540px` mobile width) in `docs/screenshots/` via `ffmpeg`, copied/normalized 4 static showcase images (`hero-crossplatform-showcase.jpg`, `android-home-dashboard.jpg`, `linux-kde-translucent-blur.png`, `windows-context-menu-glass.png`), removed the 14 superseded `.png` placeholders, and updated all `<img>` tags, spec comments, and inventory table entries in `README.md`.
+- **Affected Files**: `README.md`, `docs/screenshots/*` (16 updated assets), `history.md`
 
 ### 2026-11-13: Upgrade README Screenshot Placeholders with Visual Blueprint Cards
 - **Summary**: Upgraded all 17 blank black screenshot placeholders (`docs/screenshots/*.png`) into high-contrast, informative visual blueprint cards. Each card clearly displays its Spec Number (`📸 SCREENSHOT SPEC #01` to `#17`), target asset filename in bold monospace, platform badge (Windows 11, Linux Desktop, or Android Mobile), view description subtitle, and exact aspect ratio dimensions (960×540 for 16:9 landscape, 540×1170 for 9:19.5 portrait).
