@@ -22,6 +22,10 @@ if (Test-Path "D:\BuildTools\Rust\.cargo") {
 if (Test-Path "D:\BuildTools\Android\.gradle") {
     if (-not $env:GRADLE_USER_HOME) { $env:GRADLE_USER_HOME = "D:\BuildTools\Android\.gradle" }
 }
+if (Test-Path "D:\BuildTools\Android") {
+    if (-not $env:ANDROID_USER_HOME) { $env:ANDROID_USER_HOME = "D:\BuildTools\Android\.android" }
+    if (-not $env:ANDROID_AVD_HOME) { $env:ANDROID_AVD_HOME = "D:\BuildTools\Android\.android\avd" }
+}
 $ReleaseDir = Join-Path $ProjectRoot $OutputDir
 
 function Invoke-Exit([int]$code = 0) {
@@ -685,7 +689,8 @@ function Invoke-AndroidDev {
                     $avds = @(cmd.exe /c "emulator -list-avds 2>nul")
                     if ($avds.Count -gt 0) {
                         $avd = $avds[0]; Write-Host "Starting Android emulator '$avd' with host GPU..." -ForegroundColor Yellow
-                        $lockDir = Join-Path $env:USERPROFILE ".android\avd\$avd.avd"
+                        $avdRoot = if ($env:ANDROID_AVD_HOME) { $env:ANDROID_AVD_HOME } elseif ($env:ANDROID_USER_HOME) { Join-Path $env:ANDROID_USER_HOME "avd" } else { Join-Path $env:USERPROFILE ".android\avd" }
+                        $lockDir = Join-Path $avdRoot "$avd.avd"
                         Remove-Item (Join-Path $lockDir "*.lock") -Recurse -Force -ErrorAction SilentlyContinue
                         Start-Process "emulator" -ArgumentList "-avd", "$avd", "-gpu", "host"
                         Write-Host "Waiting for emulator to complete boot..." -ForegroundColor Yellow

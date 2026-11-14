@@ -75,6 +75,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-15: Support `D:\BuildTools\Android\.android\avd` Shared Emulator in `build.ps1`
+- **Summary**: Configured `build.ps1` to default `ANDROID_USER_HOME` (`D:\BuildTools\Android\.android`) and `ANDROID_AVD_HOME` (`D:\BuildTools\Android\.android\avd`) when `D:\BuildTools\Android` is present, and updated the AVD stale `*.lock` cleanup path to resolve `$env:ANDROID_AVD_HOME` / `$env:ANDROID_USER_HOME` instead of hardcoded `%USERPROFILE%\.android\avd`.
+- **Affected Files**: `build.ps1`, `history.md`
+
 ### 2026-11-15: Ignore Auto-Generated `RustWebView.kt` in `.gitignore`
 - **Summary**: Added `**/gen/android/**/generated/RustWebView.kt` to `.gitignore` and untracked the Gradle-regenerated file from Git (`git rm --cached`) so `applyRustWebViewPatch()` build runs never leave noisy diffs.
 - **Affected Files**: `.gitignore`, `history.md`
