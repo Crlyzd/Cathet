@@ -553,6 +553,11 @@ cp -f "$artifact" ./__OUTDIR__/__DEST_FILE__
 
 function Resolve-CompatibleJavaHome {
     $candidates = @()
+    if (Test-Path "D:\BuildTools\Java") {
+        Get-ChildItem -Path "D:\BuildTools\Java" -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match "jdk[-_]?(17|21)" } |
+        ForEach-Object { $candidates += $_.FullName }
+    }
     if ($env:JAVA_HOME -and (Test-Path $env:JAVA_HOME)) { $candidates += $env:JAVA_HOME }
     $roots = @((Join-Path $env:USERPROFILE ".jdks"), "C:\Program Files\Eclipse Adoptium", "C:\Program Files\Microsoft", "C:\Program Files\Java")
     foreach ($r in $roots) {

@@ -87,6 +87,10 @@ This document serves as the living project documentation and institutional memor
 - **Summary**: Enabled `check_for_updates` on Android in `src-tauri/src/commands/updater.rs` (adding `release_url` to `UpdateInfo`); added 24-hour throttled `checkForUpdatesOccasionally()` and `openAndroidUpdateUrl()` (opening the direct `.apk` `download_url` immediately) to `UpdateService`; wired `HomeHeader.ts` update pill, `MobileMenuDrawer.ts` update item, `SettingsModal.ts` + `MobileSettingsView.ts` + `MobileAboutCard.ts` update row, `home.css` / `mobile.css` styles, and all 5 locale files (`en`, `id`, `jv-krama`, `jv-malang`, `jv-ngoko`).
 - **Affected Files**: `src-tauri/src/commands/updater.rs (240)`, `src-ui/src/services/updateService.ts (149)`, `src-ui/src/main.ts`, `src-ui/src/components/home/HomeHeader.ts (186)`, `src-ui/src/components/MobileMenuDrawer.ts (208)`, `src-ui/src/components/SettingsModal.ts (185)`, `src-ui/src/components/MobileSettingsView.ts (226)`, `src-ui/src/components/settings/MobileAboutCard.ts (80)`, `src-ui/src/services/mobileCoordinator.ts`, `src-ui/styles/{home.css,mobile.css}`, `src-ui/src/locales/{en,id,jv-krama,jv-malang,jv-ngoko}.json`, `history.md`
 
+### 2026-11-15: Prefer `D:\BuildTools\Java` in `build.ps1` `Resolve-CompatibleJavaHome`
+- **Summary**: Updated `Resolve-CompatibleJavaHome` in `build.ps1` to scan `D:\BuildTools\Java` before `$env:JAVA_HOME` and `C:\Program Files\*` so the shared JDK 21 on `D:` is used across builds.
+- **Affected Files**: `build.ps1`, `history.md`
+
 ### 2026-11-15: Support `D:\BuildTools\Android\.android\avd` Shared Emulator in `build.ps1`
 - **Summary**: Configured `build.ps1` to default `ANDROID_USER_HOME` (`D:\BuildTools\Android\.android`) and `ANDROID_AVD_HOME` (`D:\BuildTools\Android\.android\avd`) when `D:\BuildTools\Android` is present, and updated the AVD stale `*.lock` cleanup path to resolve `$env:ANDROID_AVD_HOME` / `$env:ANDROID_USER_HOME` instead of hardcoded `%USERPROFILE%\.android\avd`.
 - **Affected Files**: `build.ps1`, `history.md`
