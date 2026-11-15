@@ -75,6 +75,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-15: Eliminate Android Settings Sheet Open Stutter & Dual-Sheet Overlap
+- **Summary**: Fixed Android Settings bottom sheet frame drops and flicker by keeping `.settings-modal-sheet` / `.mobile-drawer-sheet` GPU-promoted (`will-change: transform`, `contain: layout style paint`), removing `visibility: hidden` texture eviction in `src-ui/styles/mobile.css` (replaced with `inert` + `aria-hidden` + `pointer-events: none` in `SettingsModal.ts` and `MobileMenuDrawer.ts`), tightening sheet `box-shadow` and `.mobile-theme-tile` transition, fixing `MobileMenuDrawer.hideInstant()` so the `⋯` drawer snaps away instead of animating underneath Settings, and staging `SettingsModal.show()`'s `.visible` class on `requestAnimationFrame` after `updateState()` and `blur()`.
+- **Affected Files**: `src-ui/styles/mobile.css`, `src-ui/src/components/SettingsModal.ts (193)`, `src-ui/src/components/MobileMenuDrawer.ts (216)`, `history.md`
+
 ### 2026-11-15: Fix Android `check_for_updates` Panic (`rustls-platform-verifier`) & Add Timeout
 - **Summary**: Downgraded `reqwest` from `0.13` to `0.12` in `src-tauri/Cargo.toml` so non-Windows/Android targets use `rustls-tls-webpki-roots` instead of `0.13`'s uninitialized `rustls-platform-verifier` (which panicked inside `tokio-rt-worker` with `Expect rustls-platform-verifier to be initialized` and left `Checking...` hung); added a 10s `.timeout()` to `reqwest::Client::builder()` in `src-tauri/src/commands/updater.rs`.
 - **Affected Files**: `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `src-tauri/src/commands/updater.rs`, `history.md`

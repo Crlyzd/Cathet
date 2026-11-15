@@ -669,19 +669,16 @@ body.is-modal-open #workspace-shell {
   align-items: flex-end;
   justify-content: center;
   opacity: 0;
-  visibility: hidden;
   pointer-events: none;
   isolation: isolate;
   will-change: opacity;
-  transition: opacity 0.28s cubic-bezier(0.2, 0, 0, 1), visibility 0s linear 0.28s;
+  transition: opacity 0.28s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .settings-modal-overlay.visible,
 .mobile-drawer-overlay.visible {
   opacity: 1;
-  visibility: visible;
   pointer-events: auto;
-  transition: opacity 0.28s cubic-bezier(0.2, 0, 0, 1), visibility 0s linear 0s;
 }
 
 body.is-mobile[data-theme="light"] .settings-modal-overlay,
@@ -706,12 +703,14 @@ body.is-mobile[data-theme="light"] .mobile-drawer-overlay,
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  contain: layout style paint;
   isolation: isolate;
+  will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: translate3d(0, 100%, 0);
   transition: transform 0.34s cubic-bezier(0.2, 0, 0, 1);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.28);
   padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
 }
 
@@ -724,7 +723,6 @@ body.is-mobile[data-theme="light"] .mobile-drawer-sheet {
 
 .settings-modal-overlay.visible .settings-modal-sheet,
 .mobile-drawer-overlay.visible .mobile-drawer-sheet {
-  will-change: transform;
   transform: translate3d(0, 0, 0);
 }
 
@@ -791,6 +789,8 @@ body.is-mobile[data-theme="light"] .mobile-drawer-sheet {
 .mobile-settings-scroll {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  contain: layout style;
   padding: 12px 16px 20px 16px;
   display: flex;
   flex-direction: column;
@@ -833,7 +833,7 @@ body.is-mobile[data-theme="light"] .mobile-drawer-sheet {
   border-radius: 10px;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .mobile-theme-tile.tile-dark {

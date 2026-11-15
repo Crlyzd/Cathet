@@ -37,6 +37,8 @@ export class SettingsModalComponent {
     this.overlay = document.createElement("div");
     this.overlay.id = "mobile-settings-overlay";
     this.overlay.className = "settings-modal-overlay";
+    this.overlay.inert = true;
+    this.overlay.setAttribute("aria-hidden", "true");
     this.overlay.innerHTML = `
       <div class="settings-modal-sheet" id="mobile-settings-sheet">
         <div class="settings-modal-drag-indicator"></div>
@@ -139,6 +141,8 @@ export class SettingsModalComponent {
   show(): void {
     if (this.isVisible) return;
     this.isVisible = true;
+    this.overlay.inert = false;
+    this.overlay.setAttribute("aria-hidden", "false");
 
     const active = document.activeElement as HTMLElement | null;
     if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) {
@@ -157,13 +161,17 @@ export class SettingsModalComponent {
       updateInfo: this.updateService.getUpdateInfo(),
     });
 
-    this.overlay.classList.add("visible");
+    requestAnimationFrame(() => {
+      if (this.isVisible) this.overlay.classList.add("visible");
+    });
   }
 
   hide(): void {
     if (!this.isVisible) return;
     this.isVisible = false;
     this.overlay.classList.remove("visible");
+    this.overlay.inert = true;
+    this.overlay.setAttribute("aria-hidden", "true");
     document.body.classList.remove("is-modal-open");
   }
 

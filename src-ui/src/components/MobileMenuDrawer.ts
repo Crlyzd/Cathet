@@ -38,6 +38,8 @@ export class MobileMenuDrawerComponent {
     this.overlay = document.createElement("div");
     this.overlay.className = "mobile-drawer-overlay";
     this.overlay.id = "mobile-menu-drawer-overlay";
+    this.overlay.inert = true;
+    this.overlay.setAttribute("aria-hidden", "true");
 
     document.body.appendChild(this.overlay);
     this.bindEvents();
@@ -150,6 +152,8 @@ export class MobileMenuDrawerComponent {
     document.body.classList.add("is-modal-open");
 
     this.attachItemHandlers(state);
+    this.overlay.inert = false;
+    this.overlay.setAttribute("aria-hidden", "false");
     void this.overlay.offsetHeight;
     this.overlay.classList.add("visible");
     this.isVisible = true;
@@ -178,11 +182,13 @@ export class MobileMenuDrawerComponent {
   }
 
   hideInstant(): void {
-    if (!this.isVisible) return;
+    if (!this.isVisible && !this.overlay.classList.contains("visible")) return;
     this.overlay.style.transition = "none";
     const sheet = this.overlay.querySelector(".mobile-drawer-sheet") as HTMLElement | null;
     if (sheet) sheet.style.transition = "none";
     this.overlay.classList.remove("visible");
+    this.overlay.inert = true;
+    this.overlay.setAttribute("aria-hidden", "true");
     this.isVisible = false;
     document.body.classList.remove("is-modal-open");
     requestAnimationFrame(() => {
@@ -194,6 +200,8 @@ export class MobileMenuDrawerComponent {
   hide(): void {
     if (!this.isVisible) return;
     this.overlay.classList.remove("visible");
+    this.overlay.inert = true;
+    this.overlay.setAttribute("aria-hidden", "true");
     document.body.classList.remove("is-modal-open");
     this.isVisible = false;
   }
