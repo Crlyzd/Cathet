@@ -75,6 +75,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-16: Fix Android Pinch-Zoom Indicator Scroll Drift & Redesign Frosted HUD
+- **Summary**: Fixed `.touch-zoom-pill` scrolling upward off-screen on long documents by decoupling the touch listener (`this.wrapperEl`) from the pill mount host (`this.container`: `#editor-container` with `position: relative` in `formatbar.css`, or `.dualpane-editor-host` in Dual Pane) in `touchZoomHandler.ts` and `Editor.ts`. Redesigned `.touch-zoom-pill` in `mobile.css` as a centered `112px × 112px` (`88px × 88px` in Dual Pane) `0.2` alpha frosted-glass (`blur(8px)`) rounded-square HUD with crisp white `tabular-nums` text, subtle `text-shadow`, and GPU-composited `.is-visible` scale/opacity transition.
+- **Affected Files**: `src-ui/src/utils/touchZoomHandler.ts (113)`, `src-ui/src/components/Editor.ts (249)`, `src-ui/styles/formatbar.css`, `src-ui/styles/mobile.css`, `history.md`
+
 ### 2026-11-15: Eliminate Android Settings Sheet Open Stutter & Dual-Sheet Overlap
 - **Summary**: Fixed Android Settings bottom sheet frame drops and flicker by keeping `.settings-modal-sheet` / `.mobile-drawer-sheet` GPU-promoted (`will-change: transform`, `contain: layout style paint`), removing `visibility: hidden` texture eviction in `src-ui/styles/mobile.css` (replaced with `inert` + `aria-hidden` + `pointer-events: none` in `SettingsModal.ts` and `MobileMenuDrawer.ts`), tightening sheet `box-shadow` and `.mobile-theme-tile` transition, fixing `MobileMenuDrawer.hideInstant()` so the `⋯` drawer snaps away instead of animating underneath Settings, and staging `SettingsModal.show()`'s `.visible` class on `requestAnimationFrame` after `updateState()` and `blur()`.
 - **Affected Files**: `src-ui/styles/mobile.css`, `src-ui/src/components/SettingsModal.ts (193)`, `src-ui/src/components/MobileMenuDrawer.ts (216)`, `history.md`
