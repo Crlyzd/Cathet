@@ -61,7 +61,11 @@ pub async fn check_for_updates() -> Result<UpdateInfo, String> {
     }
 
     let url = format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO);
-    let client = reqwest::Client::builder().user_agent("Cathet-Updater").build().map_err(|e| e.to_string())?;
+    let client = reqwest::Client::builder()
+        .user_agent("Cathet-Updater")
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
     let response = client.get(&url).send().await.map_err(|e| format!("Failed to fetch release: {}", e))?;
 
     if !response.status().is_success() {
