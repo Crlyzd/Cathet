@@ -448,7 +448,7 @@ dependencies = [
 
 [[package]]
 name = "cathet"
-version = "5.5.1"
+version = "5.5.2"
 dependencies = [
  "jni",
  "ndk-context",
