@@ -1085,33 +1085,54 @@ body.is-mobile[data-theme="light"] .mobile-drawer-item:active {
 }
 
 
-/* 10. Multi-Touch Pinch Zoom Badge (Android) */
+/* 10. Multi-Touch Pinch Zoom HUD (Android) */
 .touch-zoom-pill {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background: rgba(22, 24, 33, 0.85);
-  border: 1px solid var(--col-card-border);
-  border-radius: 9999px;
-  padding: 8px 18px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--col-accent);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translate3d(-50%, -50%, 0) scale(0.88);
+  width: 112px;
+  height: 112px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(8px) saturate(1.15);
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
+  background: rgba(110, 118, 134, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
   pointer-events: none;
   user-select: none;
-  z-index: 100;
+  z-index: 30;
   opacity: 0;
-  transition: opacity 0.25s ease;
+  will-change: transform, opacity;
+  transition: opacity 0.18s cubic-bezier(0.2, 0, 0, 1), transform 0.18s cubic-bezier(0.2, 0, 0, 1);
 }
 
 body.is-mobile[data-theme="light"] .touch-zoom-pill {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--col-accent);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: rgba(70, 74, 82, 0.2);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+
+.touch-zoom-pill.is-visible {
+  opacity: 1;
+  transform: translate3d(-50%, -50%, 0) scale(1);
+}
+
+.dualpane-editor-host .touch-zoom-pill {
+  width: 88px;
+  height: 88px;
+  border-radius: 18px;
+  font-size: 22px;
 }
 
 /* 11. Mobile Context Menu Adaptations (Windows Only Shortcuts Suppressed) */

@@ -81,7 +81,7 @@ export class EditorComponent {
     }, true);
 
     if (PlatformService.getInstance().isAndroid()) {
-      this.touchZoomCleanup = attachTouchZoom(this.wrapperEl, this, () => this.touchZoomOptions);
+      this.touchZoomCleanup = attachTouchZoom(this.wrapperEl, this, () => this.touchZoomOptions, this.container);
     }
   }
 

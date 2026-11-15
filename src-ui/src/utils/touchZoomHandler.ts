@@ -12,13 +12,14 @@ export interface TouchZoomOptions {
 export function attachTouchZoom(
   container: HTMLElement,
   editor: EditorComponent,
-  getOptions?: () => TouchZoomOptions | undefined
+  getOptions?: () => TouchZoomOptions | undefined,
+  pillHost: HTMLElement = container
 ): () => void {
-  let pillEl: HTMLElement | null = container.querySelector(".touch-zoom-pill");
+  let pillEl: HTMLElement | null = pillHost.querySelector(".touch-zoom-pill");
   if (!pillEl) {
     pillEl = document.createElement("div");
     pillEl.className = "touch-zoom-pill";
-    container.appendChild(pillEl);
+    pillHost.appendChild(pillEl);
   }
 
   let d0 = 0;
@@ -29,7 +30,7 @@ export function attachTouchZoom(
   const showPill = (percent: number) => {
     if (!pillEl) return;
     pillEl.textContent = `${percent}%`;
-    pillEl.style.opacity = "1";
+    pillEl.classList.add("is-visible");
     if (fadeTimer) {
       window.clearTimeout(fadeTimer);
       fadeTimer = null;
@@ -40,7 +41,7 @@ export function attachTouchZoom(
     if (fadeTimer) window.clearTimeout(fadeTimer);
     fadeTimer = window.setTimeout(() => {
       if (pillEl) {
-        pillEl.style.opacity = "0";
+        pillEl.classList.remove("is-visible");
       }
       fadeTimer = null;
     }, 1200);
