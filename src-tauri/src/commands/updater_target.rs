@@ -53,46 +53,101 @@ pub fn detect_linux_package_type() -> LinuxPackageType {
     LinuxPackageType::Generic
 }
 
+pub fn find_android_apk_for_arch<'a>(assets: &'a [GithubAsset], arch: &str) -> Option<&'a GithubAsset> {
+    let apks: Vec<&GithubAsset> = assets
+        .iter()
+        .filter(|a| a.name.to_lowercase().ends_with(".apk"))
+        .collect();
+    let has = |a: &GithubAsset, pat: &str| a.name.to_lowercase().contains(pat);
+
+    if arch == "aarch64" {
+        if let Some(a) = apks.iter().find(|a| has(a, "arm64") || has(a, "aarch64")) {
+            return Some(*a);
+        }
+    } else if arch == "arm" {
+        if let Some(a) = apks.iter().find(|a| has(a, "armeabi") || has(a, "armv7")) {
+            return Some(*a);
+        }
+    } else if let Some(a) = apks.iter().find(|a| has(a, arch)) {
+        return Some(*a);
+    }
+
+    if let Some(a) = apks.iter().find(|a| has(a, "universal")) {
+        return Some(*a);
+    }
+    apks.into_iter().find(|a| {
+        !has(a, "arm64")
+            && !has(a, "aarch64")
+            && !has(a, "armeabi")
+            && !has(a, "armv7")
+            && !has(a, "x86")
+    })
+}
+
+pub fn find_windows_exe_for_arch<'a>(assets: &'a [GithubAsset], is_arm64: bool) -> Option<&'a GithubAsset> {
+    for asset in assets {
+        let name = asset.name.to_lowercase();
+        if !name.ends_with(".exe") {
+            continue;
+        }
+        if is_arm64 && (name.contains("arm64") || name.contains("aarch64")) {
+            return Some(asset);
+        } else if !is_arm64 && (name.contains("x64") || name.contains("x86_64") || !name.contains("arm")) {
+            return Some(asset);
+        }
+    }
+    assets.iter().find(|a| a.name.to_lowercase().ends_with(".exe"))
+}
+
+pub fn find_linux_pkg_for_arch<'a>(
+    assets: &'a [GithubAsset],
+    target_ext: &str,
+    arch: &str,
+) -> Option<&'a GithubAsset> {
+    let is_arm64 = arch == "aarch64";
+    let pick = |ext: &str| -> Option<&'a GithubAsset> {
+        let matching: Vec<&GithubAsset> = assets
+            .iter()
+            .filter(|a| a.name.to_lowercase().ends_with(ext))
+            .collect();
+        if let Some(a) = matching.iter().find(|a| {
+            let n = a.name.to_lowercase();
+            if is_arm64 {
+                n.contains("arm64") || n.contains("aarch64")
+            } else {
+                n.contains("x86_64") || n.contains("amd64") || n.contains("x64")
+                    || (!n.contains("arm64") && !n.contains("aarch64"))
+            }
+        }) {
+            return Some(*a);
+        }
+        matching.into_iter().next()
+    };
+
+    pick(target_ext).or_else(|| if target_ext != ".appimage" { pick(".appimage") } else { None })
+}
+
 pub fn find_matching_asset<'a>(assets: &'a [GithubAsset]) -> Option<&'a GithubAsset> {
     #[cfg(target_os = "android")]
     {
-        assets.iter().find(|a| a.name.to_lowercase().ends_with(".apk"))
+        find_android_apk_for_arch(assets, std::env::consts::ARCH)
     }
     #[cfg(target_os = "windows")]
     {
         if is_msix_packaged() {
             return None;
         }
-        let is_arm64 = cfg!(target_arch = "aarch64");
-        for asset in assets {
-            let name = asset.name.to_lowercase();
-            if !name.ends_with(".exe") {
-                continue;
-            }
-            if is_arm64 && (name.contains("arm64") || name.contains("aarch64")) {
-                return Some(asset);
-            } else if !is_arm64 && (name.contains("x64") || name.contains("x86_64") || !name.contains("arm")) {
-                return Some(asset);
-            }
-        }
-        assets.iter().find(|a| a.name.to_lowercase().ends_with(".exe"))
+        find_windows_exe_for_arch(assets, cfg!(target_arch = "aarch64"))
     }
     #[cfg(target_os = "linux")]
     {
-        let pkg_type = detect_linux_package_type();
-        let target_ext = match pkg_type {
+        let target_ext = match detect_linux_package_type() {
             LinuxPackageType::AppImage => ".appimage",
             LinuxPackageType::Deb => ".deb",
             LinuxPackageType::Rpm => ".rpm",
             LinuxPackageType::Generic => ".appimage",
         };
-        for asset in assets {
-            let name = asset.name.to_lowercase();
-            if name.ends_with(target_ext) {
-                return Some(asset);
-            }
-        }
-        assets.iter().find(|a| a.name.to_lowercase().ends_with(".appimage"))
+        find_linux_pkg_for_arch(assets, target_ext, std::env::consts::ARCH)
     }
     #[cfg(not(any(target_os = "android", target_os = "windows", target_os = "linux")))]
     {
@@ -155,4 +210,42 @@ pub fn is_newer_version(latest: &str, current: &str) -> bool {
             .collect()
     };
     parse(latest) > parse(current)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn full_release_assets() -> Vec<GithubAsset> {
+        [
+            "cathet-release-key.asc",
+            "cathet-v5.5.1-amd64.deb",
+            "cathet-v5.5.1-amd64.deb.asc",
+            "cathet-v5.5.1-android-arm64.apk",
+            "cathet-v5.5.1-android-universal.apk",
+            "cathet-v5.5.1-android.apk",
+            "cathet-v5.5.1-arm64.exe",
+            "cathet-v5.5.1-x64.exe",
+            "cathet-v5.5.1-x86_64.AppImage",
+            "cathet-v5.5.1-x86_64.AppImage.asc",
+            "cathet-v5.5.1-x86_64.rpm",
+            "cathet-v5.5.1.msixbundle",
+        ]
+        .iter()
+        .map(|n| GithubAsset { name: (*n).into(), browser_download_url: format!("https://example.com/{}", n) })
+        .collect()
+    }
+
+    #[test]
+    fn test_cross_platform_asset_matching() {
+        let assets = full_release_assets();
+        assert_eq!(find_android_apk_for_arch(&assets, "aarch64").unwrap().name, "cathet-v5.5.1-android-arm64.apk");
+        assert_eq!(find_android_apk_for_arch(&assets, "arm").unwrap().name, "cathet-v5.5.1-android-universal.apk");
+        assert_eq!(find_android_apk_for_arch(&assets, "x86_64").unwrap().name, "cathet-v5.5.1-android-universal.apk");
+        assert_eq!(find_windows_exe_for_arch(&assets, false).unwrap().name, "cathet-v5.5.1-x64.exe");
+        assert_eq!(find_windows_exe_for_arch(&assets, true).unwrap().name, "cathet-v5.5.1-arm64.exe");
+        assert_eq!(find_linux_pkg_for_arch(&assets, ".deb", "x86_64").unwrap().name, "cathet-v5.5.1-amd64.deb");
+        assert_eq!(find_linux_pkg_for_arch(&assets, ".rpm", "x86_64").unwrap().name, "cathet-v5.5.1-x86_64.rpm");
+        assert_eq!(find_linux_pkg_for_arch(&assets, ".appimage", "x86_64").unwrap().name, "cathet-v5.5.1-x86_64.AppImage");
+    }
 }
