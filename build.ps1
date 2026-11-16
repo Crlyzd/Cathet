@@ -7,7 +7,7 @@ param(
     [switch]$BuildMsix, [switch]$AllWindows,
     [switch]$BuildAppImage, [switch]$BuildRpm, [switch]$BuildDeb, [switch]$BuildLinux, [switch]$AllLinux, [switch]$SignLinux,
     [switch]$All, [switch]$Run, [switch]$AndroidDev, [switch]$AndroidBuild, [switch]$AndroidArm64, [switch]$AndroidUniversal, [switch]$AndroidAll,
-    [switch]$AndroidPerf, [switch]$Patch, [switch]$Minor, [switch]$Major, [string]$TargetVersion,
+    [switch]$AndroidPerf, [switch]$ColdBoot, [switch]$Patch, [switch]$Minor, [switch]$Major, [string]$TargetVersion,
     [string]$OutputDir = "release", [int]$Port = 0, [switch]$Clean, [switch]$PurgeBuildTools, [switch]$NoPause, [switch]$Help
 )
 
@@ -36,7 +36,8 @@ function Get-AppVersion { (Get-Content -Raw (Join-Path $ProjectRoot "package.jso
 function Get-NativeArch { if ($env:PROCESSOR_ARCHITECTURE -match "ARM64" -or $env:PROCESSOR_ARCHITEW6432 -match "ARM64") { "arm64" } else { "x64" } }
 
 function Show-HelpGuide {
-    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Interactive Menu | -Dev / -Live -> Hot reload | -Check -> Tests`n  -BuildX64 / -BuildArm64 -> Release EXE | -BuildMsix -> Microsoft Store Package (.msixbundle)`n  -AllWindows -> All Windows targets (x64 + ARM64 + Store MSIX Bundle)`n  -AndroidDev -> Android Hot Reload | -AndroidBuild / -AndroidAll -> Phone ARM64 + Universal APKs`n  -AndroidArm64 -> Phone ARM64 APK only (~6.5 MB) | -AndroidUniversal -> Universal APK (~20.5 MB)`n  -BuildDeb -> Linux Debian/Ubuntu (.deb ~3.5 MB) | -BuildRpm -> Linux Fedora KDE (.rpm ~3.5 MB)`n  -BuildAppImage -> Universal Linux AppImage (~78 MB) | -AllLinux -> All Linux formats`n  -SignLinux -> Digitally sign Linux artifacts via GPG`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Clean -> Purge local & WSL build caches (~9.7 GB)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
+    Write-Host "Cathet Unified Automation Script`nUsage:`n  .\build.ps1 -> Interactive Menu | -Dev / -Live -> Hot reload | -Check -> Tests`n  -BuildX64 / -BuildArm64 -> Release EXE | -BuildMsix -> Microsoft Store Package (.msixbundle)`n  -AllWindows -> All Windows targets (x64 + ARM64 + Store MSIX Bundle)`n  -AndroidDev [-ColdBoot] -> Android Hot Reload | -ColdBoot -> Cold boot Android emulator (-no-snapshot-load)
+  -AndroidBuild / -AndroidAll -> Phone ARM64 + Universal APKs`n  -AndroidArm64 -> Phone ARM64 APK only (~6.5 MB) | -AndroidUniversal -> Universal APK (~20.5 MB)`n  -BuildDeb -> Linux Debian/Ubuntu (.deb ~3.5 MB) | -BuildRpm -> Linux Fedora KDE (.rpm ~3.5 MB)`n  -BuildAppImage -> Universal Linux AppImage (~78 MB) | -AllLinux -> All Linux formats`n  -SignLinux -> Digitally sign Linux artifacts via GPG`n  -AndroidPerf -> Live Android Performance Monitor (RAM / CPU / 120Hz Jank)`n  -Clean -> Purge local & WSL build caches (~9.7 GB)`n  -Patch|-Minor|-Major -> Bump version | -NoPause -> Non-interactive exit" -ForegroundColor Cyan
 }
 
 function Initialize-Environment {
@@ -663,12 +664,79 @@ function Install-MinimalAndroidSdk {
     Write-Host "Minimal Android SDK setup completed successfully!" -ForegroundColor Green; return $sdk
 }
 
-function Invoke-AndroidDev {
+function Start-AndroidEmulator([bool]$coldBoot = $false) {
+    if (-not (Get-Command emulator -ErrorAction SilentlyContinue)) {
+        throw "Android emulator binary not found in PATH."
+    }
+    $avds = @(cmd.exe /c "emulator -list-avds 2>nul" | Where-Object { $_ -and $_.Trim() })
+    if ($avds.Count -eq 0) {
+        Write-Host "[Note] Connect phone via USB or create an AVD with avdmanager." -ForegroundColor Yellow
+        return $null
+    }
+    $avd = if ($avds.Count -gt 1) {
+        Write-Host "`nMultiple AVDs found:" -ForegroundColor Cyan
+        for ($i = 0; $i -lt $avds.Count; $i++) { Write-Host "  [$($i+1)] $($avds[$i])" }
+        $sel = (Read-Host "Select AVD [1-$($avds.Count)] (Default: 1)").Trim()
+        $idx = if ($sel -match '^\d+$' -and [int]$sel -ge 1 -and [int]$sel -le $avds.Count) { [int]$sel - 1 } else { 0 }
+        $avds[$idx].Trim()
+    } else { $avds[0].Trim() }
+
+    $modeLabel = if ($coldBoot) { "cold boot (-no-snapshot-load)" } else { "host GPU" }
+    Write-Host "Starting Android emulator '$avd' ($modeLabel)..." -ForegroundColor Yellow
+    $avdRoot = if ($env:ANDROID_AVD_HOME) { $env:ANDROID_AVD_HOME } elseif ($env:ANDROID_USER_HOME) { Join-Path $env:ANDROID_USER_HOME "avd" } else { Join-Path $env:USERPROFILE ".android\avd" }
+    $lockDir = Join-Path $avdRoot "$avd.avd"
+    Remove-Item (Join-Path $lockDir "*.lock") -Recurse -Force -ErrorAction SilentlyContinue
+
+    $emuArgs = @("-avd", "$avd", "-gpu", "host")
+    if ($coldBoot) { $emuArgs += "-no-snapshot-load" }
+    Start-Process "emulator" -ArgumentList $emuArgs
+
+    Write-Host "Waiting for emulator to complete boot..." -ForegroundColor Yellow
+    cmd.exe /c "adb wait-for-device 2>nul" | Out-Null
+    for ($w = 0; $w -lt 60; $w++) {
+        Start-Sleep -Seconds 2
+        $b = ("" + (cmd.exe /c "adb shell getprop sys.boot_completed 2>nul")).Trim()
+        if ($b -eq "1") { break }
+    }
+    $readyEmu = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\tdevice' })
+    if ($readyEmu.Count -gt 0) { return $readyEmu[0].Split("`t")[0] }
+    return $null
+}
+
+function Invoke-AndroidColdBoot {
+    Initialize-AndroidEnvironment
+    $prevEAP = $ErrorActionPreference; $ErrorActionPreference = 'SilentlyContinue'
+    try {
+        if (Get-Command adb -ErrorAction SilentlyContinue) {
+            $runningEmus = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '^emulator-\d+' } | ForEach-Object { $_.Split("`t")[0] })
+            foreach ($emuId in $runningEmus) {
+                Write-Host "Stopping running emulator '$emuId' before cold boot..." -ForegroundColor Yellow
+                cmd.exe /c "adb -s $emuId emu kill 2>nul" | Out-Null
+            }
+            if ($runningEmus.Count -gt 0) { Start-Sleep -Seconds 2 }
+        }
+        $booted = Start-AndroidEmulator $true
+        if ($booted) { Write-Host "Emulator '$booted' cold-booted successfully!" -ForegroundColor Green }
+    }
+    finally {
+        $ErrorActionPreference = $prevEAP
+    }
+}
+
+function Invoke-AndroidDev([bool]$coldBoot = $false) {
     Initialize-AndroidEnvironment; Confirm-Target @("x86_64-linux-android", "aarch64-linux-android")
     $targetDevId = $null
     if (Get-Command adb -ErrorAction SilentlyContinue) {
         $prevEAP = $ErrorActionPreference; $ErrorActionPreference = 'SilentlyContinue'
         try {
+            if ($coldBoot) {
+                $runningEmus = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '^emulator-\d+' } | ForEach-Object { $_.Split("`t")[0] })
+                foreach ($emuId in $runningEmus) {
+                    Write-Host "Stopping running emulator '$emuId' for cold boot..." -ForegroundColor Yellow
+                    cmd.exe /c "adb -s $emuId emu kill 2>nul" | Out-Null
+                }
+                if ($runningEmus.Count -gt 0) { Start-Sleep -Seconds 2 }
+            }
             while ($true) {
                 $raw = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\t(device|emulator|unauthorized)' })
                 if (@($raw | Where-Object { $_ -match '\tunauthorized' }).Count -gt 0) {
@@ -691,24 +759,7 @@ function Invoke-AndroidDev {
                     $targetDevId = $ready[0].Split("`t")[0]
                 }
                 elseif (Get-Command emulator -ErrorAction SilentlyContinue) {
-                    $avds = @(cmd.exe /c "emulator -list-avds 2>nul")
-                    if ($avds.Count -gt 0) {
-                        $avd = $avds[0]; Write-Host "Starting Android emulator '$avd' with host GPU..." -ForegroundColor Yellow
-                        $avdRoot = if ($env:ANDROID_AVD_HOME) { $env:ANDROID_AVD_HOME } elseif ($env:ANDROID_USER_HOME) { Join-Path $env:ANDROID_USER_HOME "avd" } else { Join-Path $env:USERPROFILE ".android\avd" }
-                        $lockDir = Join-Path $avdRoot "$avd.avd"
-                        Remove-Item (Join-Path $lockDir "*.lock") -Recurse -Force -ErrorAction SilentlyContinue
-                        Start-Process "emulator" -ArgumentList "-avd", "$avd", "-gpu", "host"
-                        Write-Host "Waiting for emulator to complete boot..." -ForegroundColor Yellow
-                        cmd.exe /c "adb wait-for-device 2>nul" | Out-Null
-                        for ($w = 0; $w -lt 60; $w++) {
-                            Start-Sleep -Seconds 2
-                            $b = ("" + (cmd.exe /c "adb shell getprop sys.boot_completed 2>nul")).Trim()
-                            if ($b -eq "1") { break }
-                        }
-                        $readyEmu = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\tdevice' })
-                        if ($readyEmu.Count -gt 0) { $targetDevId = $readyEmu[0].Split("`t")[0] }
-                    }
-                    else { Write-Host "[Note] Connect phone via USB or create an AVD with avdmanager." -ForegroundColor Yellow }
+                    $targetDevId = Start-AndroidEmulator $coldBoot
                 }
                 break
             }
@@ -1067,9 +1118,10 @@ function Show-InteractiveMenu {
     Write-Host "  [19] Purge BuildTools Hub & WSL (Free up D:\ space)"
     Write-Host "  [20] Clean Build Caches & Targets (Rust, Android, WSL, Dist)"
     Write-Host "  [21] Re-Sign Release Artifacts (GPG Detached Signatures & SHA256SUMS.asc)"
+    Write-Host "  [22] Cold Boot Android Emulator (-no-snapshot-load)"
     Write-Host "  [Q]  Exit" -ForegroundColor Gray
 
-    $c = (Read-Host "`nEnter option [1-21, Q] (Default: 1)").Trim()
+    $c = (Read-Host "`nEnter option [1-22, Q] (Default: 1)").Trim()
     return $(if ($c) { $c } else { "1" })
 }
 
@@ -1077,7 +1129,8 @@ function Invoke-Pipeline([hashtable]$opts) {
     if ($opts.Clean) { Invoke-CleanBuildArtifacts; return }
     if ($opts.PurgeBuildTools) { Invoke-PurgeBuildTools; return }
     if ($opts.Check) { Invoke-CheckMode; return }
-    if ($opts.AndroidDev) { Invoke-AndroidDev; return }
+    if ($opts.AndroidDev) { Invoke-AndroidDev ([bool]$opts.ColdBoot); return }
+    if ($opts.ColdBoot) { Invoke-AndroidColdBoot; return }
     if ($opts.AndroidArm64) { Invoke-AndroidBuild "arm64"; return }
     if ($opts.AndroidUniversal) { Invoke-AndroidBuild "universal"; return }
     if ($opts.AndroidBuild -or $opts.AndroidAll) { Invoke-AndroidBuild "all"; return }
@@ -1157,8 +1210,9 @@ try {
                 "19" { $runOpts.PurgeBuildTools = $true }
                 "20" { $runOpts.Clean = $true }
                 "21" { $runOpts.SignLinux = $true }
+                "22" { $runOpts.ColdBoot = $true }
                 { $_ -in "q", "Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
-                default { Write-Host "Invalid option '$_'. Choose 1-21 or Q." -ForegroundColor Red; continue }
+                default { Write-Host "Invalid option '$_'. Choose 1-22 or Q." -ForegroundColor Red; continue }
             }
             Invoke-Pipeline $runOpts
             $ans = (Read-Host "`nPress Enter to return to menu (or 'q' to exit)").Trim(); if ($ans -in "q", "Q") { Invoke-Exit 0 }
@@ -1171,7 +1225,7 @@ try {
             BuildAppImage = $BuildAppImage; BuildRpm = $BuildRpm; BuildDeb = $BuildDeb; BuildLinux = $BuildLinux; AllLinux = $AllLinux;
             SignLinux = $SignLinux;
             All = $All; Run = $Run; AndroidDev = $AndroidDev; AndroidBuild = $AndroidBuild; AndroidArm64 = $AndroidArm64;
-            AndroidUniversal = $AndroidUniversal; AndroidAll = $AndroidAll; AndroidPerf = $AndroidPerf;
+            AndroidUniversal = $AndroidUniversal; AndroidAll = $AndroidAll; AndroidPerf = $AndroidPerf; ColdBoot = $ColdBoot;
             Patch = $Patch; Minor = $Minor; Major = $Major; TargetVersion = $TargetVersion;
             Port = $Port; Clean = $Clean; PurgeBuildTools = $PurgeBuildTools
         }

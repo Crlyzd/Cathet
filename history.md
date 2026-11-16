@@ -194,3 +194,9 @@ This document serves as the living project documentation and institutional memor
 - **v5.3.0 – v5.4.0 (2026-11-07 – 2026-11-09)**: Linux Desktop support (Fedora `.rpm`, `.deb`, Universal AppImage via WSL Base64 bridge in `build.ps1`), `domSearch.ts` CSS Custom Highlight API search, 2D pull-down-and-turn-right Private Vault access, removal of artificial Android selection/scroll locks, and repository license alignment to GNU GPLv3. (See `git log` for granular commit details.)
 - **Build Pipeline Fix (2026-11-13)**: Configured default fallback `SCCACHE_SERVER_PORT = "35422"` in `build.ps1` and `.cargo/config.toml` to prevent Windows socket access permission failures (`os error 10013`) caused by Hyper-V / WSL dynamic port exclusions blocking default port 4226.
 - **Linux App Icon Resolution Prioritization (2026-11-13)**: Reordered `bundle.icon` in `src-tauri/tauri.conf.json` so `icons/icon.png` (512×512) and high-DPI assets appear ahead of `32x32.png`. In Tauri v2, `find_icon` on Linux grabs the first `.png` in `bundle.icon` for `default_window_icon`. Recompiled and signed `release/cathet-v5.5.0-x86_64.AppImage`.
+
+### 2026-11-16: Android Emulator Cold Boot Support in `build.ps1`
+- **Summary**:
+  - Extracted `Start-AndroidEmulator` helper and added `Invoke-AndroidColdBoot` in `build.ps1` to launch AVDs with `-no-snapshot-load` (stopping any currently running `emulator-*` instance first).
+  - Added `-ColdBoot` CLI switch (works standalone or combined with `-AndroidDev`) and interactive menu option `[22] Cold Boot Android Emulator (-no-snapshot-load)`.
+- **Affected Files**: `build.ps1`
