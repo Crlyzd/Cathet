@@ -75,6 +75,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-16: Fix Stale Post-Upgrade Update Notification & Hybrid Android Check Cadence
+- **Summary**: Fixed stale update badges (`v5.5.3`) persisting after upgrading from `5.5.2` to `5.5.3` by exporting `isNewerVersion()` and `getValidCachedUpdate()` in `src-ui/src/services/updateService.ts` (193 lines) to invalidate `cathet_latest_update`, `cathet_last_update_check`, and `cathet_launch_count` whenever `info.current_version !== APP_VERSION` or `latest_version <= APP_VERSION`. Updated `HomeHeaderComponent.syncCachedUpdate()` in `src-ui/src/components/home/HomeHeader.ts` (182 lines) to use `getValidCachedUpdate()` instead of raw `localStorage` parsing. Switched `UpdateService.checkForUpdatesOccasionally()` to check on every 5th app launch with a 12-hour minimum cooldown (`43,200,000` ms) or 7-day fallback (`604,800,000` ms).
+- **Affected Files**: `src-ui/src/services/updateService.ts`, `src-ui/src/components/home/HomeHeader.ts`, `history.md`
+
 ### 2026-11-16: Fix Windows `CVT1100` Duplicate `RT_ICON` Collision & Cross-Compile Guard in `build.rs`
 - **Summary**: Fixed `CVTRES : fatal error CVT1100: duplicate resource. type:ICON, name:1` during Windows release linking (`x64` & `ARM64`) caused by `embed_resource` compiling `doc_icon.rc` into a separate `doc_icon.lib` whose auto-numbered `RT_ICON` IDs (`1..N`) collided with `tauri_build`'s `resource.lib`. Updated `src-tauri/build.rs` (85 lines) to gate on `CARGO_CFG_TARGET_OS == "windows"` (preventing host-cfg execution during Android cross-compilation), append `101 ICON` directly into `OUT_DIR/resource.rc`, and recompile `OUT_DIR/resource.lib` via `rc.exe` + `cvtres.exe`.
 - **Affected Files**: `src-tauri/build.rs`, `history.md`
