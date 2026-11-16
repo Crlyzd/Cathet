@@ -233,6 +233,9 @@ class CathetApp {
 
     this.registerShortcuts();
     this.initDragDrop();
+    (window as unknown as Record<string, unknown>).__cathet_on_new_intent = () => {
+      void this.handleWarmStartIntent();
+    };
     this.loadInitialFile();
     setTimeout(() => {
       if (PlatformService.getInstance().isMobile()) this.updateService.checkForUpdatesOccasionally();
@@ -593,6 +596,14 @@ class CathetApp {
     else if (this.fileService.getLastError()) {
       showGlassDialog({ type: "warning", title: "Cannot Open File", message: this.fileService.getLastError()! });
     }
+  }
+
+  private async handleWarmStartIntent(): Promise<void> {
+    if (PlatformService.getInstance().isAndroid()) {
+      await this.homeCoord?.autoSaveCurrentNote();
+      await this.autoSaveRightPane();
+    }
+    await this.loadInitialFile();
   }
 
   private async loadInitialFile(): Promise<void> {

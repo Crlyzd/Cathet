@@ -37,6 +37,7 @@ class MainActivity : TauriActivity() {
 
   private external fun initNativeBridge(context: Context)
   private external fun onBiometricResult(success: Boolean, error: String?)
+  private var activeWebView: java.lang.ref.WeakReference<WebView>? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     activeInstance = this
@@ -49,6 +50,7 @@ class MainActivity : TauriActivity() {
 
   override fun onWebViewCreate(webView: WebView) {
     super.onWebViewCreate(webView)
+    activeWebView = java.lang.ref.WeakReference(webView)
     webView.addJavascriptInterface(object {
       @android.webkit.JavascriptInterface
       fun performHaptic(type: String) {
@@ -82,6 +84,7 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onDestroy() {
+    activeWebView = null
     if (activeInstance == this) {
       activeInstance = null
     }
@@ -147,6 +150,11 @@ class MainActivity : TauriActivity() {
       val uri = intent.dataString
       if (!uri.isNullOrEmpty()) {
         FileHelper.setInitialUri(uri)
+        activeWebView?.get()?.let { wv ->
+          wv.post {
+            wv.evaluateJavascript("window.__cathet_on_new_intent&&window.__cathet_on_new_intent()", null)
+          }
+        }
       }
     }
   }
