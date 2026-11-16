@@ -200,3 +200,15 @@ This document serves as the living project documentation and institutional memor
   - Extracted `Start-AndroidEmulator` helper and added `Invoke-AndroidColdBoot` in `build.ps1` to launch AVDs with `-no-snapshot-load` (stopping any currently running `emulator-*` instance first).
   - Added `-ColdBoot` CLI switch (works standalone or combined with `-AndroidDev`) and interactive menu option `[22] Cold Boot Android Emulator (-no-snapshot-load)`.
 - **Affected Files**: `build.ps1`
+
+### 2026-11-16: [Mistake] Standalone Cold Boot Option Instead of Android Live Dev (Cold Boot)
+- **Context**: User asked to add the cold boot command option to `build.ps1` after troubleshooting a broken emulator Quick Boot snapshot during Android development.
+- **User Correction**: *"bruh when I asked for cold boot, I was asking it for live dev, but cold boot."*
+- **Root Cause**: Added `[22] Cold Boot Android Emulator` as a standalone utility that only boots the emulator and returns to the menu, rather than wiring interactive menu selection directly to `Android Live Dev (Cold Boot)`.
+- **Corrective Guardrail**: When adding interactive menu variants for dev workflows in `build.ps1`, ensure the menu option invokes the full `Invoke-AndroidDev` pipeline with cold-boot enabled (`$runOpts.AndroidDev = $true; $runOpts.ColdBoot = $true`), or prompts/exposes it directly under the Android section so users don't have to run two separate steps.
+
+### 2026-11-16: Wire Android Live Dev (Cold Boot) into `build.ps1` Menu `[10]`
+- **Summary**:
+  - Moved Cold Boot Live Dev directly under `[9]` as `[10] Android Live Dev (Cold Boot Emulator -no-snapshot-load)` and shifted `[11]`–`[22]` accordingly.
+  - Extracted `Stop-RunningAndroidEmulators` (with `adb emu kill` + wait + `qemu-system-*` process fallback) and updated `Invoke-AndroidDev -ColdBoot` to always stop running emulators and cold-boot/target the AVD directly (ignoring attached USB phones).
+- **Affected Files**: `build.ps1`

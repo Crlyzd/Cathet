@@ -703,18 +703,28 @@ function Start-AndroidEmulator([bool]$coldBoot = $false) {
     return $null
 }
 
+function Stop-RunningAndroidEmulators {
+    if (-not (Get-Command adb -ErrorAction SilentlyContinue)) { return }
+    $runningEmus = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '^emulator-\d+' } | ForEach-Object { $_.Split("`t")[0] })
+    if ($runningEmus.Count -eq 0) { return }
+    foreach ($emuId in $runningEmus) {
+        Write-Host "Stopping running emulator '$emuId' for cold boot..." -ForegroundColor Yellow
+        cmd.exe /c "adb -s $emuId emu kill 2>nul" | Out-Null
+    }
+    for ($i = 0; $i -lt 10; $i++) {
+        Start-Sleep -Milliseconds 500
+        $left = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '^emulator-\d+' })
+        if ($left.Count -eq 0) { return }
+    }
+    Get-Process -Name "qemu-system-*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 500
+}
+
 function Invoke-AndroidColdBoot {
     Initialize-AndroidEnvironment
     $prevEAP = $ErrorActionPreference; $ErrorActionPreference = 'SilentlyContinue'
     try {
-        if (Get-Command adb -ErrorAction SilentlyContinue) {
-            $runningEmus = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '^emulator-\d+' } | ForEach-Object { $_.Split("`t")[0] })
-            foreach ($emuId in $runningEmus) {
-                Write-Host "Stopping running emulator '$emuId' before cold boot..." -ForegroundColor Yellow
-                cmd.exe /c "adb -s $emuId emu kill 2>nul" | Out-Null
-            }
-            if ($runningEmus.Count -gt 0) { Start-Sleep -Seconds 2 }
-        }
+        Stop-RunningAndroidEmulators
         $booted = Start-AndroidEmulator $true
         if ($booted) { Write-Host "Emulator '$booted' cold-booted successfully!" -ForegroundColor Green }
     }
@@ -730,38 +740,36 @@ function Invoke-AndroidDev([bool]$coldBoot = $false) {
         $prevEAP = $ErrorActionPreference; $ErrorActionPreference = 'SilentlyContinue'
         try {
             if ($coldBoot) {
-                $runningEmus = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '^emulator-\d+' } | ForEach-Object { $_.Split("`t")[0] })
-                foreach ($emuId in $runningEmus) {
-                    Write-Host "Stopping running emulator '$emuId' for cold boot..." -ForegroundColor Yellow
-                    cmd.exe /c "adb -s $emuId emu kill 2>nul" | Out-Null
-                }
-                if ($runningEmus.Count -gt 0) { Start-Sleep -Seconds 2 }
+                Stop-RunningAndroidEmulators
+                $targetDevId = Start-AndroidEmulator $true
             }
-            while ($true) {
-                $raw = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\t(device|emulator|unauthorized)' })
-                if (@($raw | Where-Object { $_ -match '\tunauthorized' }).Count -gt 0) {
-                    Write-Host "`n[ALERT] Device connected but UNAUTHORIZED! Unlock phone and tap Allow." -ForegroundColor Yellow
-                    $ans = (Read-Host "Press Enter once allowed (or 'q' to skip)").Trim(); if ($ans -in "q", "Q") { break } else { continue }
-                }
-                $ready = @($raw | Where-Object { $_ -match '\t(device|emulator)' })
-                if ($ready.Count -gt 1) {
-                    Write-Host "`nMultiple active Android targets found:" -ForegroundColor Cyan
-                    for ($i = 0; $i -lt $ready.Count; $i++) {
-                        $did = $ready[$i].Split("`t")[0]
-                        $m = ("" + (cmd.exe /c "adb -s $did shell getprop ro.product.model 2>nul")).Trim()
-                        Write-Host "  [$($i+1)] $did ($m)"
+            else {
+                while ($true) {
+                    $raw = @(cmd.exe /c "adb devices 2>nul" | Where-Object { $_ -match '\t(device|emulator|unauthorized)' })
+                    if (@($raw | Where-Object { $_ -match '\tunauthorized' }).Count -gt 0) {
+                        Write-Host "`n[ALERT] Device connected but UNAUTHORIZED! Unlock phone and tap Allow." -ForegroundColor Yellow
+                        $ans = (Read-Host "Press Enter once allowed (or 'q' to skip)").Trim(); if ($ans -in "q", "Q") { break } else { continue }
                     }
-                    $sel = (Read-Host "Select target [1-$($ready.Count)] (Default: 1)").Trim()
-                    $idx = if ($sel -match '^\d+$' -and [int]$sel -ge 1 -and [int]$sel -le $ready.Count) { [int]$sel - 1 } else { 0 }
-                    $targetDevId = $ready[$idx].Split("`t")[0]
+                    $ready = @($raw | Where-Object { $_ -match '\t(device|emulator)' })
+                    if ($ready.Count -gt 1) {
+                        Write-Host "`nMultiple active Android targets found:" -ForegroundColor Cyan
+                        for ($i = 0; $i -lt $ready.Count; $i++) {
+                            $did = $ready[$i].Split("`t")[0]
+                            $m = ("" + (cmd.exe /c "adb -s $did shell getprop ro.product.model 2>nul")).Trim()
+                            Write-Host "  [$($i+1)] $did ($m)"
+                        }
+                        $sel = (Read-Host "Select target [1-$($ready.Count)] (Default: 1)").Trim()
+                        $idx = if ($sel -match '^\d+$' -and [int]$sel -ge 1 -and [int]$sel -le $ready.Count) { [int]$sel - 1 } else { 0 }
+                        $targetDevId = $ready[$idx].Split("`t")[0]
+                    }
+                    elseif ($ready.Count -eq 1) {
+                        $targetDevId = $ready[0].Split("`t")[0]
+                    }
+                    elseif (Get-Command emulator -ErrorAction SilentlyContinue) {
+                        $targetDevId = Start-AndroidEmulator $false
+                    }
+                    break
                 }
-                elseif ($ready.Count -eq 1) {
-                    $targetDevId = $ready[0].Split("`t")[0]
-                }
-                elseif (Get-Command emulator -ErrorAction SilentlyContinue) {
-                    $targetDevId = Start-AndroidEmulator $coldBoot
-                }
-                break
             }
         }
         finally {
@@ -1102,23 +1110,23 @@ function Show-InteractiveMenu {
 
     Write-Host "`nAndroid Releases:" -ForegroundColor DarkCyan
     Write-Host "  [9]  Android Live Dev (Hot Reload - USB Device / Emulator)"
-    Write-Host "  [10] Build Android Phone APK (ARM64 ~6.5 MB) -> $OutputDir/cathet-v$ver-android-arm64.apk"
-    Write-Host "  [11] Build Android Universal APK (All ABIs ~20.5 MB) -> $OutputDir/cathet-v$ver-android-universal.apk"
-    Write-Host "  [12] Build All Android Targets (ARM64 + Universal) [Default]"
-    Write-Host "  [13] Android Performance Monitor (Live RAM / CPU / 120Hz Jank)"
+    Write-Host "  [10] Android Live Dev (Cold Boot Emulator -no-snapshot-load)"
+    Write-Host "  [11] Build Android Phone APK (ARM64 ~6.5 MB) -> $OutputDir/cathet-v$ver-android-arm64.apk"
+    Write-Host "  [12] Build Android Universal APK (All ABIs ~20.5 MB) -> $OutputDir/cathet-v$ver-android-universal.apk"
+    Write-Host "  [13] Build All Android Targets (ARM64 + Universal) [Default]"
+    Write-Host "  [14] Android Performance Monitor (Live RAM / CPU / 120Hz Jank)"
 
     Write-Host "`nLinux Releases (Digitally Signed via GPG):" -ForegroundColor DarkCyan
-    Write-Host "  [14] Build Linux Debian / Ubuntu (.deb ~3.5 MB) -> $OutputDir/cathet-v$ver-amd64.deb"
-    Write-Host "  [15] Build Linux Fedora KDE (.rpm ~3.5 MB) -> $OutputDir/cathet-v$ver-x86_64.rpm"
-    Write-Host "  [16] Build Universal Linux AppImage (~78 MB) -> $OutputDir/cathet-v$ver-x86_64.AppImage"
-    Write-Host "  [17] Build & Sign All Linux Formats (.deb + .rpm + .AppImage + GPG Signatures)"
+    Write-Host "  [15] Build Linux Debian / Ubuntu (.deb ~3.5 MB) -> $OutputDir/cathet-v$ver-amd64.deb"
+    Write-Host "  [16] Build Linux Fedora KDE (.rpm ~3.5 MB) -> $OutputDir/cathet-v$ver-x86_64.rpm"
+    Write-Host "  [17] Build Universal Linux AppImage (~78 MB) -> $OutputDir/cathet-v$ver-x86_64.AppImage"
+    Write-Host "  [18] Build & Sign All Linux Formats (.deb + .rpm + .AppImage + GPG Signatures)"
 
     Write-Host "`nUtilities:" -ForegroundColor DarkCyan
-    Write-Host "  [18] Bump Project Version (Current: v$ver)"
-    Write-Host "  [19] Purge BuildTools Hub & WSL (Free up D:\ space)"
-    Write-Host "  [20] Clean Build Caches & Targets (Rust, Android, WSL, Dist)"
-    Write-Host "  [21] Re-Sign Release Artifacts (GPG Detached Signatures & SHA256SUMS.asc)"
-    Write-Host "  [22] Cold Boot Android Emulator (-no-snapshot-load)"
+    Write-Host "  [19] Bump Project Version (Current: v$ver)"
+    Write-Host "  [20] Purge BuildTools Hub & WSL (Free up D:\ space)"
+    Write-Host "  [21] Clean Build Caches & Targets (Rust, Android, WSL, Dist)"
+    Write-Host "  [22] Re-Sign Release Artifacts (GPG Detached Signatures & SHA256SUMS.asc)"
     Write-Host "  [Q]  Exit" -ForegroundColor Gray
 
     $c = (Read-Host "`nEnter option [1-22, Q] (Default: 1)").Trim()
@@ -1195,10 +1203,11 @@ try {
                 "1" { $runOpts.Dev = $true }; "2" { $runOpts.Check = $true }; "3" { $runOpts.Build = $true }
                 "4" { $runOpts.Build = $true; $runOpts.Run = $true }; "5" { $runOpts.BuildX64 = $true }
                 "6" { $runOpts.BuildArm64 = $true }; "7" { $runOpts.BuildMsix = $true }; "8" { $runOpts.AllWindows = $true }
-                "9" { $runOpts.AndroidDev = $true }; "10" { $runOpts.AndroidArm64 = $true }
-                "11" { $runOpts.AndroidUniversal = $true }; "12" { $runOpts.AndroidAll = $true }; "13" { $runOpts.AndroidPerf = $true }
-                "14" { $runOpts.BuildDeb = $true }; "15" { $runOpts.BuildRpm = $true }; "16" { $runOpts.BuildAppImage = $true }; "17" { $runOpts.AllLinux = $true }
-                "18" {
+                "9" { $runOpts.AndroidDev = $true }; "10" { $runOpts.AndroidDev = $true; $runOpts.ColdBoot = $true }
+                "11" { $runOpts.AndroidArm64 = $true }; "12" { $runOpts.AndroidUniversal = $true }
+                "13" { $runOpts.AndroidAll = $true }; "14" { $runOpts.AndroidPerf = $true }
+                "15" { $runOpts.BuildDeb = $true }; "16" { $runOpts.BuildRpm = $true }; "17" { $runOpts.BuildAppImage = $true }; "18" { $runOpts.AllLinux = $true }
+                "19" {
                     $bChoice = (Read-Host "`nBump type: [1] Patch [2] Minor [3] Major [4] Custom (Default: 1)").Trim()
                     if ($bChoice -eq "2") { $runOpts.Minor = $true } elseif ($bChoice -eq "3") { $runOpts.Major = $true }
                     elseif ($bChoice -eq "4") {
@@ -1207,10 +1216,9 @@ try {
                     }
                     else { $runOpts.Patch = $true }
                 }
-                "19" { $runOpts.PurgeBuildTools = $true }
-                "20" { $runOpts.Clean = $true }
-                "21" { $runOpts.SignLinux = $true }
-                "22" { $runOpts.ColdBoot = $true }
+                "20" { $runOpts.PurgeBuildTools = $true }
+                "21" { $runOpts.Clean = $true }
+                "22" { $runOpts.SignLinux = $true }
                 { $_ -in "q", "Q" } { Write-Host "Exited." -ForegroundColor Gray; Invoke-Exit 0 }
                 default { Write-Host "Invalid option '$_'. Choose 1-22 or Q." -ForegroundColor Red; continue }
             }
