@@ -81,6 +81,14 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-16: Switch Desktop Dual-Pane Folder Icons to RemixIcon (`RiFolderLine` / `RiFolderOpenLine`)
+- **Summary**: Added RemixIcon `riFolderLine` and `riFolderOpenLine` to `src-ui/src/utils/monochromeIcons.ts` (keeping `icons.folder` untouched for mobile `MobileActionBar.ts` and `MobileMenuDrawer.ts`) and updated `src-ui/src/components/dualpane/DualPaneHeader.ts` (`!isMobile()` only) to use them.
+- **Affected Files**: `src-ui/src/utils/monochromeIcons.ts`, `src-ui/src/components/dualpane/DualPaneHeader.ts (104)`, `history.md`
+
+### 2026-11-16: Animate Dual-Pane Desktop Folder Icon to Open on Hover
+- **Summary**: Added `folderOpen` SVG icon to `src-ui/src/utils/monochromeIcons.ts`, rendered layered `.folder-icon-closed` / `.folder-icon-open` spans in `src-ui/src/components/dualpane/DualPaneHeader.ts` (desktop only, `!isMobile()`), and added GPU-composited hover swap transitions in `src-ui/styles/dualpane.css`.
+- **Affected Files**: `src-ui/src/utils/monochromeIcons.ts`, `src-ui/src/components/dualpane/DualPaneHeader.ts (104)`, `src-ui/styles/dualpane.css`, `history.md`
+
 ### 2026-11-16: Fix Windows `.exe` Icon Resource Ordering (`40001`) & Desktop Dual-Pane Folder Icon
 - **Summary**: Changed secondary document icon Win32 resource ID from `101` to `40001` in `src-tauri/build.rs` (`append_doc_icon_to_tauri_resources`), `src-tauri/doc_icon.rc`, and `src-tauri/src/commands/association.rs` (`,-40001` in `register_associations` and `self_heal_if_moved`) so `tauri_build`'s `32512` main `M` icon remains at PE `index 0` on `cathet.exe`. Updated `src-ui/src/components/dualpane/DualPaneHeader.ts` to show `icons.folder` (`Open File (Ctrl+O)`) on Windows and Linux (`!isMobile()`) while keeping `icons.grid` (`Notes Dashboard`) on Android.
 - **Affected Files**: `src-tauri/build.rs (83)`, `src-tauri/doc_icon.rc`, `src-tauri/src/commands/association.rs (237)`, `src-ui/src/components/dualpane/DualPaneHeader.ts (102)`, `history.md`
