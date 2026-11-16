@@ -133,8 +133,10 @@ export class HomeViewComponent {
     }
   }
 
-  async refresh(): Promise<void> {
-    const reg = await this.notesService.fetchNotes();
+  async refresh(): Promise<void> { await this.notesService.fetchNotes(); this.syncFromRegistry(); }
+
+  syncFromRegistry(): void {
+    const reg = this.notesService.getRegistry();
     if (this.activeFolder !== "All" && !reg.folders.includes(this.activeFolder)) this.activeFolder = "All";
     this.categoryTabs.setFolders(reg.folders, this.activeFolder);
     this.renderGrid();
@@ -221,9 +223,9 @@ export class HomeViewComponent {
     if (visible && shouldRefresh) this.refresh();
   }
 
-  async showAndRefresh(): Promise<void> {
+  showAndRefresh(): void {
+    this.syncFromRegistry();
     this.element.style.display = "flex";
-    await this.refresh();
   }
 
   animateEnter(): void {

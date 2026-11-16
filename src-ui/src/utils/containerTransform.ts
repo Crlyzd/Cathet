@@ -25,15 +25,17 @@ export interface CollapseContainerOptions {
 
 export class ContainerTransform {
   private static activeAnim: Animation | null = null;
-  private static activeCleanup: (() => void) | null = null;
+  private static activeCleanup: ((runCallback?: boolean) => void) | null = null;
 
   private static cancelActive(): void {
     if (this.activeAnim) {
+      this.activeAnim.onfinish = null;
+      this.activeAnim.oncancel = null;
       this.activeAnim.cancel();
       this.activeAnim = null;
     }
     if (this.activeCleanup) {
-      this.activeCleanup();
+      this.activeCleanup(false);
       this.activeCleanup = null;
     }
   }
@@ -97,7 +99,7 @@ export class ContainerTransform {
 
     this.activeAnim = anim;
     let finished = false;
-    const finish = () => {
+    const finish = (runCallback = true) => {
       if (finished) return;
       finished = true;
       if (this.activeAnim === anim) this.activeAnim = null;
@@ -106,18 +108,18 @@ export class ContainerTransform {
       workspaceEl.style.transform = "";
       workspaceEl.style.clipPath = "";
       workspaceEl.style.willChange = "";
-      workspaceEl.style.zIndex = "";
+      workspaceEl.style.zIndex = "200";
       workspaceEl.style.backgroundColor = "";
       if (cardEl) {
         cardEl.style.visibility = "";
         cardEl.style.backgroundColor = "";
       }
-      onComplete();
+      if (runCallback) onComplete();
     };
 
     this.activeCleanup = finish;
-    anim.onfinish = finish;
-    anim.oncancel = finish;
+    anim.onfinish = () => finish(true);
+    anim.oncancel = () => finish(true);
   }
 
   static collapse(options: CollapseContainerOptions): void {
@@ -202,17 +204,21 @@ export class ContainerTransform {
         { transform: "translate3d(0px, 0px, 0) scale(1)", clipPath: "inset(0px 0px 0px 0px round 0px)" },
         { transform: `translate3d(${dx}px, ${dy}px, 0) scale(${s})`, clipPath: `inset(0px ${insetRight}px ${insetBottom}px 0px round ${localRadius}px)` },
       ],
-      { duration: 400, easing: "cubic-bezier(0.2, 0, 0, 1)" }
+      { duration: 400, easing: "cubic-bezier(0.2, 0, 0, 1)", fill: "forwards" }
     );
 
     this.activeAnim = anim;
     let finished = false;
-    const finish = () => {
+    const finish = (runCallback = true) => {
       if (finished) return;
       finished = true;
       if (this.activeAnim === anim) this.activeAnim = null;
       if (this.activeCleanup === finish) this.activeCleanup = null;
+      if (runCallback) onComplete();
       document.body.classList.remove("is-animating-transform");
+      anim.onfinish = null;
+      anim.oncancel = null;
+      anim.cancel();
       innerAnims.forEach((a) => a.cancel());
       tileAnim?.cancel();
       tileClone?.remove();
@@ -225,11 +231,10 @@ export class ContainerTransform {
         cardEl.style.visibility = "";
         cardEl.style.backgroundColor = "";
       }
-      onComplete();
     };
 
     this.activeCleanup = finish;
-    anim.onfinish = finish;
-    anim.oncancel = finish;
+    anim.onfinish = () => finish(true);
+    anim.oncancel = () => finish(true);
   }
 }

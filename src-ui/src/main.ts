@@ -358,10 +358,11 @@ class CathetApp {
     if (!PlatformService.getInstance().isAndroid() || !this.dualPaneView) return;
     const edRight = this.dualPaneView.getEditorRight();
     if (!edRight) return;
-    const text = edRight.getText().trim();
-    if (!text) return;
     const rightPath = this.dualPaneService.getRightPath();
     const noteId = rightPath?.startsWith("notes/") ? rightPath.slice(6) : null;
+    if (noteId && !edRight.isModified()) return;
+    const text = edRight.getText().trim();
+    if (!text) return;
     try {
       const saved = await this.notesService.saveNote(noteId, text, this.homeCoord?.getCurrentFolder() || "");
       if (saved) {
