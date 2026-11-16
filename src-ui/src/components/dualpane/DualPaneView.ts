@@ -88,14 +88,16 @@ export class DualPaneView {
     this.rootEl.append(this.leftPaneEl, this.splitter.getElement(), this.rightPaneEl);
     this.container.appendChild(this.rootEl);
 
+    this.leftPaneEl.classList.add("entering");
     this.rightPaneEl.classList.add("entering");
     this.splitter.getElement().classList.add("entering");
     const onEnter = () => {
+      this.leftPaneEl.classList.remove("entering");
       this.rightPaneEl.classList.remove("entering");
       this.splitter.getElement().classList.remove("entering");
     };
     this.rightPaneEl.addEventListener("animationend", onEnter, { once: true });
-    setTimeout(onEnter, 250);
+    setTimeout(onEnter, 360);
 
     this.leftHostEl.appendChild(this.editorLeft.getWrapperEl());
     syncTouchZoomHost(this.editorLeft);
@@ -201,12 +203,13 @@ export class DualPaneView {
   getSplitterPosition(): number { return this.splitter.getElement().getBoundingClientRect().left; }
   animateClose(callback: () => void): void {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { callback(); return; }
+    this.leftPaneEl.classList.add("exiting");
     this.rightPaneEl.classList.add("exiting");
     this.splitter.getElement().classList.add("exiting");
     let called = false;
     const finish = () => { if (!called) { called = true; callback(); } };
     this.rightPaneEl.addEventListener("animationend", finish, { once: true });
-    setTimeout(finish, 170);
+    setTimeout(finish, 300);
   }
 
   destroy(): void {
