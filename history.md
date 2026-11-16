@@ -11,6 +11,12 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-16: Secondary Windows `.ico` Resource ID `101` Overwriting `.exe` Main Icon (`index 0`)
+- **Context**: Added `doc_icon.rc` with `101 ICON "icons/doc-icon.ico"` alongside `tauri_build::build()`.
+- **User Correction**: Compiled `cathet-v5.5.3-x64.exe` and `cathet-v5.5.3-arm64.exe` displayed the document icon instead of Cathet's main `M` icon.
+- **Root Cause**: `tauri_build` (`tauri-winres`) embeds the main app icon at Win32 `IDI_APPLICATION` (`32512`), not `1`. Windows PE `.rsrc` tables sort numeric IDs in ascending order, so `101` sorted before `32512` and became `index 0` (the `.exe`'s own icon in Explorer).
+- **Guardrail**: Any secondary `.ico` embedded into `cathet.exe` via `.rc` MUST use a resource ID strictly greater than `32518` (e.g., `40001`), keeping `32512` first at `index 0`.
+
 ### [Mistake] 2026-11-13: Missing `public/app-icon.png` Update During App Icon Refresh
 - **Guardrail**: `SettingsTabs.ts`, `AboutPane.ts`, and `MobileSettingsView.ts` reference `/app-icon.png` served from `public/app-icon.png`. Whenever updating the app icon, search for `*app-icon*` and update both `src-ui/src/assets/app-icon.png` and `public/app-icon.png`.
 
@@ -74,6 +80,10 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-16: Fix Windows `.exe` Icon Resource Ordering (`40001`) & Desktop Dual-Pane Folder Icon
+- **Summary**: Changed secondary document icon Win32 resource ID from `101` to `40001` in `src-tauri/build.rs` (`append_doc_icon_to_tauri_resources`), `src-tauri/doc_icon.rc`, and `src-tauri/src/commands/association.rs` (`,-40001` in `register_associations` and `self_heal_if_moved`) so `tauri_build`'s `32512` main `M` icon remains at PE `index 0` on `cathet.exe`. Updated `src-ui/src/components/dualpane/DualPaneHeader.ts` to show `icons.folder` (`Open File (Ctrl+O)`) on Windows and Linux (`!isMobile()`) while keeping `icons.grid` (`Notes Dashboard`) on Android.
+- **Affected Files**: `src-tauri/build.rs (83)`, `src-tauri/doc_icon.rc`, `src-tauri/src/commands/association.rs (237)`, `src-ui/src/components/dualpane/DualPaneHeader.ts (102)`, `history.md`
 
 ### 2026-11-16: Fix Stale Post-Upgrade Update Notification & Hybrid Android Check Cadence
 - **Summary**: Fixed stale update badges (`v5.5.3`) persisting after upgrading from `5.5.2` to `5.5.3` by exporting `isNewerVersion()` and `getValidCachedUpdate()` in `src-ui/src/services/updateService.ts` (193 lines) to invalidate `cathet_latest_update`, `cathet_last_update_check`, and `cathet_launch_count` whenever `info.current_version !== APP_VERSION` or `latest_version <= APP_VERSION`. Updated `HomeHeaderComponent.syncCachedUpdate()` in `src-ui/src/components/home/HomeHeader.ts` (182 lines) to use `getValidCachedUpdate()` instead of raw `localStorage` parsing. Switched `UpdateService.checkForUpdatesOccasionally()` to check on every 5th app launch with a 12-hour minimum cooldown (`43,200,000` ms) or 7-day fallback (`604,800,000` ms).
