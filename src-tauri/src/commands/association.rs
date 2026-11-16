@@ -1,5 +1,5 @@
 use serde::Serialize;
-#[cfg(any(target_os = "windows", target_os = "linux"))]
+#[cfg(target_os = "windows")]
 use std::env;
 #[cfg(target_os = "windows")]
 use std::ffi::OsStr;
@@ -7,7 +7,7 @@ use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 #[cfg(target_os = "windows")]
 use std::path::Path;
-#[cfg(any(target_os = "windows", target_os = "linux"))]
+#[cfg(target_os = "windows")]
 use std::path::PathBuf;
 
 #[cfg(target_os = "windows")]
@@ -95,13 +95,14 @@ const SUPPORTED_EXTENSIONS: &[&str] = &[
 pub fn register_associations(exe_path: &Path) -> Result<(), String> {
     let exe_str = exe_path.to_str().ok_or("Invalid executable path")?;
     let open_cmd = format!("\"{}\" \"%1\"", exe_str);
-    let icon_cmd = format!("\"{}\",0", exe_str);
+    let app_icon_cmd = format!("\"{}\",0", exe_str);
+    let doc_icon_cmd = format!("\"{}\",-101", exe_str);
 
     reg_set_string(HKEY_CURRENT_USER, "Software\\Classes\\Cathet.Document", "", "Cathet Document");
-    reg_set_string(HKEY_CURRENT_USER, "Software\\Classes\\Cathet.Document\\DefaultIcon", "", &icon_cmd);
+    reg_set_string(HKEY_CURRENT_USER, "Software\\Classes\\Cathet.Document\\DefaultIcon", "", &doc_icon_cmd);
     reg_set_string(HKEY_CURRENT_USER, "Software\\Classes\\Cathet.Document\\shell\\open\\command", "", &open_cmd);
     reg_set_string(HKEY_CURRENT_USER, "Software\\Classes\\Applications\\cathet.exe", "FriendlyAppName", "Cathet");
-    reg_set_string(HKEY_CURRENT_USER, "Software\\Classes\\Applications\\cathet.exe\\DefaultIcon", "", &icon_cmd);
+    reg_set_string(HKEY_CURRENT_USER, "Software\\Classes\\Applications\\cathet.exe\\DefaultIcon", "", &app_icon_cmd);
     reg_set_string(HKEY_CURRENT_USER, "Software\\Classes\\Applications\\cathet.exe\\shell\\open\\command", "", &open_cmd);
 
     for ext in SUPPORTED_EXTENSIONS {
@@ -152,7 +153,9 @@ pub fn read_registered_exe() -> Option<String> {
 pub fn self_heal_if_moved() -> bool {
     let Ok(current_exe) = env::current_exe() else { return false };
     if let Some(registered) = read_registered_exe() {
-        if PathBuf::from(&registered) != current_exe {
+        let expected_doc_icon = format!("\"{}\",-101", current_exe.to_string_lossy());
+        let registered_doc_icon = reg_get_string(HKEY_CURRENT_USER, "Software\\Classes\\Cathet.Document\\DefaultIcon", "");
+        if PathBuf::from(&registered) != current_exe || registered_doc_icon.as_deref() != Some(expected_doc_icon.as_str()) {
             let _ = register_associations(&current_exe);
             return true;
         }
@@ -162,18 +165,6 @@ pub fn self_heal_if_moved() -> bool {
 
 #[cfg(not(target_os = "windows"))]
 pub fn self_heal_if_moved() -> bool { false }
-
-#[cfg(target_os = "linux")]
-fn linux_desktop_entry_path() -> Option<PathBuf> {
-    env::var("HOME").ok().map(|h| PathBuf::from(h).join(".local/share/applications/com.cathet.app.desktop"))
-}
-
-#[cfg(target_os = "linux")]
-fn resolve_linux_exec_path() -> String {
-    env::var("APPIMAGE").ok().filter(|s| !s.is_empty()).unwrap_or_else(|| {
-        env::current_exe().map(|p| p.to_string_lossy().to_string()).unwrap_or_default()
-    })
-}
 
 #[tauri::command]
 pub async fn get_association_status() -> Result<AssociationStatus, String> {
@@ -189,14 +180,8 @@ pub async fn get_association_status() -> Result<AssociationStatus, String> {
     }
     #[cfg(target_os = "linux")]
     {
-        let current_exe = resolve_linux_exec_path();
-        let out = std::process::Command::new("xdg-mime")
-            .args(["query", "default", "text/markdown"])
-            .output()
-            .ok();
-        let is_reg = out
-            .map(|o| String::from_utf8_lossy(&o.stdout).contains("com.cathet.app.desktop"))
-            .unwrap_or(false);
+        let current_exe = super::association_linux::resolve_exec_path();
+        let is_reg = super::association_linux::is_registered();
         return Ok(AssociationStatus {
             is_registered: is_reg,
             current_exe_path: current_exe.clone(),
@@ -224,20 +209,7 @@ pub async fn configure_default_app() -> Result<AssociationStatus, String> {
     }
     #[cfg(target_os = "linux")]
     {
-        let exec_path = resolve_linux_exec_path();
-        if let Some(desktop_path) = linux_desktop_entry_path() {
-            if let Some(parent) = desktop_path.parent() {
-                let _ = std::fs::create_dir_all(parent);
-            }
-            let entry = format!(
-                "[Desktop Entry]\nName=Cathet\nComment=Lightweight text & markdown editor\nExec=\"{}\" %F\nIcon=cathet\nTerminal=false\nType=Application\nCategories=Utility;TextEditor;Development;\nMimeType=text/plain;text/markdown;text/x-markdown;\n",
-                exec_path
-            );
-            let _ = std::fs::write(&desktop_path, entry);
-        }
-        let _ = std::process::Command::new("xdg-mime")
-            .args(["default", "com.cathet.app.desktop", "text/plain", "text/markdown", "text/x-markdown"])
-            .status();
+        super::association_linux::configure_default();
         return get_association_status().await;
     }
     #[cfg(not(any(target_os = "windows", target_os = "linux")))]
@@ -255,9 +227,7 @@ pub async fn unregister_default_app() -> Result<AssociationStatus, String> {
     }
     #[cfg(target_os = "linux")]
     {
-        if let Some(desktop_path) = linux_desktop_entry_path() {
-            let _ = std::fs::remove_file(desktop_path);
-        }
+        super::association_linux::unregister_default();
         return get_association_status().await;
     }
     #[cfg(not(any(target_os = "windows", target_os = "linux")))]

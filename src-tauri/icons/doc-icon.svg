@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="sheetGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#272a31"/>
+      <stop offset="100%" stop-color="#191b20"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4cc2ff"/>
+      <stop offset="100%" stop-color="#2684ff"/>
+    </linearGradient>
+    <linearGradient id="cGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4cc2ff"/>
+      <stop offset="100%" stop-color="#2275ff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Standalone notes sheet (no outer squircle) -->
+  <path d="M58 18 H164 L216 70 V214 A24 24 0 0 1 192 238 H58 A24 24 0 0 1 34 214 V42 A24 24 0 0 1 58 18 Z"
+        fill="url(#sheetGrad)" stroke="#3e424c" stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- Folded corner flap -->
+  <path d="M164 18 V52 A18 18 0 0 0 182 70 H216 Z"
+        fill="#343842" stroke="#4d5360" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- Cyan/blue heading bar -->
+  <rect x="62" y="64" width="76" height="16" rx="8" fill="url(#accentGrad)"/>
+
+  <!-- Note body lines (shifted up 8px, 30px vertical pitch) -->
+  <rect x="62" y="98" width="126" height="14" rx="7" fill="#828896"/>
+  <rect x="62" y="128" width="88" height="14" rx="7" fill="#6d7380"/>
+  <rect x="62" y="158" width="54" height="14" rx="7" fill="#828896"/>
+  <rect x="62" y="188" width="50" height="14" rx="7" fill="#5e6470"/>
+
+  <!-- Bottom-right larger bold 'C' letter (shifted up 8px, 14px right margin) -->
+  <path d="M192 167 C186.5 159.5 178.5 155.5 168.5 155.5 C150.5 155.5 138 168 138 184 C138 200 150.5 212.5 168.5 212.5 C178.5 212.5 186.5 208.5 192 201"
+        fill="none" stroke="url(#cGrad)" stroke-width="20" stroke-linecap="round"/>
+</svg>
