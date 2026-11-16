@@ -5,6 +5,12 @@
  * while #workspace-shell shrinks behind it (z-index: 200), matching Xiaomi HyperOS choreography.
  */
 
+import {
+  CollapseOverlayLayer,
+  CollapseVariant,
+  createCollapseOverlayLayer,
+} from "./containerTransformLayers";
+
 export interface ExpandContainerOptions {
   originRect: DOMRect;
   theme?: "dark" | "light";
@@ -19,6 +25,7 @@ export interface CollapseContainerOptions {
   theme?: "dark" | "light";
   targetBorderRadius?: number;
   cardEl?: HTMLElement | null;
+  collapseVariant?: CollapseVariant;
   onReady?: () => void;
   onComplete: () => void;
 }
@@ -123,7 +130,15 @@ export class ContainerTransform {
   }
 
   static collapse(options: CollapseContainerOptions): void {
-    const { targetRect, theme = "dark", targetBorderRadius = 16, cardEl, onReady, onComplete } = options;
+    const {
+      targetRect,
+      theme = "dark",
+      targetBorderRadius = 16,
+      cardEl,
+      collapseVariant = "tile",
+      onReady,
+      onComplete,
+    } = options;
     const workspaceEl = document.getElementById("workspace-shell");
 
     this.cancelActive();
@@ -138,26 +153,9 @@ export class ContainerTransform {
     document.body.classList.add("is-animating-transform");
 
     const editorBg = theme === "light" ? "#f8fafc" : "#0f1117";
-    let tileClone: HTMLElement | null = null;
-    let tileAnim: Animation | null = null;
-
-    if (cardEl) {
-      cardEl.style.backgroundColor = "";
-      tileClone = cardEl.cloneNode(true) as HTMLElement;
-      tileClone.classList.remove("touch-pressed");
-      tileClone.style.position = "fixed";
-      tileClone.style.left = `${targetRect.left}px`;
-      tileClone.style.top = `${targetRect.top}px`;
-      tileClone.style.width = `${targetRect.width}px`;
-      tileClone.style.height = `${targetRect.height}px`;
-      tileClone.style.margin = "0";
-      tileClone.style.zIndex = "210";
-      tileClone.style.pointerEvents = "none";
-      tileClone.style.visibility = "visible";
-      tileClone.style.willChange = "transform, opacity";
-      document.body.appendChild(tileClone);
-      cardEl.style.visibility = "hidden";
-    }
+    const overlayLayer: CollapseOverlayLayer | null = cardEl
+      ? createCollapseOverlayLayer(cardEl, targetRect, collapseVariant)
+      : null;
 
     workspaceEl.style.transform = "";
     workspaceEl.style.clipPath = "";
@@ -185,20 +183,6 @@ export class ContainerTransform {
 
     onReady?.();
 
-    if (tileClone) {
-      tileAnim = tileClone.animate(
-        [
-          { transform: "translate3d(-84px, -150px, 0)", opacity: 0.25, offset: 0 },
-          { transform: "translate3d(-64px, -143px, 0)", opacity: 1, offset: 0.1 },
-          { transform: "translate3d(-36px, -118px, 0)", opacity: 1, offset: 0.3 },
-          { transform: "translate3d(-16px, -78px, 0)", opacity: 1, offset: 0.55 },
-          { transform: "translate3d(-5px, -33px, 0)", opacity: 1, offset: 0.78 },
-          { transform: "translate3d(0px, 0px, 0)", opacity: 1, offset: 1 },
-        ],
-        { duration: 400, easing: "cubic-bezier(0.2, 0, 0, 1)", fill: "forwards" }
-      );
-    }
-
     const anim = workspaceEl.animate(
       [
         { transform: "translate3d(0px, 0px, 0) scale(1)", clipPath: "inset(0px 0px 0px 0px round 0px)" },
@@ -220,8 +204,8 @@ export class ContainerTransform {
       anim.oncancel = null;
       anim.cancel();
       innerAnims.forEach((a) => a.cancel());
-      tileAnim?.cancel();
-      tileClone?.remove();
+      overlayLayer?.anims.forEach((a) => a.cancel());
+      overlayLayer?.clone.remove();
       workspaceEl.style.transform = "";
       workspaceEl.style.clipPath = "";
       workspaceEl.style.willChange = "";

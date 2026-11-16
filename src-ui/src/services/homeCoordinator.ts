@@ -112,7 +112,7 @@ export class HomeCoordinator {
     } else if (fabEl || this.lastOriginRect) {
       let rect = fabEl ? fabEl.getBoundingClientRect() : null;
       if (!rect || rect.width === 0 || rect.height === 0) rect = this.lastOriginRect || new DOMRect(window.innerWidth - 76, window.innerHeight - 90, 58, 58);
-      ContainerTransform.collapse({ targetRect: rect, theme, targetBorderRadius: 29, onComplete: onExit });
+      ContainerTransform.collapse({ targetRect: rect, theme, targetBorderRadius: 29, cardEl: fabEl, collapseVariant: "fab", onComplete: onExit });
     } else onExit();
   }
 
