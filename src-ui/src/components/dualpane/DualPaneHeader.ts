@@ -24,7 +24,9 @@ export class DualPaneHeader {
 
   constructor(options: DualPaneHeaderOptions) {
     const isMobile = PlatformService.getInstance().isMobile();
-    const openIcon = isMobile ? icons.grid : icons.folder;
+    const openIcon = isMobile
+      ? icons.grid
+      : `<span class="folder-icon-closed">${icons.riFolderLine}</span><span class="folder-icon-open">${icons.riFolderOpenLine}</span>`;
     const openTitle = isMobile ? "Notes Dashboard" : "Open File (Ctrl+O)";
     this.element = document.createElement("div");
     this.element.className = "dualpane-header";
