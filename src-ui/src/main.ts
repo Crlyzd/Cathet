@@ -30,6 +30,7 @@ import { buildMainMenuItems } from "./utils/mainMenuItems";
 import { registerWindowSyncListeners } from "./utils/windowSync";
 import { setupKeyboardCommitListener } from "./utils/editorPasteHandler";
 import { syncTouchZoomHost } from "./utils/touchZoomHandler";
+import { handleBackStackPopState, pushBackLayer, removeBackLayer } from "./utils/backStack";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -203,34 +204,16 @@ class CathetApp {
     });
 
     window.addEventListener("popstate", () => {
-      if (this.homeCoord?.isSelectionModeActive()) {
-        this.homeCoord.exitSelectionMode();
+      if (handleBackStackPopState()) {
         return;
       }
       if (this.homeCoord && !this.homeCoord.isHomeActive()) {
         this.homeCoord.navigateBackToHome(false);
         return;
       }
-      if (this.dualPaneView?.hasEmbeddedHome()) {
-        this.dualPaneView.clearEmbeddedHome("left");
-        this.dualPaneView.clearEmbeddedHome("right");
-        this.dualPaneView.getHeaderLeft().setBackVisible(false);
-        this.dualPaneView.getHeaderRight().setBackVisible(false);
-        const hostLeft = this.dualPaneView.getHostLeft();
-        if (!hostLeft.contains(this.editor.getWrapperEl())) {
-          hostLeft.innerHTML = "";
-          hostLeft.appendChild(this.editor.getWrapperEl());
-          syncTouchZoomHost(this.editor);
-        }
-        if (this.dualPaneView.getEditorRight()) {
-          const hostRight = this.dualPaneView.getHostRight();
-          hostRight.innerHTML = "";
-          hostRight.appendChild(this.dualPaneView.getEditorRight()!.getWrapperEl());
-          syncTouchZoomHost(this.dualPaneView.getEditorRight()!);
-        } else {
-          this.dualPaneView.showEmptyRightPane();
-        }
-        this.mobileCoord?.setActionBarVisible(true);
+      if (this.homeCoord?.isSelectionModeActive()) {
+        this.homeCoord.exitSelectionMode();
+        return;
       }
     });
 
@@ -420,29 +403,32 @@ class CathetApp {
         onOpenLeft: async () => {
           if (PlatformService.getInstance().isAndroid() && this.homeCoord) {
             await this.homeCoord.autoSaveCurrentNote();
-            this.dualPaneView!.clearEmbeddedHome("left");
-            const hostEl = this.dualPaneView!.getHostLeft();
-            this.dualPaneView!.getHeaderLeft().setBackVisible(true);
+            if (!this.dualPaneView) return;
+            this.dualPaneView.clearEmbeddedHome("left");
+            const hostEl = this.dualPaneView.getHostLeft();
+            this.dualPaneView.getHeaderLeft().setBackVisible(true);
             this.mobileCoord?.setActionBarVisible(false);
-            window.history.pushState({ dualPicker: "left" }, "");
+            pushBackLayer("dual-picker", () => this.closeDualEmbeddedPicker("left"));
             const inst = this.homeCoord.createEmbeddedHome(hostEl, async (note) => {
               const read = await this.notesService.readNote(note.id);
               const content = read?.content || note.snippet;
-              this.dualPaneView!.clearEmbeddedHome("left");
-              this.dualPaneView!.getHeaderLeft().setBackVisible(false);
+              if (!this.dualPaneView) return;
+              removeBackLayer("dual-picker");
+              this.dualPaneView.clearEmbeddedHome("left");
+              this.dualPaneView.getHeaderLeft().setBackVisible(false);
               hostEl.appendChild(this.editor.getWrapperEl());
               syncTouchZoomHost(this.editor);
-              this.mobileCoord?.setActionBarVisible(true);
+              if (!this.dualPaneView.hasEmbeddedHome()) this.mobileCoord?.setActionBarVisible(true);
               this.currentFilePath = `notes/${note.id}`;
               this.homeCoord?.setCurrentNoteId(note.id);
               const cleanTitle = formatDisplayTitle(note.title);
               this.dualPaneService.setLeftPath(this.currentFilePath, cleanTitle);
               const isMd = this.previewService.shouldOpenInPreview(cleanTitle);
               this.editor.loadDocument(content, this.currentFilePath, isMd);
-              this.dualPaneView!.setLeftTitle(cleanTitle);
-              this.dualPaneView!.setLeftPreviewActive(isMd);
+              this.dualPaneView.setLeftTitle(cleanTitle);
+              this.dualPaneView.setLeftPreviewActive(isMd);
             });
-            this.dualPaneView!.setEmbeddedHome("left", inst);
+            this.dualPaneView.setEmbeddedHome("left", inst);
           } else {
             this.fetchAndApply(() => this.fileService.promptOpen(), "left");
           }
@@ -450,50 +436,33 @@ class CathetApp {
         onOpenRight: async () => {
           if (PlatformService.getInstance().isAndroid() && this.homeCoord) {
             await this.autoSaveRightPane();
-            this.dualPaneView!.clearEmbeddedHome("right");
-            const hostEl = this.dualPaneView!.getHostRight();
-            this.dualPaneView!.getHeaderRight().setBackVisible(true);
+            if (!this.dualPaneView) return;
+            this.dualPaneView.clearEmbeddedHome("right");
+            const hostEl = this.dualPaneView.getHostRight();
+            this.dualPaneView.getHeaderRight().setBackVisible(true);
             this.mobileCoord?.setActionBarVisible(false);
-            window.history.pushState({ dualPicker: "right" }, "");
+            pushBackLayer("dual-picker", () => this.closeDualEmbeddedPicker("right"));
             const inst = this.homeCoord.createEmbeddedHome(hostEl, async (note) => {
               const read = await this.notesService.readNote(note.id);
               const content = read?.content || note.snippet;
-              this.dualPaneView!.clearEmbeddedHome("right");
-              this.dualPaneView!.getHeaderRight().setBackVisible(false);
-              this.mobileCoord?.setActionBarVisible(true);
+              if (!this.dualPaneView) return;
+              removeBackLayer("dual-picker");
+              this.dualPaneView.clearEmbeddedHome("right");
+              this.dualPaneView.getHeaderRight().setBackVisible(false);
+              if (!this.dualPaneView.hasEmbeddedHome()) this.mobileCoord?.setActionBarVisible(true);
               const path = `notes/${note.id}`;
               const cleanTitle = formatDisplayTitle(note.title);
               this.dualPaneService.setRightPath(path, cleanTitle);
               const isMd = this.previewService.shouldOpenInPreview(cleanTitle);
-              this.dualPaneView!.mountRightEditor(content, path, isMd, this.fontService.getCurrentFont().family);
+              this.dualPaneView.mountRightEditor(content, path, isMd, this.fontService.getCurrentFont().family);
             });
-            this.dualPaneView!.setEmbeddedHome("right", inst);
+            this.dualPaneView.setEmbeddedHome("right", inst);
           } else {
             this.fetchAndApply(() => this.fileService.promptOpen(), "right");
           }
         },
-        onBackLeft: () => {
-          this.dualPaneView!.clearEmbeddedHome("left");
-          this.dualPaneView!.getHeaderLeft().setBackVisible(false);
-          const hostEl = this.dualPaneView!.getHostLeft();
-          hostEl.innerHTML = "";
-          hostEl.appendChild(this.editor.getWrapperEl());
-          syncTouchZoomHost(this.editor);
-          this.mobileCoord?.setActionBarVisible(true);
-        },
-        onBackRight: () => {
-          this.dualPaneView!.clearEmbeddedHome("right");
-          this.dualPaneView!.getHeaderRight().setBackVisible(false);
-          if (this.dualPaneView!.getEditorRight()) {
-            const hostEl = this.dualPaneView!.getHostRight();
-            hostEl.innerHTML = "";
-            hostEl.appendChild(this.dualPaneView!.getEditorRight()!.getWrapperEl());
-            syncTouchZoomHost(this.dualPaneView!.getEditorRight()!);
-          } else {
-            this.dualPaneView!.showEmptyRightPane();
-          }
-          this.mobileCoord?.setActionBarVisible(true);
-        },
+        onBackLeft: () => { removeBackLayer("dual-picker"); this.closeDualEmbeddedPicker("left"); },
+        onBackRight: () => { removeBackLayer("dual-picker"); this.closeDualEmbeddedPicker("right"); },
         onOpenFileRight: async () => { await this.autoSaveRightPane(); await this.fetchAndApply(() => this.fileService.promptOpen(), "right"); },
         onNewRight: async () => { await this.autoSaveRightPane(); this.dualPaneService.setRightPath(null); this.dualPaneView?.mountRightEditor("", null, false, this.fontService.getCurrentFont().family).focus(); this.topBar.setTitle(this.dualPaneService.getFormattedTitle()); },
         onCloseDualPane: () => this.toggleDualPane(), onActivePaneChange: (p) => { this.dualPaneService.setActivePane(p); this.syncFormatBarState(); },
@@ -511,6 +480,7 @@ class CathetApp {
       this.mobileCoord?.setSyncState(this.dualPaneView.isSyncLocked(), this.dualPaneService.getSnapScroll());
       this.windowService.setMinSize(350, 350);
     } else {
+      removeBackLayer("dual-picker");
       void this.autoSaveRightPane();
       this.dualPaneService.setDualPane(false);
       this.dualPaneService.setRightPath(null);
@@ -542,6 +512,32 @@ class CathetApp {
     this.mobileCoord?.setDualPaneState(this.dualPaneService.isDualPane());
     this.topBar.setTitle(this.dualPaneService.getFormattedTitle());
     this.syncFormatBarState();
+  }
+
+  private closeDualEmbeddedPicker(pane: "left" | "right"): void {
+    if (!this.dualPaneView) return;
+    if (pane === "left") {
+      this.dualPaneView.clearEmbeddedHome("left");
+      this.dualPaneView.getHeaderLeft().setBackVisible(false);
+      const hostEl = this.dualPaneView.getHostLeft();
+      hostEl.innerHTML = "";
+      hostEl.appendChild(this.editor.getWrapperEl());
+      syncTouchZoomHost(this.editor);
+    } else {
+      this.dualPaneView.clearEmbeddedHome("right");
+      this.dualPaneView.getHeaderRight().setBackVisible(false);
+      if (this.dualPaneView.getEditorRight()) {
+        const hostEl = this.dualPaneView.getHostRight();
+        hostEl.innerHTML = "";
+        hostEl.appendChild(this.dualPaneView.getEditorRight()!.getWrapperEl());
+        syncTouchZoomHost(this.dualPaneView.getEditorRight()!);
+      } else {
+        this.dualPaneView.showEmptyRightPane();
+      }
+    }
+    if (!this.dualPaneView.hasEmbeddedHome()) {
+      this.mobileCoord?.setActionBarVisible(true);
+    }
   }
 
   private toggleMarkdown(): void {

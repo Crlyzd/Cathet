@@ -3,6 +3,7 @@
  * Replaces native OS alert() popups with native frosted glassmorphic UI.
  */
 import { t } from "../services/i18nService";
+import { pushBackLayer, removeBackLayer } from "../utils/backStack";
 
 export interface GlassDialogOptions {
   title?: string;
@@ -54,7 +55,11 @@ export function showGlassDialog(options: GlassDialogOptions): Promise<void> {
     const btn = overlay.querySelector("#glass-dialog-confirm-btn") as HTMLButtonElement | null;
     btn?.focus();
 
+    let closed = false;
     const cleanup = () => {
+      if (closed) return;
+      closed = true;
+      removeBackLayer("glass-dialog");
       window.removeEventListener("keydown", handleKeyDown);
       overlay.classList.add("closing");
       setTimeout(() => {
@@ -75,5 +80,6 @@ export function showGlassDialog(options: GlassDialogOptions): Promise<void> {
       if (e.target === overlay) cleanup();
     });
     window.addEventListener("keydown", handleKeyDown);
+    pushBackLayer("glass-dialog", cleanup);
   });
 }

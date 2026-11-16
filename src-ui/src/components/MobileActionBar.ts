@@ -5,6 +5,7 @@ import { MobileFormatBarComponent } from "./MobileFormatBar";
 import { MobileSearchBarComponent } from "./MobileSearchBar";
 import { bindLongPress } from "../utils/touchGesture";
 import { t } from "../services/i18nService";
+import { pushBackLayer, removeBackLayer } from "../utils/backStack";
 
 export type MobileSyncMode = "locked" | "snap" | "paused";
 
@@ -49,16 +50,8 @@ export class MobileActionBarComponent {
 
     this.render();
     this.pill = this.element.querySelector(".mobile-action-pill")!;
-    this.formatBar = new MobileFormatBarComponent(
-      this.element,
-      (action) => this.callbacks.onFormat?.(action),
-      () => this.setFormatMode(false)
-    );
-    this.searchBar = new MobileSearchBarComponent(
-      this.element,
-      () => this.callbacks.getActiveEditor?.(),
-      () => this.setSearchMode(false)
-    );
+    this.formatBar = new MobileFormatBarComponent(this.element, (a) => this.callbacks.onFormat?.(a), () => this.setFormatMode(false));
+    this.searchBar = new MobileSearchBarComponent(this.element, () => this.callbacks.getActiveEditor?.(), () => this.setSearchMode(false));
 
     const container = document.getElementById(containerId) || document.body;
     container.appendChild(this.element);
@@ -106,6 +99,7 @@ export class MobileActionBarComponent {
   }
 
   setFormatMode(enabled: boolean): void {
+    if (this.isFormatMode === enabled) return;
     this.isFormatMode = enabled;
     this.element.classList.toggle("is-format-mode", enabled);
     if (enabled) {
@@ -113,12 +107,15 @@ export class MobileActionBarComponent {
       this.isSmall = false;
       this.element.classList.remove("is-small");
       if (this.isSearchMode) this.setSearchMode(false);
+      pushBackLayer("mobile-format-bar", () => this.setFormatMode(false));
     } else {
+      removeBackLayer("mobile-format-bar");
       this.scheduleAutoCollapse(3500);
     }
   }
 
   setSearchMode(enabled: boolean): void {
+    if (this.isSearchMode === enabled) return;
     this.isSearchMode = enabled;
     this.element.classList.toggle("is-search-mode", enabled);
     if (enabled) {
@@ -126,8 +123,10 @@ export class MobileActionBarComponent {
       this.isSmall = false;
       this.element.classList.remove("is-small");
       if (this.isFormatMode) this.setFormatMode(false);
+      pushBackLayer("mobile-search-bar", () => this.setSearchMode(false));
       this.searchBar.show();
     } else {
+      removeBackLayer("mobile-search-bar");
       this.searchBar.hide();
       this.scheduleAutoCollapse(3500);
     }
@@ -240,6 +239,7 @@ export class MobileActionBarComponent {
   setVisible(visible: boolean): void { this.element.style.display = visible ? "flex" : "none"; }
 
   destroy(): void {
+    removeBackLayer("mobile-format-bar"); removeBackLayer("mobile-search-bar");
     if (this.collapseTimer) clearTimeout(this.collapseTimer);
     if (this.syncCleanup) { this.syncCleanup(); this.syncCleanup = null; }
     this.formatBar.destroy();

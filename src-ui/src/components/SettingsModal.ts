@@ -6,6 +6,7 @@ import { DualPaneService } from "../services/dualPaneService";
 import { I18nService } from "../services/i18nService";
 import { UpdateService } from "../services/updateService";
 import { globalEventBus } from "../utils/eventBus";
+import { pushBackLayer, removeBackLayer } from "../utils/backStack";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -141,6 +142,7 @@ export class SettingsModalComponent {
   show(): void {
     if (this.isVisible) return;
     this.isVisible = true;
+    pushBackLayer("settings-modal", () => this.hide());
     this.overlay.inert = false;
     this.overlay.setAttribute("aria-hidden", "false");
 
@@ -171,6 +173,7 @@ export class SettingsModalComponent {
   hide(): void {
     if (!this.isVisible) return;
     this.isVisible = false;
+    removeBackLayer("settings-modal");
     this.overlay.classList.remove("visible");
     this.overlay.inert = true;
     this.overlay.setAttribute("aria-hidden", "true");
@@ -187,6 +190,7 @@ export class SettingsModalComponent {
   }
 
   destroy(): void {
+    removeBackLayer("settings-modal");
     globalEventBus.off("update:statusChanged", this.updateHandler);
     this.settingsView?.destroy();
     this.overlay.remove();

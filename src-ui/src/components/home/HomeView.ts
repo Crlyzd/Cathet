@@ -163,7 +163,7 @@ export class HomeViewComponent {
     this.selectionBar?.setSingleSelected(this.selectedNoteIds.size === 1);
   }
 
-  isSelectionActive(): boolean { return this.isSelectionMode || this.categoryTabs.isEditModeActive(); }
+  isSelectionActive(): boolean { return this.isSelectionMode || this.categoryTabs.isEditModeActive() || this.isPrivateMode; }
 
   private enterSelectionMode(initialId: string): void {
     if (this.isEmbedded) return;
@@ -177,6 +177,7 @@ export class HomeViewComponent {
 
   exitSelectionMode(syncHistory = true): void {
     if (this.categoryTabs.isEditModeActive()) { this.categoryTabs.setEditMode(false, syncHistory); return; }
+    if (!this.isSelectionMode && this.isPrivateMode) { this.exitPrivateNotesMode(syncHistory); return; }
     if (syncHistory && window.history.state?.screen === "selection") { window.history.back(); return; }
     this.isSelectionMode = false;
     this.selectedNoteIds.clear();

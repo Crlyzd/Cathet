@@ -1,4 +1,5 @@
 import { t } from "../../services/i18nService";
+import { pushBackLayer, removeBackLayer } from "../../utils/backStack";
 
 export interface FolderModalOptions {
   mode: "create" | "move" | "delete";
@@ -12,6 +13,7 @@ export interface FolderModalOptions {
 export class FolderModalComponent {
   private element: HTMLElement;
   private options: FolderModalOptions;
+  private isClosed = false;
 
   constructor(options: FolderModalOptions) {
     this.options = options;
@@ -20,6 +22,7 @@ export class FolderModalComponent {
     this.render();
     document.body.appendChild(this.element);
     this.bindEvents();
+    pushBackLayer("folder-modal", () => this.close());
   }
 
   private render(): void {
@@ -135,6 +138,9 @@ export class FolderModalComponent {
   }
 
   private close(): void {
+    if (this.isClosed) return;
+    this.isClosed = true;
+    removeBackLayer("folder-modal");
     this.options.onCancel?.();
     this.element.remove();
   }

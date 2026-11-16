@@ -1,4 +1,5 @@
 import { t } from "../../services/i18nService";
+import { pushBackLayer, removeBackLayer } from "../../utils/backStack";
 
 export interface RenameModalOptions {
   currentTitle: string;
@@ -9,6 +10,7 @@ export interface RenameModalOptions {
 export class RenameModalComponent {
   private element: HTMLElement;
   private options: RenameModalOptions;
+  private isClosed = false;
 
   constructor(options: RenameModalOptions) {
     this.options = options;
@@ -17,6 +19,7 @@ export class RenameModalComponent {
     this.render();
     document.body.appendChild(this.element);
     this.bindEvents();
+    pushBackLayer("rename-modal", () => this.close());
   }
 
   private render(): void {
@@ -70,6 +73,9 @@ export class RenameModalComponent {
   }
 
   private close(): void {
+    if (this.isClosed) return;
+    this.isClosed = true;
+    removeBackLayer("rename-modal");
     this.options.onCancel?.();
     this.element.remove();
   }

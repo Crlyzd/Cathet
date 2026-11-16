@@ -4,6 +4,7 @@
  */
 import { PlatformService } from "../services/platformService";
 import { formatDisplayTitle } from "../utils/pathUtils";
+import { pushBackLayer, removeBackLayer } from "../utils/backStack";
 
 export interface ImageInsertResult {
   markdown?: string;
@@ -22,6 +23,7 @@ export class ImageInsertModalComponent {
   private element: HTMLElement;
   private options: ImageInsertModalOptions;
   private isMobile: boolean;
+  private isClosed = false;
 
   constructor(options: ImageInsertModalOptions) {
     this.options = options;
@@ -31,6 +33,7 @@ export class ImageInsertModalComponent {
     this.render();
     document.body.appendChild(this.element);
     this.bindEvents();
+    pushBackLayer("image-insert-modal", () => this.close());
   }
 
   private render(): void {
@@ -152,6 +155,9 @@ export class ImageInsertModalComponent {
   }
 
   close(): void {
+    if (this.isClosed) return;
+    this.isClosed = true;
+    removeBackLayer("image-insert-modal");
     this.options.onCancel?.();
     this.element.classList.add("closing");
     setTimeout(() => {

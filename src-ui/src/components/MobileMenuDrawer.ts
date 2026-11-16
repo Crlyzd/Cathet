@@ -1,6 +1,7 @@
 import { icons } from "../utils/monochromeIcons";
 import { contextIcons } from "../utils/contextMenuItems";
 import { t } from "../services/i18nService";
+import { pushBackLayer, removeBackLayer } from "../utils/backStack";
 
 export interface MobileDrawerState {
   isMarkdownPreview: boolean;
@@ -165,6 +166,7 @@ export class MobileMenuDrawerComponent {
     void this.overlay.offsetHeight;
     this.overlay.classList.add("visible");
     this.isVisible = true;
+    pushBackLayer("mobile-drawer", () => this.hide());
   }
 
   private attachItemHandlers(state: MobileDrawerState): void {
@@ -200,6 +202,7 @@ export class MobileMenuDrawerComponent {
     this.overlay.inert = true;
     this.overlay.setAttribute("aria-hidden", "true");
     this.isVisible = false;
+    removeBackLayer("mobile-drawer");
     this.overlay.innerHTML = "";
     void this.overlay.offsetHeight;
     requestAnimationFrame(() => {
@@ -213,6 +216,7 @@ export class MobileMenuDrawerComponent {
     this.overlay.inert = true;
     this.overlay.setAttribute("aria-hidden", "true");
     this.isVisible = false;
+    removeBackLayer("mobile-drawer");
     this.clearHideTimer();
     this.hideTimer = window.setTimeout(() => {
       this.hideTimer = null;
@@ -226,6 +230,7 @@ export class MobileMenuDrawerComponent {
 
   destroy(): void {
     this.clearHideTimer();
+    removeBackLayer("mobile-drawer");
     this.overlay.remove();
   }
 }
