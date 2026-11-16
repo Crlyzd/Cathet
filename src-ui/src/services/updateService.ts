@@ -3,6 +3,11 @@ import { emit, listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { globalEventBus } from "../utils/eventBus";
 import { showGlassDialog } from "../components/GlassDialog";
+import { APP_VERSION } from "../version";
+
+const STORAGE_KEY = "cathet_latest_update";
+const LAST_CHECK_KEY = "cathet_last_update_check";
+const LAUNCH_COUNT_KEY = "cathet_launch_count";
 
 export interface UpdateInfo {
   update_available: boolean;
@@ -20,22 +25,50 @@ export interface DownloadProgress {
   total_bytes: number;
 }
 
+export function isNewerVersion(latest: string, current: string): boolean {
+  const parse = (v: string) =>
+    v.trim().replace(/^v/i, "").split("-")[0].split(".").map((n) => parseInt(n, 10) || 0);
+  const a = parse(latest);
+  const b = parse(current);
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const av = a[i] ?? 0;
+    const bv = b[i] ?? 0;
+    if (av !== bv) return av > bv;
+  }
+  return false;
+}
+
+/** Returns cached update info only if it matches the running app version; purges stale cache on upgrade. */
+export function getValidCachedUpdate(): UpdateInfo | null {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return null;
+    const info = JSON.parse(saved) as UpdateInfo;
+    const isStaleVersion =
+      info?.current_version !== APP_VERSION ||
+      (info?.update_available && !isNewerVersion(info.latest_version || "", APP_VERSION));
+    if (isStaleVersion) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LAST_CHECK_KEY);
+      localStorage.removeItem(LAUNCH_COUNT_KEY);
+      return null;
+    }
+    return info;
+  } catch (_) {
+    return null;
+  }
+}
+
 export class UpdateService {
   private updateInfo: UpdateInfo | null = null;
   private isChecking: boolean = false;
   private isDownloading: boolean = false;
   private downloadedExePath: string | null = null;
-  private readonly STORAGE_KEY = "cathet_latest_update";
-  private readonly LAST_CHECK_KEY = "cathet_last_update_check";
   private readonly DEFAULT_RELEASE_URL = "https://github.com/Crlyzd/Cathet/releases/latest";
 
   constructor() {
-    try {
-      const saved = localStorage.getItem(this.STORAGE_KEY);
-      if (saved) {
-        this.updateInfo = JSON.parse(saved);
-      }
-    } catch (_) {}
+    this.updateInfo = getValidCachedUpdate();
   }
 
   async checkForUpdates(): Promise<UpdateInfo | null> {
@@ -46,8 +79,9 @@ export class UpdateService {
       const info = await invoke<UpdateInfo>("check_for_updates");
       this.updateInfo = info;
       try {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(info));
-        localStorage.setItem(this.LAST_CHECK_KEY, String(Date.now()));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(info));
+        localStorage.setItem(LAST_CHECK_KEY, String(Date.now()));
+        localStorage.setItem(LAUNCH_COUNT_KEY, "0");
       } catch (_) {}
       globalEventBus.emit("update:statusChanged", info);
       await emit("cathet:update-status", info).catch(console.error);
@@ -60,13 +94,23 @@ export class UpdateService {
     }
   }
 
-  async checkForUpdatesOccasionally(intervalMs = 86_400_000): Promise<UpdateInfo | null> {
+  /** Checks on every Nth app launch (with a minimum cooldown) or when maxAgeMs has elapsed. */
+  async checkForUpdatesOccasionally(
+    everyNLaunches = 5,
+    minCooldownMs = 43_200_000,
+    maxAgeMs = 604_800_000
+  ): Promise<UpdateInfo | null> {
+    let shouldCheck = false;
     try {
-      const last = Number(localStorage.getItem(this.LAST_CHECK_KEY) || "0");
-      if (last > 0 && Date.now() - last < intervalMs) {
-        return this.updateInfo;
-      }
-    } catch (_) {}
+      const count = (Number(localStorage.getItem(LAUNCH_COUNT_KEY) || "0") || 0) + 1;
+      localStorage.setItem(LAUNCH_COUNT_KEY, String(count));
+      const last = Number(localStorage.getItem(LAST_CHECK_KEY) || "0") || 0;
+      const elapsed = last > 0 ? Date.now() - last : Infinity;
+      shouldCheck = (count >= everyNLaunches && elapsed >= minCooldownMs) || elapsed >= maxAgeMs;
+    } catch (_) {
+      shouldCheck = true;
+    }
+    if (!shouldCheck) return this.updateInfo;
     return this.checkForUpdates();
   }
 
@@ -82,9 +126,9 @@ export class UpdateService {
     this.updateInfo = info;
     try {
       if (info) {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(info));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(info));
       } else {
-        localStorage.removeItem(this.STORAGE_KEY);
+        localStorage.removeItem(STORAGE_KEY);
       }
     } catch (_) {}
     globalEventBus.emit("update:statusChanged", info);

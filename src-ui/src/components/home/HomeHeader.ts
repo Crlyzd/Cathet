@@ -1,6 +1,7 @@
 import { icons } from "../../utils/monochromeIcons";
 import { t } from "../../services/i18nService";
 import { globalEventBus } from "../../utils/eventBus";
+import { getValidCachedUpdate } from "../../services/updateService";
 
 export interface HomeHeaderCallbacks {
   onSearch: (query: string) => void;
@@ -122,15 +123,10 @@ export class HomeHeaderComponent {
   }
 
   private syncCachedUpdate(): void {
-    try {
-      const saved = localStorage.getItem("cathet_latest_update");
-      if (saved) {
-        const info = JSON.parse(saved);
-        if (info?.update_available && info?.latest_version) {
-          this.setUpdateAvailable(String(info.latest_version));
-        }
-      }
-    } catch (_) {}
+    const info = getValidCachedUpdate();
+    if (info?.update_available && info?.latest_version) {
+      this.setUpdateAvailable(String(info.latest_version));
+    }
   }
 
   setUpdateAvailable(version: string | null): void {
