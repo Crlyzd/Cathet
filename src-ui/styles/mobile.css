@@ -988,7 +988,7 @@ body.is-mobile[data-theme="light"] .mobile-font-btn {
   text-decoration: none;
 }
 
-body.is-mobile[data-theme="light"] .mobile-about-btn {
+body.is-mobile[data-theme="light"] .mobile-about-btn:not(.has-update) {
   background: rgba(15, 23, 42, 0.04);
 }
 
@@ -1008,7 +1008,8 @@ body.is-mobile[data-theme="light"] .mobile-about-btn {
   flex-shrink: 0;
 }
 
-.mobile-update-btn.has-update {
+.mobile-update-btn.has-update,
+body.is-mobile[data-theme="light"] .mobile-update-btn.has-update {
   background: var(--col-accent);
   border-color: var(--col-accent);
   color: #fff;

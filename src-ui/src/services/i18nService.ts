@@ -61,7 +61,7 @@ export class I18nService {
     globalEventBus.emit("i18n:locale-change", locale);
 
     if (syncWindow) {
-      emit("cathet:language-change", locale).catch(() => {});
+      emit("cathet:language-change", locale).catch(() => { });
     }
   }
 
@@ -77,7 +77,7 @@ export class I18nService {
 
     if (params) {
       return Object.entries(params).reduce((str, [k, v]) => {
-        return str.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+        return str.replace(new RegExp(`\\{\\{?${k}\\}?\\}`, "g"), String(v));
       }, value);
     }
 
