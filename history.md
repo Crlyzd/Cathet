@@ -81,6 +81,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-16: Eliminate Android Settings Sheet GPU Spike (+103.6 MB) & Dual-Sheet Open Stutter
+- **Summary**: Eliminated the `+103.6 MB` transient `Graphics / EGL` surge and 57 ms (99th percentile) frame stall when opening Android Settings over an active document: removed `body.is-modal-open #workspace-shell` pointer/style invalidation in `src-ui/styles/mobile.css`, `SettingsModal.ts`, and `MobileMenuDrawer.ts`; fixed `MobileMenuDrawer.hideInstant()` (and `drawer-item-settings` handler) to tear down `.mobile-drawer-sheet` in 0 ms and release its GPU surface on `hide()` / `hideInstant()` instead of animating underneath Settings; swapped the `1024×1024` `/app-icon.png` in `MobileAboutCard.ts` for the `1.5 KB` vector `app-icon.svg`; flattened `.settings-modal-sheet` during slide-up by removing blurred `box-shadow`, scoping `will-change: opacity` to `.visible`, and deferring `.mobile-settings-scroll` `overflow-y: auto` until `.visible`; and added change-guarded DOM updates in `MobileSettingsView.updateState()` plus 2-frame rAF warmup in `SettingsModal.show()`.
+- **Affected Files**: `src-ui/styles/mobile.css`, `src-ui/src/components/MobileMenuDrawer.ts (231)`, `src-ui/src/components/SettingsModal.ts (194)`, `src-ui/src/components/MobileSettingsView.ts (236)`, `src-ui/src/components/settings/MobileAboutCard.ts (81)`, `history.md`
+
 ### 2026-11-16: Switch Desktop Dual-Pane Folder Icons to RemixIcon (`RiFolderLine` / `RiFolderOpenLine`)
 - **Summary**: Added RemixIcon `riFolderLine` and `riFolderOpenLine` to `src-ui/src/utils/monochromeIcons.ts` (keeping `icons.folder` untouched for mobile `MobileActionBar.ts` and `MobileMenuDrawer.ts`) and updated `src-ui/src/components/dualpane/DualPaneHeader.ts` (`!isMobile()` only) to use them.
 - **Affected Files**: `src-ui/src/utils/monochromeIcons.ts`, `src-ui/src/components/dualpane/DualPaneHeader.ts (104)`, `history.md`
