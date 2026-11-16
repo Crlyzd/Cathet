@@ -4,6 +4,7 @@ import { DualPaneSplitter } from "./DualPaneSplitter";
 import { DualPaneEmptyDropzone } from "./DualPaneEmptyDropzone";
 import { SyncScrollController } from "../../utils/syncScrollController";
 import { formatDisplayTitle } from "../../utils/pathUtils";
+import { syncTouchZoomHost } from "../../utils/touchZoomHandler";
 
 export interface DualPaneCallbacks {
   onOpenLeft: () => void;
@@ -97,6 +98,7 @@ export class DualPaneView {
     setTimeout(onEnter, 250);
 
     this.leftHostEl.appendChild(this.editorLeft.getWrapperEl());
+    syncTouchZoomHost(this.editorLeft);
     this.showEmptyRightPane();
 
     this.leftPaneEl.addEventListener("mousedown", () => this.setActivePane("left"));

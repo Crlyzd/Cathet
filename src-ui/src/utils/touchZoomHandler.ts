@@ -5,6 +5,21 @@ export interface TouchZoomOptions {
   getSiblingEditor?: () => EditorComponent | null;
 }
 
+interface TouchZoomController {
+  showPill: (percent: number) => void;
+  scheduleFade: () => void;
+  syncHost: () => void;
+}
+
+const zoomControllers = new WeakMap<EditorComponent, TouchZoomController>();
+
+/**
+ * Ensures an editor's touch-zoom HUD pill is mounted inside its current non-scrolling host.
+ */
+export function syncTouchZoomHost(editor: EditorComponent): void {
+  zoomControllers.get(editor)?.syncHost();
+}
+
 /**
  * Attaches a 2-finger pinch-to-zoom gesture listener to the given editor container.
  * Strictly designed for touch devices (Android WebView).
@@ -15,22 +30,31 @@ export function attachTouchZoom(
   getOptions?: () => TouchZoomOptions | undefined,
   pillHost: HTMLElement = container
 ): () => void {
-  let pillEl: HTMLElement | null = pillHost.querySelector(".touch-zoom-pill");
-  if (!pillEl) {
-    pillEl = document.createElement("div");
-    pillEl.className = "touch-zoom-pill";
-    pillHost.appendChild(pillEl);
-  }
+  let pillEl: HTMLElement | null = null;
 
   let d0 = 0;
   let startZoom = 100;
   let siblingStartZoom: number | null = null;
   let fadeTimer: number | null = null;
 
+  const ensurePillHost = (): HTMLElement | null => {
+    const host = container.parentElement || pillHost;
+    if (!host || !container.isConnected) return null;
+    if (!pillEl) {
+      pillEl = document.createElement("div");
+      pillEl.className = "touch-zoom-pill";
+    }
+    if (pillEl.parentElement !== host) {
+      host.appendChild(pillEl);
+    }
+    return pillEl;
+  };
+
   const showPill = (percent: number) => {
-    if (!pillEl) return;
-    pillEl.textContent = `${percent}%`;
-    pillEl.classList.add("is-visible");
+    const el = ensurePillHost();
+    if (!el) return;
+    el.textContent = `${percent}%`;
+    el.classList.add("is-visible");
     if (fadeTimer) {
       window.clearTimeout(fadeTimer);
       fadeTimer = null;
@@ -46,6 +70,18 @@ export function attachTouchZoom(
       fadeTimer = null;
     }, 1200);
   };
+
+  const syncHost = () => {
+    if (fadeTimer) {
+      window.clearTimeout(fadeTimer);
+      fadeTimer = null;
+    }
+    pillEl?.classList.remove("is-visible");
+    ensurePillHost();
+  };
+
+  zoomControllers.set(editor, { showPill, scheduleFade: schedulePillFade, syncHost });
+  ensurePillHost();
 
   const onTouchStart = (e: TouchEvent) => {
     if (e.touches.length === 2) {
@@ -83,6 +119,7 @@ export function attachTouchZoom(
           const delta = newZoom - startZoom;
           const siblingNewZoom = Math.max(50, Math.min(300, Math.round(siblingStartZoom + delta)));
           sibling.setZoomLevel(siblingNewZoom);
+          zoomControllers.get(sibling)?.showPill(siblingNewZoom);
         }
       }
     }
@@ -91,6 +128,10 @@ export function attachTouchZoom(
   const onTouchEnd = (e: TouchEvent) => {
     if (e.touches.length < 2 && d0 > 0) {
       d0 = 0;
+      if (siblingStartZoom !== null) {
+        const sibling = getOptions?.()?.getSiblingEditor?.();
+        if (sibling) zoomControllers.get(sibling)?.scheduleFade();
+      }
       siblingStartZoom = null;
       schedulePillFade();
     }
@@ -102,6 +143,7 @@ export function attachTouchZoom(
   container.addEventListener("touchcancel", onTouchEnd, { passive: true });
 
   return () => {
+    zoomControllers.delete(editor);
     if (fadeTimer) window.clearTimeout(fadeTimer);
     container.removeEventListener("touchstart", onTouchStart);
     container.removeEventListener("touchmove", onTouchMove);

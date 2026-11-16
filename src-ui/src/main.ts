@@ -29,6 +29,7 @@ import { buildContextMenuItems } from "./utils/contextMenuItems";
 import { buildMainMenuItems } from "./utils/mainMenuItems";
 import { registerWindowSyncListeners } from "./utils/windowSync";
 import { setupKeyboardCommitListener } from "./utils/editorPasteHandler";
+import { syncTouchZoomHost } from "./utils/touchZoomHandler";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -219,11 +220,13 @@ class CathetApp {
         if (!hostLeft.contains(this.editor.getWrapperEl())) {
           hostLeft.innerHTML = "";
           hostLeft.appendChild(this.editor.getWrapperEl());
+          syncTouchZoomHost(this.editor);
         }
         if (this.dualPaneView.getEditorRight()) {
           const hostRight = this.dualPaneView.getHostRight();
           hostRight.innerHTML = "";
           hostRight.appendChild(this.dualPaneView.getEditorRight()!.getWrapperEl());
+          syncTouchZoomHost(this.dualPaneView.getEditorRight()!);
         } else {
           this.dualPaneView.showEmptyRightPane();
         }
@@ -427,6 +430,8 @@ class CathetApp {
               const content = read?.content || note.snippet;
               this.dualPaneView!.clearEmbeddedHome("left");
               this.dualPaneView!.getHeaderLeft().setBackVisible(false);
+              hostEl.appendChild(this.editor.getWrapperEl());
+              syncTouchZoomHost(this.editor);
               this.mobileCoord?.setActionBarVisible(true);
               this.currentFilePath = `notes/${note.id}`;
               this.homeCoord?.setCurrentNoteId(note.id);
@@ -473,6 +478,7 @@ class CathetApp {
           const hostEl = this.dualPaneView!.getHostLeft();
           hostEl.innerHTML = "";
           hostEl.appendChild(this.editor.getWrapperEl());
+          syncTouchZoomHost(this.editor);
           this.mobileCoord?.setActionBarVisible(true);
         },
         onBackRight: () => {
@@ -482,6 +488,7 @@ class CathetApp {
             const hostEl = this.dualPaneView!.getHostRight();
             hostEl.innerHTML = "";
             hostEl.appendChild(this.dualPaneView!.getEditorRight()!.getWrapperEl());
+            syncTouchZoomHost(this.dualPaneView!.getEditorRight()!);
           } else {
             this.dualPaneView!.showEmptyRightPane();
           }
@@ -515,6 +522,7 @@ class CathetApp {
           this.dualPaneView = null;
           host.innerHTML = "";
           host.appendChild(this.editor.getWrapperEl());
+          syncTouchZoomHost(this.editor);
           this.windowService.setMinSize(200, 300);
           this.isClosingDualPane = false;
           if (!this.homeCoord?.isHomeActive()) {
@@ -524,6 +532,7 @@ class CathetApp {
       } else {
         host.innerHTML = "";
         host.appendChild(this.editor.getWrapperEl());
+        syncTouchZoomHost(this.editor);
         this.windowService.setMinSize(200, 300);
         if (!this.homeCoord?.isHomeActive()) {
           this.mobileCoord?.setActionBarVisible(true);
@@ -577,6 +586,7 @@ class CathetApp {
         if (!hostLeft.contains(this.editor.getWrapperEl())) {
           hostLeft.innerHTML = "";
           hostLeft.appendChild(this.editor.getWrapperEl());
+          syncTouchZoomHost(this.editor);
         }
         this.dualPaneView.setLeftTitle(title);
         this.dualPaneView.setLeftPreviewActive(preview);
