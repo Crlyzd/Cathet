@@ -51,7 +51,7 @@ fn append_doc_icon_to_tauri_resources() {
         .join("icons")
         .join("doc-icon.ico");
     let escaped = doc_ico.to_string_lossy().replace('\\', "\\\\");
-    rc.push_str(&format!("\n101 ICON \"{escaped}\"\n"));
+    rc.push_str(&format!("\n40001 ICON \"{escaped}\"\n"));
     fs::write(&rc_path, rc).expect("failed to update resource.rc");
 
     let rc_exe = find_newest(r"C:\Program Files (x86)\Windows Kits\10\bin", &["x64", "rc.exe"])

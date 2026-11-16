@@ -96,7 +96,7 @@ pub fn register_associations(exe_path: &Path) -> Result<(), String> {
     let exe_str = exe_path.to_str().ok_or("Invalid executable path")?;
     let open_cmd = format!("\"{}\" \"%1\"", exe_str);
     let app_icon_cmd = format!("\"{}\",0", exe_str);
-    let doc_icon_cmd = format!("\"{}\",-101", exe_str);
+    let doc_icon_cmd = format!("\"{}\",-40001", exe_str);
 
     reg_set_string(HKEY_CURRENT_USER, "Software\\Classes\\Cathet.Document", "", "Cathet Document");
     reg_set_string(HKEY_CURRENT_USER, "Software\\Classes\\Cathet.Document\\DefaultIcon", "", &doc_icon_cmd);
@@ -153,7 +153,7 @@ pub fn read_registered_exe() -> Option<String> {
 pub fn self_heal_if_moved() -> bool {
     let Ok(current_exe) = env::current_exe() else { return false };
     if let Some(registered) = read_registered_exe() {
-        let expected_doc_icon = format!("\"{}\",-101", current_exe.to_string_lossy());
+        let expected_doc_icon = format!("\"{}\",-40001", current_exe.to_string_lossy());
         let registered_doc_icon = reg_get_string(HKEY_CURRENT_USER, "Software\\Classes\\Cathet.Document\\DefaultIcon", "");
         if PathBuf::from(&registered) != current_exe || registered_doc_icon.as_deref() != Some(expected_doc_icon.as_str()) {
             let _ = register_associations(&current_exe);
