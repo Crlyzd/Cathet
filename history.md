@@ -75,6 +75,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-16: Fix Update `{version}` Braces, Light-Mode Update Button Contrast & Cross-Platform Asset Matching
+- **Summary**: Fixed `v{{version}}` / `Get v{{version}}` double-brace i18n typos across all 5 locale files (`en`, `id`, `jv-krama`, `jv-malang`, `jv-ngoko`) and hardened `I18nService.t()` (`\{\{?key\}?\}`) so version strings render cleanly without stray `{ }`. Fixed light-mode CSS specificity in `src-ui/styles/mobile.css` (`:not(.has-update)` on `body.is-mobile[data-theme="light"] .mobile-about-btn` and explicit light-mode `.mobile-update-btn.has-update`) so the update button renders with solid accent background and white text in light mode. Added architecture-aware GitHub release asset matching (`find_android_apk_for_arch`, `find_windows_exe_for_arch`, `find_linux_pkg_for_arch` + unit tests) in `src-tauri/src/commands/updater_target.rs`.
+- **Affected Files**: `src-ui/src/locales/{en,id,jv-krama,jv-malang,jv-ngoko}.json`, `src-ui/src/services/i18nService.ts (105)`, `src-ui/styles/mobile.css`, `src-tauri/src/commands/updater_target.rs (250)`, `history.md`
+
 ### 2026-11-16: Fix Android Pinch-Zoom Indicator Scroll Drift & Redesign Frosted HUD
 - **Summary**: Fixed `.touch-zoom-pill` scrolling upward off-screen on long documents by decoupling the touch listener (`this.wrapperEl`) from the pill mount host (`this.container`: `#editor-container` with `position: relative` in `formatbar.css`, or `.dualpane-editor-host` in Dual Pane) in `touchZoomHandler.ts` and `Editor.ts`. Redesigned `.touch-zoom-pill` in `mobile.css` as a centered `112px × 112px` (`88px × 88px` in Dual Pane) `0.2` alpha frosted-glass (`blur(8px)`) rounded-square HUD with crisp white `tabular-nums` text, subtle `text-shadow`, and GPU-composited `.is-visible` scale/opacity transition.
 - **Affected Files**: `src-ui/src/utils/touchZoomHandler.ts (113)`, `src-ui/src/components/Editor.ts (249)`, `src-ui/styles/formatbar.css`, `src-ui/styles/mobile.css`, `history.md`
