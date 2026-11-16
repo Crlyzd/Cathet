@@ -43,20 +43,30 @@ export class MobileSettingsView {
   }
 
   public updateState(partial: Partial<MobileSettingsState>): void {
-    this.state = { ...this.state, ...partial };
-    this.container.querySelector("#tile-theme-dark")?.classList.toggle("active", this.state.theme === "dark");
-    this.container.querySelector("#tile-theme-light")?.classList.toggle("active", this.state.theme === "light");
-    const fontSel = this.container.querySelector("#mobile-font-select") as HTMLSelectElement | null;
-    if (fontSel && fontSel.value !== this.state.fontId) fontSel.value = this.state.fontId;
-    const langSel = this.container.querySelector("#mobile-lang-select") as HTMLSelectElement | null;
-    if (langSel && langSel.value !== this.state.locale) langSel.value = this.state.locale;
-    const chkPreview = this.container.querySelector("#chk-always-preview") as HTMLInputElement | null;
-    if (chkPreview) chkPreview.checked = this.state.alwaysPreview;
-    const chkSnap = this.container.querySelector("#chk-snap-scroll") as HTMLInputElement | null;
-    if (chkSnap) chkSnap.checked = this.state.snapScroll;
-    const chkRefresh = this.container.querySelector("#chk-high-refresh") as HTMLInputElement | null;
-    if (chkRefresh) chkRefresh.checked = this.state.highRefreshRate;
-    this.syncUpdateRow();
+    const prev = this.state;
+    const next = { ...prev, ...partial };
+    this.state = next;
+    if (next.theme !== prev.theme) {
+      this.container.querySelector("#tile-theme-dark")?.classList.toggle("active", next.theme === "dark");
+      this.container.querySelector("#tile-theme-light")?.classList.toggle("active", next.theme === "light");
+    }
+    for (const [k, sel] of [["fontId", "#mobile-font-select"], ["locale", "#mobile-lang-select"]] as const) {
+      if (next[k] !== prev[k]) {
+        const el = this.container.querySelector(sel) as HTMLSelectElement | null;
+        if (el && el.value !== next[k]) el.value = next[k];
+      }
+    }
+    for (const [k, sel] of [["alwaysPreview", "#chk-always-preview"], ["snapScroll", "#chk-snap-scroll"], ["highRefreshRate", "#chk-high-refresh"]] as const) {
+      if (next[k] !== prev[k]) {
+        const chk = this.container.querySelector(sel) as HTMLInputElement | null;
+        if (chk) chk.checked = next[k];
+      }
+    }
+    if (
+      next.isCheckingUpdate !== prev.isCheckingUpdate ||
+      next.updateInfo?.update_available !== prev.updateInfo?.update_available ||
+      next.updateInfo?.latest_version !== prev.updateInfo?.latest_version
+    ) this.syncUpdateRow();
   }
 
   private syncUpdateRow(): void {

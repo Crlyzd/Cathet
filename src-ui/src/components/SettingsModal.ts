@@ -148,7 +148,6 @@ export class SettingsModalComponent {
     if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) {
       active.blur();
     }
-    document.body.classList.add("is-modal-open");
 
     this.ensureSettingsView();
     this.settingsView?.updateState({
@@ -162,7 +161,10 @@ export class SettingsModalComponent {
     });
 
     requestAnimationFrame(() => {
-      if (this.isVisible) this.overlay.classList.add("visible");
+      if (!this.isVisible) return;
+      requestAnimationFrame(() => {
+        if (this.isVisible) this.overlay.classList.add("visible");
+      });
     });
   }
 
@@ -172,7 +174,6 @@ export class SettingsModalComponent {
     this.overlay.classList.remove("visible");
     this.overlay.inert = true;
     this.overlay.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("is-modal-open");
   }
 
   toggle(): void {

@@ -31,6 +31,7 @@ export interface MobileDrawerCallbacks {
 export class MobileMenuDrawerComponent {
   private overlay: HTMLElement;
   private isVisible = false;
+  private hideTimer: number | null = null;
   private callbacks: MobileDrawerCallbacks;
 
   constructor(callbacks: MobileDrawerCallbacks) {
@@ -55,7 +56,15 @@ export class MobileMenuDrawerComponent {
     });
   }
 
+  private clearHideTimer(): void {
+    if (this.hideTimer !== null) {
+      window.clearTimeout(this.hideTimer);
+      this.hideTimer = null;
+    }
+  }
+
   show(state: MobileDrawerState): void {
+    this.clearHideTimer();
     this.overlay.innerHTML = `
       <div class="mobile-drawer-sheet" id="mobile-drawer-sheet">
         <div class="mobile-drawer-drag-indicator"></div>
@@ -149,7 +158,6 @@ export class MobileMenuDrawerComponent {
 
     (document.activeElement as HTMLElement)?.blur();
     window.getSelection()?.removeAllRanges();
-    document.body.classList.add("is-modal-open");
 
     this.attachItemHandlers(state);
     this.overlay.inert = false;
@@ -160,9 +168,10 @@ export class MobileMenuDrawerComponent {
   }
 
   private attachItemHandlers(state: MobileDrawerState): void {
-    const bindItem = (id: string, action: () => void) => {
+    const bindItem = (id: string, action: () => void, instant = false) => {
       this.overlay.querySelector(`#${id}`)?.addEventListener("click", () => {
-        this.hide();
+        if (instant) this.hideInstant();
+        else this.hide();
         action();
       });
     };
@@ -175,14 +184,15 @@ export class MobileMenuDrawerComponent {
     if (!state.isMarkdownPreview && state.canRedo) bindItem("drawer-item-redo", this.callbacks.onRedo);
     bindItem("drawer-item-dual", this.callbacks.onToggleDualPane);
     bindItem("drawer-item-markdown", this.callbacks.onToggleMarkdown);
-    bindItem("drawer-item-settings", this.callbacks.onOpenSettings);
+    bindItem("drawer-item-settings", this.callbacks.onOpenSettings, true);
     if (state.updateVersion && this.callbacks.onOpenUpdate) {
       bindItem("drawer-item-update", this.callbacks.onOpenUpdate);
     }
   }
 
   hideInstant(): void {
-    if (!this.isVisible && !this.overlay.classList.contains("visible")) return;
+    this.clearHideTimer();
+    if (!this.isVisible && !this.overlay.classList.contains("visible") && !this.overlay.innerHTML) return;
     this.overlay.style.transition = "none";
     const sheet = this.overlay.querySelector(".mobile-drawer-sheet") as HTMLElement | null;
     if (sheet) sheet.style.transition = "none";
@@ -190,10 +200,10 @@ export class MobileMenuDrawerComponent {
     this.overlay.inert = true;
     this.overlay.setAttribute("aria-hidden", "true");
     this.isVisible = false;
-    document.body.classList.remove("is-modal-open");
+    this.overlay.innerHTML = "";
+    void this.overlay.offsetHeight;
     requestAnimationFrame(() => {
       this.overlay.style.transition = "";
-      if (sheet) sheet.style.transition = "";
     });
   }
 
@@ -202,8 +212,12 @@ export class MobileMenuDrawerComponent {
     this.overlay.classList.remove("visible");
     this.overlay.inert = true;
     this.overlay.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("is-modal-open");
     this.isVisible = false;
+    this.clearHideTimer();
+    this.hideTimer = window.setTimeout(() => {
+      this.hideTimer = null;
+      if (!this.isVisible) this.overlay.innerHTML = "";
+    }, 360);
   }
 
   isOpen(): boolean {
@@ -211,6 +225,7 @@ export class MobileMenuDrawerComponent {
   }
 
   destroy(): void {
+    this.clearHideTimer();
     this.overlay.remove();
   }
 }

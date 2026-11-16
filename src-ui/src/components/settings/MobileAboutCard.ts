@@ -1,4 +1,5 @@
 import { icons } from "../../utils/monochromeIcons";
+import appIconUrl from "../../assets/app-icon.svg";
 import { APP_VERSION } from "../../version";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { t } from "../../services/i18nService";
@@ -22,7 +23,7 @@ export function renderMobileAboutCard(updateInfo?: UpdateInfo | null, isChecking
     <div class="mobile-settings-section-title">${t("settings.about")}</div>
     <div class="mobile-settings-card mobile-about-card">
       <div class="mobile-about-brand">
-        <img src="/app-icon.png" alt="Cathet" decoding="async" />
+        <img src="${appIconUrl}" alt="Cathet" width="32" height="32" decoding="async" />
         <div>
           <div class="mobile-about-title">Cathet</div>
           <div class="mobile-about-version">v${APP_VERSION} (Android)</div>
