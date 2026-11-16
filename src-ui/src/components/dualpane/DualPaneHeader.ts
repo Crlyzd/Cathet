@@ -1,4 +1,5 @@
 import { icons } from "../../utils/monochromeIcons";
+import { PlatformService } from "../../services/platformService";
 
 export interface DualPaneHeaderOptions {
   title: string;
@@ -22,6 +23,9 @@ export class DualPaneHeader {
   private backBtn: HTMLElement;
 
   constructor(options: DualPaneHeaderOptions) {
+    const isMobile = PlatformService.getInstance().isMobile();
+    const openIcon = isMobile ? icons.grid : icons.folder;
+    const openTitle = isMobile ? "Notes Dashboard" : "Open File (Ctrl+O)";
     this.element = document.createElement("div");
     this.element.className = "dualpane-header";
     this.element.innerHTML = `
@@ -36,7 +40,7 @@ export class DualPaneHeader {
       </div>
       <div class="dualpane-actions">
         <button class="dualpane-btn btn-preview" title="Toggle Preview (Ctrl+M)">Preview</button>
-        <button class="dualpane-btn btn-open" title="Notes Dashboard">${icons.grid}</button>
+        <button class="dualpane-btn btn-open" title="${openTitle}">${openIcon}</button>
         ${options.showCloseBtn ? `<button class="dualpane-btn btn-close" title="Exit Dual Pane">✕</button>` : ""}
       </div>
     `;
