@@ -266,3 +266,7 @@ This document serves as the living project documentation and institutional memor
   - Moved Cold Boot Live Dev directly under `[9]` as `[10] Android Live Dev (Cold Boot Emulator -no-snapshot-load)` and shifted `[11]`–`[22]` accordingly.
   - Extracted `Stop-RunningAndroidEmulators` (with `adb emu kill` + wait + `qemu-system-*` process fallback) and updated `Invoke-AndroidDev -ColdBoot` to always stop running emulators and cold-boot/target the AVD directly (ignoring attached USB phones).
 - **Affected Files**: `build.ps1`
+
+### 2026-11-17: Add Cathet Privacy Policy (`PRIVACY.md`)
+- **Summary**: Added `PRIVACY.md` at the repository root covering zero telemetry, local-only file/note storage, Windows `runFullTrust` MSIX file access, Android `BiometricPrompt` isolation, GitHub Releases update checks, and Android permissions (`INTERNET`, `VIBRATE`, `FileProvider`).
+- **Affected Files**: `PRIVACY.md`, `history.md`
