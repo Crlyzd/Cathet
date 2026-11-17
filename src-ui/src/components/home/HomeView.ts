@@ -142,18 +142,18 @@ export class HomeViewComponent {
     this.renderGrid();
   }
 
+  private getFilteredNotes() {
+    return this.notesService.filterNotes(this.searchQuery, this.isPrivateMode ? "" : this.activeFolder, this.isPrivateMode);
+  }
+
   private renderGrid(): void {
-    const filtered = this.isPrivateMode
-      ? this.notesService.filterNotes(this.searchQuery, "", true)
-      : this.notesService.filterNotes(this.searchQuery, this.activeFolder, false);
+    const filtered = this.getFilteredNotes();
     this.noteGrid.setNotes(filtered, this.isSelectionMode, this.selectedNoteIds);
     this.syncSelectionBars(filtered.length);
   }
 
   private syncSelectionUI(): void {
-    const filtered = this.isPrivateMode
-      ? this.notesService.filterNotes(this.searchQuery, "", true)
-      : this.notesService.filterNotes(this.searchQuery, this.activeFolder, false);
+    const filtered = this.getFilteredNotes();
     this.noteGrid.updateSelectionState(this.isSelectionMode, this.selectedNoteIds);
     this.syncSelectionBars(filtered.length);
   }
@@ -177,20 +177,24 @@ export class HomeViewComponent {
     window.history.pushState({ screen: "selection" }, "");
   }
 
-  exitSelectionMode(syncHistory = true): void {
-    if (this.categoryTabs.isEditModeActive()) { this.categoryTabs.setEditMode(false, syncHistory); return; }
-    if (!this.isSelectionMode && this.isPrivateMode) { this.exitPrivateNotesMode(syncHistory); return; }
-    if (syncHistory && window.history.state?.screen === "selection") { window.history.back(); return; }
-    this.isSelectionMode = false;
-    this.selectedNoteIds.clear();
+  private clearSelectionState(): void {
+    this.isSelectionMode = false; this.selectedNoteIds.clear();
     if (this.fab) this.fab.setVisible(true);
     this.syncSelectionUI();
   }
 
+  exitSelectionMode(syncHistory = true): void {
+    if (this.categoryTabs.isEditModeActive()) { this.categoryTabs.setEditMode(false, syncHistory); return; }
+    if (!this.isSelectionMode && this.isPrivateMode) { this.exitPrivateNotesMode(syncHistory); return; }
+    if (syncHistory && window.history.state?.screen === "selection") { window.history.back(); return; }
+    this.clearSelectionState();
+  }
+
   enterPrivateNotesMode(): void {
     if (this.isPrivateMode) return;
-    this.isPrivateMode = true;
-    this.exitSelectionMode(false);
+    if (this.categoryTabs.isEditModeActive()) this.categoryTabs.setEditMode(false, false);
+    this.isPrivateMode = true; this.searchQuery = ""; this.header.clearSearch();
+    this.clearSelectionState();
     this.categoryTabs.setVisible(false);
     this.header.setPrivateNotesMode(true);
     this.selectionBar?.setHiddenMode(true);
@@ -202,7 +206,7 @@ export class HomeViewComponent {
     if (!this.isPrivateMode) return;
     if (syncHistory && window.history.state?.screen === "private_notes") { window.history.back(); return; }
     this.isPrivateMode = false;
-    this.exitSelectionMode(false);
+    this.clearSelectionState();
     this.header.setPrivateNotesMode(false);
     this.categoryTabs.setVisible(true);
     this.selectionBar?.setHiddenMode(false);
@@ -210,9 +214,7 @@ export class HomeViewComponent {
   }
 
   private toggleSelectAll(): void {
-    const currentNotes = this.isPrivateMode
-      ? this.notesService.filterNotes(this.searchQuery, "", true)
-      : this.notesService.filterNotes(this.searchQuery, this.activeFolder, false);
+    const currentNotes = this.getFilteredNotes();
     if (this.selectedNoteIds.size === currentNotes.length) this.selectedNoteIds.clear();
     else currentNotes.forEach((n) => this.selectedNoteIds.add(n.id));
     this.syncSelectionUI();
@@ -239,12 +241,8 @@ export class HomeViewComponent {
   }
 
   destroy(): void {
-    this.pullDownDetector?.destroy();
-    this.header.destroy();
-    this.categoryTabs.destroy();
-    this.noteGrid.destroy();
-    this.selectionBar?.destroy();
-    this.fab?.destroy();
+    this.pullDownDetector?.destroy(); this.header.destroy(); this.categoryTabs.destroy();
+    this.noteGrid.destroy(); this.selectionBar?.destroy(); this.fab?.destroy();
     this.element.remove();
   }
 }
