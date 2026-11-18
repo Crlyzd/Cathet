@@ -13,6 +13,7 @@ export interface DualPaneCallbacks {
   onNewRight?: () => void;
   onCloseDualPane: () => void;
   onActivePaneChange: (pane: "left" | "right") => void;
+  onPreviewChange?: () => void;
   onTitleChange: () => void;
   onSyncChange?: (isLocked: boolean) => void;
   onSnapChange?: (enabled: boolean) => void;
@@ -134,8 +135,8 @@ export class DualPaneView {
   toggleLock(): boolean { const l = this.scrollSync.toggleLock(); this.splitter.setSyncLocked(l); this.callbacks.onSyncChange?.(l); return l; }
   setSyncLocked(locked: boolean): void { this.scrollSync.setLocked(locked); this.splitter.setSyncLocked(locked); this.callbacks.onSyncChange?.(locked); }
   isSyncLocked(): boolean { return this.scrollSync.isLocked(); }
-  toggleLeftPreview(): void { this.headerLeft.setPreviewActive(this.editorLeft.toggleMarkdownPreview()); this.scrollSync.resync("left"); }
-  toggleRightPreview(): void { if (!this.editorRight) return; this.headerRight.setPreviewActive(this.editorRight.toggleMarkdownPreview()); this.scrollSync.resync("right"); }
+  toggleLeftPreview(): void { this.headerLeft.setPreviewActive(this.editorLeft.toggleMarkdownPreview()); this.scrollSync.resync("left"); this.callbacks.onPreviewChange?.(); }
+  toggleRightPreview(): void { if (!this.editorRight) return; this.headerRight.setPreviewActive(this.editorRight.toggleMarkdownPreview()); this.scrollSync.resync("right"); this.callbacks.onPreviewChange?.(); }
 
   setEmbeddedHome(pane: "left" | "right", instance: any): void {
     const cur = pane === "left" ? this.embeddedHomeLeft : this.embeddedHomeRight;

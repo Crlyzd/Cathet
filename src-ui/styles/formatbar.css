@@ -34,9 +34,21 @@
   padding-left: 48px;
 }
 
-/* Prevent DesktopSearchBar collision when Top toolbar is active in single-pane */
+/* Prevent DesktopSearchBar collision with Dual-Pane headers and Top/Left toolbars */
+#workspace-shell.is-dual-pane .desktop-search-bar {
+  top: calc(var(--top-bar-height) + 36px);
+}
+
 #workspace-shell.format-bar-open.format-bar-top:not(.is-dual-pane) .desktop-search-bar {
   top: calc(var(--top-bar-height) + 46px);
+}
+
+#workspace-shell.is-dual-pane.format-bar-open.format-bar-top .desktop-search-bar {
+  top: calc(var(--top-bar-height) + 74px);
+}
+
+#workspace-shell.format-bar-open.format-bar-left .desktop-search-bar {
+  max-width: calc(100% - 68px);
 }
 
 /* Floating Frosted Glass Pill */

@@ -467,6 +467,7 @@ class CathetApp {
         onOpenFileRight: async () => { await this.autoSaveRightPane(); await this.fetchAndApply(() => this.fileService.promptOpen(), "right"); },
         onNewRight: async () => { await this.autoSaveRightPane(); this.dualPaneService.setRightPath(null); this.dualPaneView?.mountRightEditor("", null, false, this.fontService.getCurrentFont().family).focus(); this.topBar.setTitle(this.dualPaneService.getFormattedTitle()); },
         onCloseDualPane: () => this.toggleDualPane(), onActivePaneChange: (p) => { this.dualPaneService.setActivePane(p); this.syncFormatBarState(); },
+        onPreviewChange: () => this.syncFormatBarState(),
         onTitleChange: () => this.topBar.setTitle(this.dualPaneService.getFormattedTitle()),
         onSyncChange: (s) => this.mobileCoord?.setSyncState(s, this.dualPaneService.getSnapScroll()),
         onSnapChange: (snap) => {
