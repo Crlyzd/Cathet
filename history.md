@@ -304,3 +304,37 @@ This document serves as the living project documentation and institutional memor
 ### 2026-11-17: Add Cathet Privacy Policy (`PRIVACY.md`)
 - **Summary**: Added `PRIVACY.md` at the repository root covering zero telemetry, local-only file/note storage, Windows `runFullTrust` MSIX file access, Android `BiometricPrompt` isolation, GitHub Releases update checks, and Android permissions (`INTERNET`, `VIBRATE`, `FileProvider`).
 - **Affected Files**: `PRIVACY.md`, `history.md`
+
+### 2026-11-19: [Mistake] Overwrote `implementation_plan.md` Instead of Appending New Request
+- **Context**: User first asked `/architect` to plan a fix for the folder-drag jump/merge glitch (`TabDragReorder.ts`), then followed up with *"also, I want full page scrolling in preview mode, and ability to add bookmarks..."* in the same conversation.
+- **User Correction**: *"never EVER overwirtten fucking plan, ALWAS ADD not OVERWRITTEN, you always fucking do this bto"*
+- **Root Cause**: Used `write_file` with `Overwrite: true` on `implementation_plan.md` for the second `/architect` request, wiping out the unexecuted first bug-fix plan instead of appending/merging it into the existing plan.
+- **Corrective Guardrail**: When the user adds another request or `"also ..."` while an `implementation_plan.md` already exists in the conversation, NEVER overwrite/replace prior unexecuted plan items—ALWAYS read and **append/merge** the new items into the existing `implementation_plan.md` so all planned work remains intact.
+
+### 2026-11-19: Fix Folder Drag Jump Glitch & Add Preview Fisheye Glass Scroller + Reading Bookmarks
+- **Summary**:
+  - **Folder Drag Reorder Fix (`TabDragReorder.ts`, 149 lines)**: Added `applyTransform()` with custom-tab boundary clamping between `All` and `+`, returned `boolean` from `swapWithNeighbor()`, and immediately re-synced `style.transform` after `insertBefore()` in the same frame so dragged folder chips never flash or jump onto `All` or `+` for a few frames.
+  - **Preview Fisheye Glass Scroller (`PreviewMinimap.ts`, 160 lines; `previewOverlay.css`)**: Added a display-only (`pointer-events: none`) 1/4-height frosted-glass cylindrical fisheye page scroller with soft top/bottom edge fade and subtle drop shadow underneath, syncing at 120fps on scroll and fading out completely after `~1.8s` of inactivity.
+  - **Reading Bookmarks (`bookmarkService.ts`, 92 lines; `PreviewBookmarkBar.ts`, 165 lines)**: Added persistent per-document reading bookmarks with a frosted-glass quick-jump pill (`Save` / `%`, `+`, list popover), smart heading/snippet anchor matching with arrival pulse, and curved ribbon markers on the fisheye scroller.
+  - **Preview Overlay & Settings Toggles (`PreviewOverlayController.ts`, 66 lines; `Editor.ts`, 227 lines; `previewService.ts`, 52 lines)**: Wired per-pane Preview gating (single-pane and Dual-Pane) and added independent **Preview Page Scroller** and **Reading Bookmarks** toggles in Desktop & Mobile Settings (`SettingsAccordions.ts`, `SettingsPane.ts`, `SettingsTabs.ts`, `settingsMain.ts`, `MobileSettingsView.ts`, `SettingsModal.ts`, `windowSync.ts`, `src-ui/src/locales/*.json`).
+- **Affected Files**: `src-ui/src/components/home/TabDragReorder.ts`, `src-ui/src/services/bookmarkService.ts`, `src-ui/src/services/previewService.ts`, `src-ui/src/components/preview/PreviewMinimap.ts`, `src-ui/src/components/preview/PreviewBookmarkBar.ts`, `src-ui/src/components/preview/PreviewOverlayController.ts`, `src-ui/src/components/Editor.ts`, `src-ui/src/utils/monochromeIcons.ts`, `src-ui/src/components/settings/{SettingsAccordions.ts,SettingsPane.ts}`, `src-ui/src/components/{SettingsTabs.ts,MobileSettingsView.ts,SettingsModal.ts}`, `src-ui/src/settingsMain.ts`, `src-ui/src/utils/windowSync.ts`, `src-ui/src/locales/*.json`, `src-ui/styles/{previewOverlay.css,dualpane.css}`, `index.html`, `history.md`
+
+### 2026-11-19: Fix Dual-Pane Preview Overlay Reparenting & Polish Liquid-Glass Fisheye Scroller
+- **Summary**:
+  - **Dual-Pane Host Reparenting**: Added `attachToHost()` to `PreviewOverlayController` (`getElement()` on `PreviewMinimap` & `PreviewBookmarkBar`) and `attachOverlayHost()` on `EditorComponent`, wired into `DualPaneView` constructor (`leftHostEl`) and `destroy()` (restoring to `#editor-container`) so Primary pane's scroller & bookmark pill stay strictly inside the Primary pane.
+  - **Liquid-Glass Fisheye Scroller & Placement (`previewOverlay.css`, `PreviewMinimap.ts`)**: Widened single-pane scroller to `72px` (`54px` in Dual-Pane), increased height to `clamp(120px, 32%, 185px)`, moved single-pane position upward to `top: 32%` (volume-button height), upgraded to refractive liquid-glass gradients + `blur(18px) saturate(160%)` + specular rim + soft drop shadow underneath, and added a long multi-stop gradual edge fade (`0%..44%` / `56%..100%`) with softened canvas alpha (`pow(lens, 1.25)`).
+- **Affected Files**: `src-ui/src/components/preview/{PreviewMinimap.ts,PreviewBookmarkBar.ts,PreviewOverlayController.ts}`, `src-ui/src/components/Editor.ts`, `src-ui/src/components/dualpane/DualPaneView.ts`, `src-ui/styles/previewOverlay.css`, `history.md`
+
+### 2026-11-19: Fix Dual-Pane Close Overlay Wipe, Remove Edge Stroke, & Double Scroller Width
+- **Summary**:
+  - **Dual-Pane Close & Picker Restore (`main.ts`)**: Called `attachOverlayHost(...)` after every `innerHTML = ""` + `appendChild(getWrapperEl())` reparenting in `toggleDualPane()`, `closeDualEmbeddedPicker()`, and `fetchAndApply()`, preventing `host.innerHTML = ""` from wiping the fisheye scroller and bookmark pill when exiting Dual-Pane.
+  - **Borderless & Twice as Wide (`previewOverlay.css`)**: Removed `border` and `inset` rim strokes on `.preview-minimap` (leaving pure frosted glass + soft ambient drop shadow) and doubled width to `144px` in single-pane (`108px` in Dual-Pane).
+- **Affected Files**: `src-ui/src/main.ts`, `src-ui/styles/previewOverlay.css`, `history.md`
+
+### 2026-11-19: Taller Fisheye Scroller with Long Center-Focused Fade
+- **Summary**: Increased `.preview-minimap` height to `clamp(260px, 56%, 440px)` in single-pane (`clamp(140px, 58%, 220px)` in Dual-Pane), tightened the fully opaque center band to `48%–52%` with a long 12-step gradual fade out to `0%` / `100%`, and increased `PreviewMinimap.ts` canvas fade exponent to `1.85`.
+- **Affected Files**: `src-ui/styles/previewOverlay.css`, `src-ui/src/components/preview/PreviewMinimap.ts`, `history.md`
+
+### 2026-11-19: Increase Center Opacity of Preview Fisheye Glass Scroller
+- **Summary**: Raised `.preview-minimap` center glass background opacity to `0.62` (light) / `0.64` (dark) in `previewOverlay.css`, and boosted `PreviewMinimap.ts` canvas line opacities (`0.95` headings, `0.68` paragraphs, `0.45` code/media) so the center reads clearly while keeping the long top/bottom fade.
+- **Affected Files**: `src-ui/styles/previewOverlay.css`, `src-ui/src/components/preview/PreviewMinimap.ts`, `history.md`
