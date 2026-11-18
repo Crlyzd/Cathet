@@ -172,6 +172,31 @@ body.is-mobile.is-keyboard-open .mobile-action-bar {
   bottom: 10px;
 }
 
+@keyframes mobilePillIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.76);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.mobile-action-bar.is-entering .mobile-action-pill,
+.mobile-action-bar.is-entering .mobile-format-pill {
+  animation: mobilePillIn 280ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-action-bar.is-entering .mobile-action-pill,
+  .mobile-action-bar.is-entering .mobile-format-pill,
+  .mobile-search-ribbon {
+    animation: none;
+  }
+}
+
 .mobile-action-pill {
   position: relative;
   display: flex;

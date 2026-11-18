@@ -34,7 +34,9 @@ export class MobileActionBarComponent {
   private syncMode: MobileSyncMode = "locked";
   private isTogglingSync = false;
   private isSmall = false;
+  private isShown = true;
   private collapseTimer: ReturnType<typeof setTimeout> | null = null;
+  private enterTimer: ReturnType<typeof setTimeout> | null = null;
   private syncCleanup: (() => void) | null = null;
   private btnFormat!: HTMLButtonElement;
   private btnMarkdown!: HTMLButtonElement;
@@ -98,38 +100,32 @@ export class MobileActionBarComponent {
     this.btnSettings?.addEventListener("click", () => this.callbacks.onOpenSettings());
   }
 
-  setFormatMode(enabled: boolean): void {
-    if (this.isFormatMode === enabled) return;
-    this.isFormatMode = enabled;
-    this.element.classList.toggle("is-format-mode", enabled);
+  private applyOverlayMode(cls: string, layerId: string, enabled: boolean, onBack: () => void): void {
+    this.element.classList.toggle(cls, enabled);
     if (enabled) {
       if (this.collapseTimer) clearTimeout(this.collapseTimer);
       this.isSmall = false;
       this.element.classList.remove("is-small");
-      if (this.isSearchMode) this.setSearchMode(false);
-      pushBackLayer("mobile-format-bar", () => this.setFormatMode(false));
+      pushBackLayer(layerId, onBack);
     } else {
-      removeBackLayer("mobile-format-bar");
+      removeBackLayer(layerId);
       this.scheduleAutoCollapse(3500);
     }
+  }
+
+  setFormatMode(enabled: boolean): void {
+    if (this.isFormatMode === enabled) return;
+    this.isFormatMode = enabled;
+    if (enabled && this.isSearchMode) this.setSearchMode(false);
+    this.applyOverlayMode("is-format-mode", "mobile-format-bar", enabled, () => this.setFormatMode(false));
   }
 
   setSearchMode(enabled: boolean): void {
     if (this.isSearchMode === enabled) return;
     this.isSearchMode = enabled;
-    this.element.classList.toggle("is-search-mode", enabled);
-    if (enabled) {
-      if (this.collapseTimer) clearTimeout(this.collapseTimer);
-      this.isSmall = false;
-      this.element.classList.remove("is-small");
-      if (this.isFormatMode) this.setFormatMode(false);
-      pushBackLayer("mobile-search-bar", () => this.setSearchMode(false));
-      this.searchBar.show();
-    } else {
-      removeBackLayer("mobile-search-bar");
-      this.searchBar.hide();
-      this.scheduleAutoCollapse(3500);
-    }
+    if (enabled && this.isFormatMode) this.setFormatMode(false);
+    this.applyOverlayMode("is-search-mode", "mobile-search-bar", enabled, () => this.setSearchMode(false));
+    if (enabled) this.searchBar.show(); else this.searchBar.hide();
   }
 
   toggleSearchMode(): void {
@@ -161,27 +157,20 @@ export class MobileActionBarComponent {
       this.btnSync = document.createElement("button");
       this.btnSync.className = "mobile-action-btn btn-sync";
       this.btnSync.id = "mobile-btn-sync";
+      const toggle = (e: Event, nextMode: MobileSyncMode, vibrate = false) => {
+        e.stopPropagation();
+        this.scheduleAutoCollapse();
+        this.isTogglingSync = true;
+        this.syncMode = nextMode;
+        if (vibrate) { try { if ("vibrate" in navigator) navigator.vibrate(30); } catch (_) {} }
+        this.updateSyncButton();
+        try { this.callbacks.onToggleSync?.(this.syncMode); }
+        finally { setTimeout(() => { this.isTogglingSync = false; }, 80); }
+      };
       this.syncCleanup = bindLongPress(this.btnSync, {
         thresholdMs: 400,
-        onClick: (e) => {
-          e.stopPropagation();
-          this.scheduleAutoCollapse();
-          this.isTogglingSync = true;
-          this.syncMode = this.syncMode === "paused" ? "locked" : "paused";
-          this.updateSyncButton();
-          try { this.callbacks.onToggleSync?.(this.syncMode); }
-          finally { setTimeout(() => { this.isTogglingSync = false; }, 80); }
-        },
-        onLongPress: (e) => {
-          e.stopPropagation();
-          this.scheduleAutoCollapse();
-          this.isTogglingSync = true;
-          this.syncMode = this.syncMode === "snap" ? "locked" : "snap";
-          try { if ("vibrate" in navigator) navigator.vibrate(30); } catch (_) {}
-          this.updateSyncButton();
-          try { this.callbacks.onToggleSync?.(this.syncMode); }
-          finally { setTimeout(() => { this.isTogglingSync = false; }, 80); }
-        },
+        onClick: (e) => toggle(e, this.syncMode === "paused" ? "locked" : "paused"),
+        onLongPress: (e) => toggle(e, this.syncMode === "snap" ? "locked" : "snap", true),
       });
       this.btnDual.insertAdjacentElement("afterend", this.btnSync);
     }
@@ -236,11 +225,23 @@ export class MobileActionBarComponent {
     this.updateSyncButton();
   }
 
-  setVisible(visible: boolean): void { this.element.style.display = visible ? "flex" : "none"; }
+  setVisible(visible: boolean): void {
+    const wasShown = this.isShown;
+    this.isShown = visible;
+    this.element.style.display = visible ? "flex" : "none";
+    if (this.enterTimer) { clearTimeout(this.enterTimer); this.enterTimer = null; }
+    this.element.classList.remove("is-entering");
+    if (visible && !wasShown && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      void this.element.offsetWidth;
+      this.element.classList.add("is-entering");
+      this.enterTimer = setTimeout(() => { this.element.classList.remove("is-entering"); this.enterTimer = null; }, 320);
+    }
+  }
 
   destroy(): void {
     removeBackLayer("mobile-format-bar"); removeBackLayer("mobile-search-bar");
     if (this.collapseTimer) clearTimeout(this.collapseTimer);
+    if (this.enterTimer) clearTimeout(this.enterTimer);
     if (this.syncCleanup) { this.syncCleanup(); this.syncCleanup = null; }
     this.formatBar.destroy();
     this.searchBar.destroy();
