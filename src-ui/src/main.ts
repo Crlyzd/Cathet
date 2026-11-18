@@ -194,6 +194,26 @@ class CathetApp {
         this.editor.loadDocument(content, this.currentFilePath, shouldPreview);
         this.mobileCoord?.setMarkdownState(shouldPreview);
       },
+      onDualNotesSelectedForEditor: (left, right) => {
+        this.currentFilePath = `notes/${left.noteId}`;
+        const leftTitle = formatDisplayTitle(left.title);
+        const leftPreview = this.previewService.shouldOpenInPreview(left.title);
+        this.dualPaneService.setLeftPath(this.currentFilePath, leftTitle);
+        this.editor.loadDocument(left.content, this.currentFilePath, leftPreview);
+        if (!this.dualPaneService.isDualPane()) this.toggleDualPane();
+        this.dualPaneView?.setLeftTitle(leftTitle);
+        this.dualPaneView?.setLeftPreviewActive(leftPreview);
+        const rightPath = `notes/${right.noteId}`;
+        const rightTitle = formatDisplayTitle(right.title);
+        const rightPreview = this.previewService.shouldOpenInPreview(right.title);
+        this.dualPaneService.setRightPath(rightPath, rightTitle);
+        this.dualPaneView?.mountRightEditor(right.content, rightPath, rightPreview, this.fontService.getCurrentFont().family);
+        this.dualPaneView?.setRightTitle(rightTitle);
+        this.dualPaneView?.setActivePane("left");
+        this.mobileCoord?.setMarkdownState(this.getActiveEditor().getIsMarkdownPreview());
+        this.topBar.setTitle(this.dualPaneService.getFormattedTitle());
+        this.syncFormatBarState();
+      },
     });
 
     window.addEventListener("blur", () => {
@@ -364,7 +384,9 @@ class CathetApp {
     const text = edRight.getText().trim();
     if (!text) return;
     try {
-      const saved = await this.notesService.saveNote(noteId, text, this.homeCoord?.getCurrentFolder() || "");
+      const existing = noteId ? this.notesService.getRegistry().notes[noteId] : undefined;
+      const folder = existing ? (existing.isHidden ? "Hidden" : existing.folder) : (this.homeCoord?.getCurrentFolder() || "");
+      const saved = await this.notesService.saveNote(noteId, text, folder);
       if (saved) {
         this.dualPaneService.setRightPath(`notes/${saved.id}`, saved.title);
         edRight.markSaved();

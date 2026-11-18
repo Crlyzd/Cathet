@@ -73,3 +73,28 @@ export function createCollapseOverlayLayer(
 
   return { clone, anims };
 }
+
+/** Toggles visibility of #workspace-shell, #editor-container, and #topbar-container. */
+export function setEditorShellVisible(visible: boolean): void {
+  const shell = document.getElementById("workspace-shell");
+  const ed = document.getElementById("editor-container");
+  const top = document.getElementById("topbar-container");
+  if (shell) { shell.style.display = visible ? "flex" : "none"; shell.style.zIndex = visible ? "200" : ""; }
+  if (ed) ed.style.display = visible ? "block" : "none";
+  if (top) { top.style.display = visible ? "block" : "none"; if (!visible) top.style.zIndex = ""; }
+}
+
+/** Plays fallback CSS enter animation on #editor-container and #topbar-container when no originRect is available. */
+export function triggerEditorEnterAnimation(): void {
+  const ed = document.getElementById("editor-container");
+  const top = document.getElementById("topbar-container");
+  if (!ed || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  ed.classList.remove("anim-editor-enter", "anim-editor-exit");
+  top?.classList.remove("anim-editor-enter", "anim-editor-exit");
+  void ed.offsetWidth;
+  ed.classList.add("anim-editor-enter");
+  top?.classList.add("anim-editor-enter");
+  const clear = () => { ed.classList.remove("anim-editor-enter"); top?.classList.remove("anim-editor-enter"); };
+  ed.addEventListener("animationend", clear, { once: true });
+  setTimeout(clear, 250);
+}

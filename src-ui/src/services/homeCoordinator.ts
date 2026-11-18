@@ -7,6 +7,7 @@ import { FontService } from "./fontService";
 import { PlatformService } from "./platformService";
 import { ThemeService } from "./themeService";
 import { ContainerTransform } from "../utils/containerTransform";
+import { setEditorShellVisible, triggerEditorEnterAnimation } from "../utils/containerTransformLayers";
 import { globalEventBus } from "../utils/eventBus";
 
 export interface HomeCoordinatorOptions {
@@ -18,6 +19,10 @@ export interface HomeCoordinatorOptions {
   getMobileCoordinator?: () => any;
   onOpenExternalPicker: () => void;
   onNoteSelectedForEditor: (content: string, noteId: string, title: string) => void;
+  onDualNotesSelectedForEditor?: (
+    left: { content: string; noteId: string; title: string },
+    right: { content: string; noteId: string; title: string }
+  ) => void;
   onBeforeNavigateHome?: () => Promise<void>;
   onNavigateHome?: () => void;
 }
@@ -49,6 +54,7 @@ export class HomeCoordinator {
       containerElement: appEl,
       notesService: this.notesService,
       onOpenNote: (note, rect) => this.openNote(note, rect),
+      onOpenDualNotes: (left, right, rect) => this.openDualNotes(left, right, rect),
       onNewNote: (folder, rect) => this.openNewNote(folder, rect),
       onOpenFile: (folder) => { this.currentFolder = folder === "All" ? "" : folder; this.options.onOpenExternalPicker(); },
     });
@@ -65,7 +71,7 @@ export class HomeCoordinator {
     if (!this.homeView) return;
     this.isHomeVisible = true;
     this.topBar.setBackVisible(false);
-    this.setEditorContainerVisible(false);
+    setEditorShellVisible(false);
     this.options.getMobileCoordinator?.()?.setActionBarVisible(false);
     this.homeView.setVisible(true, shouldRefresh);
     if (animate) this.homeView.animateEnter?.();
@@ -87,7 +93,7 @@ export class HomeCoordinator {
       this.showHome(false, false);
     };
 
-    if (!reduced && ed) { document.body.classList.add("is-animating-transform"); this.setEditorContainerVisible(true); }
+    if (!reduced && ed) { document.body.classList.add("is-animating-transform"); setEditorShellVisible(true); }
     this.options.getMobileCoordinator?.()?.setActionBarVisible(false);
 
     try {
@@ -130,44 +136,71 @@ export class HomeCoordinator {
     return this.activeSavePromise;
   }
 
-  async openNote(note: NoteItem, originRect?: DOMRect): Promise<void> {
+  private pushEditorHistory(): void {
+    if (window.history.state?.screen === "selection") window.history.replaceState({ screen: "editor" }, "");
+    else window.history.pushState({ screen: "editor" }, "");
+  }
+
+  private launchWithTransform(originRect: DOMRect | null | undefined, borderRadius: number, cardEl: HTMLElement | null, afterExpand?: () => void): void {
+    const theme = ThemeService.getInstance().getTheme();
+    if (originRect && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.body.classList.add("is-animating-transform");
+      setEditorShellVisible(true);
+      ContainerTransform.expand({
+        originRect, theme, borderRadius, cardEl,
+        onComplete: () => { this.showEditorView(); afterExpand?.(); },
+      });
+    } else {
+      if (cardEl) cardEl.style.backgroundColor = "";
+      this.showEditorView();
+      triggerEditorEnterAnimation();
+      afterExpand?.();
+    }
+  }
+
+  private async openNoteFlow(primary: NoteItem, originRect: DOMRect | undefined, applyContent: () => Promise<void>): Promise<void> {
     if (this.isOpeningNote || this.isNavigatingHome) return;
     this.isOpeningNote = true;
     this.lastOriginRect = originRect || null;
     const theme = ThemeService.getInstance().getTheme();
-    const cardEl = document.querySelector<HTMLElement>(`.home-note-card[data-id="${CSS.escape(note.id)}"]`);
+    const cardEl = document.querySelector<HTMLElement>(`.home-note-card[data-id="${CSS.escape(primary.id)}"]`);
     if (cardEl) cardEl.style.backgroundColor = theme === "light" ? "#f8fafc" : "#0f1117";
-
     try {
       (document.activeElement as HTMLElement)?.blur();
       window.getSelection()?.removeAllRanges();
-
-      let content = note.snippet;
-      try { const res = await this.notesService.readNote(note.id); if (res?.content) content = res.content; } catch { /* fallback to snippet */ }
-
-      this.currentNoteId = note.id;
-      this.currentFolder = note.isHidden ? "Hidden" : note.folder;
+      await applyContent();
+      this.currentNoteId = primary.id;
+      this.currentFolder = primary.isHidden ? "Hidden" : primary.folder;
       this.isHomeVisible = false;
-      this.options.onNoteSelectedForEditor(content, note.id, note.title);
-      this.topBar.setTitle(note.title);
       this.topBar.setBackVisible(true);
-      window.history.pushState({ screen: "editor" }, "");
-
-      if (originRect && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        document.body.classList.add("is-animating-transform");
-        this.setEditorContainerVisible(true);
-        ContainerTransform.expand({
-          originRect, theme, borderRadius: 16, cardEl,
-          onComplete: () => { this.showEditorView(); },
-        });
-      } else {
-        if (cardEl) cardEl.style.backgroundColor = "";
-        this.showEditorView();
-        this.triggerEditorEnterAnimation();
-      }
+      this.pushEditorHistory();
+      this.launchWithTransform(originRect, 16, cardEl);
     } finally {
       this.isOpeningNote = false;
     }
+  }
+
+  private async readNoteContent(note: NoteItem): Promise<string> {
+    try { const res = await this.notesService.readNote(note.id); return res?.content || note.snippet; }
+    catch { return note.snippet; }
+  }
+
+  async openNote(note: NoteItem, originRect?: DOMRect): Promise<void> {
+    await this.openNoteFlow(note, originRect, async () => {
+      const content = await this.readNoteContent(note);
+      this.options.onNoteSelectedForEditor(content, note.id, note.title);
+      this.topBar.setTitle(note.title);
+    });
+  }
+
+  async openDualNotes(left: NoteItem, right: NoteItem, originRect?: DOMRect): Promise<void> {
+    await this.openNoteFlow(left, originRect, async () => {
+      const [leftContent, rightContent] = await Promise.all([this.readNoteContent(left), this.readNoteContent(right)]);
+      this.options.onDualNotesSelectedForEditor?.(
+        { content: leftContent, noteId: left.id, title: left.title },
+        { content: rightContent, noteId: right.id, title: right.title }
+      );
+    });
   }
 
   openNewNote(folder = "", originRect?: DOMRect): void {
@@ -180,21 +213,8 @@ export class HomeCoordinator {
     this.topBar.setTitle("Untitled Note");
     this.topBar.setBackVisible(true);
     this.editor.loadDocument("", null, false);
-    window.history.pushState({ screen: "editor" }, "");
-
-    if (this.lastOriginRect && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const theme = ThemeService.getInstance().getTheme();
-      document.body.classList.add("is-animating-transform");
-      this.setEditorContainerVisible(true);
-      ContainerTransform.expand({
-        originRect: this.lastOriginRect, theme, borderRadius: 29,
-        onComplete: () => { this.showEditorView(); this.editor.focus(); },
-      });
-    } else {
-      this.showEditorView();
-      this.triggerEditorEnterAnimation();
-      this.editor.focus();
-    }
+    this.pushEditorHistory();
+    this.launchWithTransform(this.lastOriginRect, 29, null, () => this.editor.focus());
   }
 
   openExternalFile(title: string): void {
@@ -208,36 +228,13 @@ export class HomeCoordinator {
   private showEditorView(): void {
     this.isHomeVisible = false;
     if (this.homeView) this.homeView.setVisible(false);
-    this.setEditorContainerVisible(true);
+    setEditorShellVisible(true);
     this.options.getMobileCoordinator?.()?.setActionBarVisible(true);
-  }
-
-  private triggerEditorEnterAnimation(): void {
-    const ed = document.getElementById("editor-container");
-    const top = document.getElementById("topbar-container");
-    if (!ed || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    ed.classList.remove("anim-editor-enter", "anim-editor-exit");
-    top?.classList.remove("anim-editor-enter", "anim-editor-exit");
-    void ed.offsetWidth;
-    ed.classList.add("anim-editor-enter");
-    top?.classList.add("anim-editor-enter");
-    const clear = () => { ed.classList.remove("anim-editor-enter"); top?.classList.remove("anim-editor-enter"); };
-    ed.addEventListener("animationend", clear, { once: true });
-    setTimeout(clear, 250);
   }
 
   getCurrentNoteId(): string | null { return this.currentNoteId; }
   setCurrentNoteId(id: string | null): void { this.currentNoteId = id; }
   getCurrentFolder(): string { return this.currentFolder; }
-
-  private setEditorContainerVisible(visible: boolean): void {
-    const shell = document.getElementById("workspace-shell");
-    const ed = document.getElementById("editor-container");
-    const top = document.getElementById("topbar-container");
-    if (shell) { shell.style.display = visible ? "flex" : "none"; shell.style.zIndex = visible ? "200" : ""; }
-    if (ed) ed.style.display = visible ? "block" : "none";
-    if (top) { top.style.display = visible ? "block" : "none"; if (!visible) top.style.zIndex = ""; }
-  }
 
   createEmbeddedHome(container: HTMLElement, onSelect: (note: NoteItem) => void): HomeViewComponent {
     return new HomeViewComponent({ containerElement: container, notesService: this.notesService, isEmbedded: true, onOpenNote: onSelect, onNewNote: () => { }, onOpenFile: () => { } });
