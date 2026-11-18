@@ -9,8 +9,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : TauriActivity() {
   companion object {
@@ -72,15 +70,7 @@ class MainActivity : TauriActivity() {
         }
       }
     }, "CathetNativeHaptic")
-    ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
-      val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-      val density = resources.displayMetrics.density.coerceAtLeast(1f)
-      val imeDp = Math.round(imeBottom / density)
-      webView.post {
-        webView.evaluateJavascript("window.__cathet_on_ime_inset&&window.__cathet_on_ime_inset($imeDp)", null)
-      }
-      ViewCompat.onApplyWindowInsets(v, insets)
-    }
+    ImeInsetHelper.attach(this, webView)
   }
 
   override fun onDestroy() {
