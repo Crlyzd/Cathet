@@ -200,12 +200,12 @@ export class MobileActionBarComponent {
 
   scheduleAutoCollapse(delayMs = 3500): void {
     if (this.collapseTimer) clearTimeout(this.collapseTimer);
-    if (this.isKeyboardOpen || this.isFormatMode) return;
+    if (this.isKeyboardOpen || this.isFormatMode || this.isSearchMode) return;
     this.collapseTimer = setTimeout(() => this.collapse(), delayMs);
   }
 
   collapse(): void {
-    if (this.isKeyboardOpen || this.isFormatMode) return;
+    if (this.isKeyboardOpen || this.isFormatMode || this.isSearchMode) return;
     this.isSmall = true;
     this.element.classList.add("is-small");
   }

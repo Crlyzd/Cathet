@@ -11,6 +11,7 @@ export class KeyboardTracker {
   private maxInnerHeight: number = typeof window !== "undefined" ? window.innerHeight : 0;
   private lastInnerWidth: number = typeof window !== "undefined" ? window.innerWidth : 0;
   private nativeImeDp: number = 0;
+  private resizedByNative: boolean = false;
   private isKeyboardOpen: boolean = false;
   private isLandscape: boolean = false;
   private currentInsetPx: number = 0;
@@ -24,8 +25,9 @@ export class KeyboardTracker {
   private init(): void {
     if (typeof window === "undefined") return;
 
-    (window as any).__cathet_on_ime_inset = (imeDp: number) => {
+    (window as any).__cathet_on_ime_inset = (imeDp: number, resizedByNative?: boolean) => {
       this.nativeImeDp = Math.max(0, Number(imeDp) || 0);
+      this.resizedByNative = Boolean(resizedByNative);
       this.recalculate();
     };
 
@@ -51,11 +53,13 @@ export class KeyboardTracker {
 
     const vv = window.visualViewport;
     const layoutShrink = Math.max(0, this.maxInnerHeight - winH);
+    const vvOffsetTop = vv ? Math.max(0, Math.round(vv.offsetTop)) : 0;
     const vvShrink = vv ? Math.max(0, Math.round(winH - (vv.height + vv.offsetTop))) : 0;
 
-    // Avoid double-offsetting if layout viewport (innerHeight) already shrank for IME
-    const insetPx = Math.max(vvShrink, Math.max(0, this.nativeImeDp - layoutShrink));
-    const isOpen = this.nativeImeDp > 80 || layoutShrink + vvShrink > 100;
+    // Avoid double-offsetting when native bottomMargin resize or vv.offsetTop already accounts for IME
+    const fallbackInset = Math.max(vvShrink, Math.max(0, this.nativeImeDp - layoutShrink - vvOffsetTop));
+    const insetPx = this.resizedByNative ? 0 : fallbackInset;
+    const isOpen = this.nativeImeDp > 40 || layoutShrink + vvShrink > 100;
     const nextLandscape = winW > this.maxInnerHeight && winW >= 480;
 
     if (nextLandscape !== this.isLandscape) {

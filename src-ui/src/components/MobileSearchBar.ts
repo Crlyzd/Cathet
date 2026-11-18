@@ -157,7 +157,7 @@ export class MobileSearchBarComponent {
   show(): void {
     this.visible = true;
     this.element.style.display = "flex";
-    this.input.focus();
+    this.input.focus({ preventScroll: true });
     this.input.select();
     if (this.input.value.trim()) {
       this.handleQueryChange();

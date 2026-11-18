@@ -58,7 +58,7 @@ body.is-mobile #app {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
-  height: 100dvh;
+  height: calc(100dvh - var(--keyboard-inset, 0px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
