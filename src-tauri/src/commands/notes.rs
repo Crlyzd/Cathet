@@ -12,17 +12,17 @@ pub struct NoteMetadataRecord {
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct NotesRegistry { pub folders: Vec<String>, pub notes: HashMap<String, NoteMetadataRecord> }
 
-fn get_notes_root(app_handle: &AppHandle) -> Result<PathBuf, String> {
+pub(super) fn get_notes_root(app_handle: &AppHandle) -> Result<PathBuf, String> {
     let d = app_handle.path().app_data_dir().map_err(|e| e.to_string())?.join("notes");
     if !d.exists() { fs::create_dir_all(&d).map_err(|e| e.to_string())?; }
     Ok(d)
 }
 
-fn load_registry(root: &Path) -> NotesRegistry {
+pub(super) fn load_registry(root: &Path) -> NotesRegistry {
     fs::read_to_string(root.join("metadata.json")).ok().and_then(|c| serde_json::from_str(&c).ok()).unwrap_or_default()
 }
 
-fn save_registry(root: &Path, reg: &NotesRegistry) -> Result<(), String> {
+pub(super) fn save_registry(root: &Path, reg: &NotesRegistry) -> Result<(), String> {
     fs::write(root.join("metadata.json"), serde_json::to_string_pretty(reg).map_err(|e| e.to_string())?).map_err(|e| e.to_string())
 }
 
@@ -39,21 +39,21 @@ fn extract_title_and_snippet(content: &str, fallback_name: &str) -> (String, Str
     let snippet = if body.chars().count() > 120 { body.chars().take(120).collect::<String>() + "..." } else { body }; (title, snippet)
 }
 
-fn current_timestamp() -> u64 { SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64 }
+pub(super) fn current_timestamp() -> u64 { SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64 }
 
-fn sanitize_filename(name: &str) -> String {
+pub(super) fn sanitize_filename(name: &str) -> String {
     let clean: String = name.chars().map(|c| if "<>:\"/\\|?*".contains(c) { '_' } else { c }).collect();
     let t = clean.trim(); if t.is_empty() { "Untitled Note".to_string() } else { t.to_string() }
 }
 
-fn is_reserved_folder(name: &str) -> bool {
+pub(super) fn is_reserved_folder(name: &str) -> bool {
     let t = name.trim(); t.is_empty() || t.eq_ignore_ascii_case("All") || t.eq_ignore_ascii_case("Hidden")
 }
 
 #[tauri::command]
 pub async fn list_notes(app_handle: AppHandle) -> Result<NotesRegistry, String> {
     let root = get_notes_root(&app_handle)?;
-    let (mut reg, mut folders, mut scanned_ids) = (load_registry(&root), Vec::new(), HashMap::new());
+    let (mut reg, mut disk_folders, mut scanned_ids) = (load_registry(&root), Vec::new(), HashMap::new());
     for entry in fs::read_dir(&root).into_iter().flatten().flatten() {
         let path = entry.path();
         if path.is_dir() {
@@ -69,7 +69,7 @@ pub async fn list_notes(app_handle: AppHandle) -> Result<NotesRegistry, String> 
                     }
                     let _ = fs::remove_dir(&path);
                 } else if !is_reserved_folder(folder_name) {
-                    folders.push(folder_name.to_string());
+                    disk_folders.push(folder_name.to_string());
                     for sub in fs::read_dir(&path).into_iter().flatten().flatten() { scan_file(&sub.path(), &root, folder_name, false, &mut reg, &mut scanned_ids); }
                 }
             }
@@ -77,7 +77,11 @@ pub async fn list_notes(app_handle: AppHandle) -> Result<NotesRegistry, String> 
             scan_file(&path, &root, "", false, &mut reg, &mut scanned_ids);
         }
     }
-    folders.sort(); reg.folders = folders; reg.notes.retain(|id, _| scanned_ids.contains_key(id));
+    let mut ordered: Vec<String> = Vec::new();
+    for f in &reg.folders { if disk_folders.contains(f) && !ordered.contains(f) { ordered.push(f.clone()); } }
+    disk_folders.sort();
+    for f in disk_folders { if !ordered.contains(&f) { ordered.push(f); } }
+    reg.folders = ordered; reg.notes.retain(|id, _| scanned_ids.contains_key(id));
     let _ = save_registry(&root, &reg); Ok(reg)
 }
 
@@ -145,20 +149,70 @@ pub async fn delete_notes(app_handle: AppHandle, ids: Vec<String>) -> Result<(),
 }
 
 #[tauri::command]
+pub async fn duplicate_notes(app_handle: AppHandle, ids: Vec<String>) -> Result<Vec<NoteMetadataRecord>, String> {
+    let root = get_notes_root(&app_handle)?;
+    let mut reg = load_registry(&root);
+    let mut created = Vec::new();
+    for id in ids {
+        let Some(existing) = reg.notes.get(&id).cloned() else { continue; };
+        let Ok(content) = fs::read_to_string(root.join(&id)) else { continue; };
+        let folder = if !is_reserved_folder(&existing.folder) && root.join(&existing.folder).is_dir() {
+            existing.folder.clone()
+        } else { String::new() };
+        let dest_dir = if folder.is_empty() { root.clone() } else { root.join(&folder) };
+        let base = if existing.title.trim().is_empty() { "Untitled Note" } else { existing.title.trim() };
+        let mut n = 1u32;
+        let (copy_title, dest_path) = loop {
+            let candidate_title = if n == 1 { format!("{} (Copy)", base) } else { format!("{} (Copy {})", base, n) };
+            let candidate_path = dest_dir.join(format!("{}.md", sanitize_filename(&candidate_title)));
+            if !candidate_path.exists() { break (candidate_title, candidate_path); }
+            n += 1;
+        };
+        if fs::write(&dest_path, &content).is_err() { continue; }
+        let new_id = dest_path.strip_prefix(&root).unwrap_or(&dest_path).to_string_lossy().replace('\\', "/");
+        let file_size = fs::metadata(&dest_path).map(|m| m.len()).unwrap_or(content.len() as u64);
+        let record = NoteMetadataRecord {
+            id: new_id.clone(), title: copy_title, folder, snippet: existing.snippet,
+            is_pinned: false, is_hidden: existing.is_hidden, updated_at: current_timestamp(), file_size,
+        };
+        reg.notes.insert(new_id, record.clone());
+        created.push(record);
+    }
+    save_registry(&root, &reg)?;
+    Ok(created)
+}
+
+#[tauri::command]
 pub async fn move_notes(app_handle: AppHandle, ids: Vec<String>, target_folder: String) -> Result<(), String> {
     let root = get_notes_root(&app_handle)?; let mut reg = load_registry(&root);
-    let dest_dir = if is_reserved_folder(&target_folder) { root.clone() } else { let d = root.join(&target_folder); let _ = fs::create_dir_all(&d); d };
+    let raw_target = target_folder.trim();
+    let clean_folder = if is_reserved_folder(raw_target) { String::new() } else { sanitize_filename(raw_target) };
+    let clean_folder = if is_reserved_folder(&clean_folder) { String::new() } else { clean_folder };
+    let dest_dir = if clean_folder.is_empty() { root.clone() } else {
+        let d = root.join(&clean_folder);
+        fs::create_dir_all(&d).map_err(|e| e.to_string())?;
+        if !reg.folders.contains(&clean_folder) { reg.folders.push(clean_folder.clone()); }
+        d
+    };
     for id in ids {
-        if let Some(mut record) = reg.notes.remove(&id) {
-            let src_path = root.join(&id);
-            if let Some(file_name) = src_path.file_name() {
-                let dest_path = dest_dir.join(file_name);
-                if fs::rename(&src_path, &dest_path).is_ok() {
-                    let new_id = dest_path.strip_prefix(&root).unwrap_or(&dest_path).to_string_lossy().replace('\\', "/");
-                    record.id = new_id.clone(); record.folder = if is_reserved_folder(&target_folder) { String::new() } else { target_folder.clone() };
-                    reg.notes.insert(new_id, record);
-                }
-            }
+        let Some(existing) = reg.notes.get(&id).cloned() else { continue; };
+        let src_path = root.join(&id);
+        let Some(file_name) = src_path.file_name() else { continue; };
+        let mut dest_path = dest_dir.join(file_name);
+        if dest_path == src_path { continue; }
+        let stem = src_path.file_stem().and_then(|s| s.to_str()).unwrap_or("Note");
+        let mut n = 0u32;
+        while dest_path.exists() {
+            let suffix = if n == 0 { format!("{}", current_timestamp() % 10000) } else { format!("{}_{}", current_timestamp() % 10000, n) };
+            dest_path = dest_dir.join(format!("{}_{}.md", stem, suffix));
+            n += 1;
+        }
+        if fs::rename(&src_path, &dest_path).is_ok() {
+            reg.notes.remove(&id);
+            let new_id = dest_path.strip_prefix(&root).unwrap_or(&dest_path).to_string_lossy().replace('\\', "/");
+            let mut updated = existing;
+            updated.id = new_id.clone(); updated.folder = clean_folder.clone();
+            reg.notes.insert(new_id, updated);
         }
     }
     save_registry(&root, &reg)
@@ -176,65 +230,6 @@ pub async fn set_note_hidden(app_handle: AppHandle, ids: Vec<String>, hidden: bo
     let root = get_notes_root(&app_handle)?; let mut reg = load_registry(&root);
     for id in ids { if let Some(rec) = reg.notes.get_mut(&id) { rec.is_hidden = hidden; } }
     save_registry(&root, &reg)
-}
-
-#[tauri::command]
-pub async fn create_folder(app_handle: AppHandle, folder_name: String) -> Result<(), String> {
-    let clean = folder_name.trim().to_string();
-    if is_reserved_folder(&clean) { return Ok(()); }
-    let root = get_notes_root(&app_handle)?;
-    fs::create_dir_all(root.join(&clean)).map_err(|e| e.to_string())?;
-    let mut reg = load_registry(&root);
-    if !reg.folders.contains(&clean) { reg.folders.push(clean); reg.folders.sort(); save_registry(&root, &reg)?; }
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn rename_folder(app_handle: AppHandle, old_name: String, new_name: String) -> Result<String, String> {
-    let (old_c, new_c) = (old_name.trim().to_string(), sanitize_filename(new_name.trim()));
-    if is_reserved_folder(&old_c) || is_reserved_folder(&new_c) || old_c == new_c { return Ok(old_c); }
-    let root = get_notes_root(&app_handle)?;
-    let (old_dir, new_dir) = (root.join(&old_c), root.join(&new_c));
-    if new_dir.exists() { return Err("Folder already exists".to_string()); }
-    if old_dir.exists() { fs::rename(&old_dir, &new_dir).map_err(|e| e.to_string())?; } else { fs::create_dir_all(&new_dir).map_err(|e| e.to_string())?; }
-    let mut reg = load_registry(&root);
-    let note_ids: Vec<String> = reg.notes.iter().filter(|(_, r)| r.folder == old_c).map(|(id, _)| id.clone()).collect();
-    for id in note_ids {
-        if let Some(mut rec) = reg.notes.remove(&id) {
-            let fname = Path::new(&id).file_name().and_then(|n| n.to_str()).unwrap_or("Untitled Note.md");
-            let new_id = format!("{}/{}", new_c, fname);
-            rec.id = new_id.clone(); rec.folder = new_c.clone(); rec.updated_at = current_timestamp();
-            reg.notes.insert(new_id, rec);
-        }
-    }
-    reg.folders.retain(|f| f != &old_c);
-    if !reg.folders.contains(&new_c) { reg.folders.push(new_c.clone()); reg.folders.sort(); }
-    save_registry(&root, &reg)?; Ok(new_c)
-}
-
-#[tauri::command]
-pub async fn delete_folder(app_handle: AppHandle, folder_name: String, delete_notes: bool) -> Result<(), String> {
-    let clean = folder_name.trim().to_string();
-    if is_reserved_folder(&clean) { return Ok(()); }
-    let root = get_notes_root(&app_handle)?; let folder_dir = root.join(&clean); let mut reg = load_registry(&root);
-    let note_ids: Vec<String> = reg.notes.iter().filter(|(_, r)| r.folder == clean).map(|(id, _)| id.clone()).collect();
-    for id in note_ids {
-        let is_priv = reg.notes.get(&id).map(|r| r.is_hidden).unwrap_or(false);
-        if delete_notes && !is_priv {
-            let _ = fs::remove_file(root.join(&id)); reg.notes.remove(&id);
-        } else if let Some(mut record) = reg.notes.remove(&id) {
-            let src_path = root.join(&id);
-            if let Some(fname) = src_path.file_name() {
-                let mut dest = root.join(fname);
-                if dest.exists() { dest = root.join(format!("{}_{}.md", src_path.file_stem().and_then(|s| s.to_str()).unwrap_or("Note"), current_timestamp() % 10000)); }
-                let final_p = if fs::rename(&src_path, &dest).is_ok() { dest } else { src_path };
-                let new_id = final_p.strip_prefix(&root).unwrap_or(&final_p).to_string_lossy().replace('\\', "/");
-                record.id = new_id.clone(); record.folder = String::new(); reg.notes.insert(new_id, record);
-            }
-        }
-    }
-    if folder_dir.exists() { let _ = fs::remove_dir_all(&folder_dir); }
-    reg.folders.retain(|f| f != &clean); save_registry(&root, &reg)
 }
 
 #[tauri::command]

@@ -12,9 +12,10 @@ use commands::file::{
     get_initial_file, get_pending_commit_image, init_cli_file, is_file_readonly,
     read_clipboard_image, read_text_file, show_open_dialog, show_save_dialog, write_text_file,
 };
+use commands::note_folders::{create_folder, delete_folder, rename_folder, reorder_folders};
 use commands::notes::{
-    create_folder, delete_folder, delete_notes, import_external_file, list_notes, move_notes,
-    read_note, rename_folder, rename_note, save_note, set_note_hidden, set_note_pinned,
+    delete_notes, duplicate_notes, import_external_file, list_notes, move_notes, read_note,
+    rename_note, save_note, set_note_hidden, set_note_pinned,
 };
 use commands::memory::trim_memory;
 use commands::linux_desktop::get_linux_desktop_info;
@@ -146,12 +147,14 @@ pub fn run() {
             save_note,
             rename_note,
             delete_notes,
+            duplicate_notes,
             move_notes,
             set_note_pinned,
             set_note_hidden,
             create_folder,
             rename_folder,
             delete_folder,
+            reorder_folders,
             import_external_file,
             authenticate_biometric,
             set_window_backdrop,

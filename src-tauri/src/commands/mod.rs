@@ -6,6 +6,7 @@ pub mod file;
 pub mod linux_desktop;
 pub mod memory;
 pub mod migration;
+pub mod note_folders;
 pub mod notes;
 pub mod updater;
 pub mod updater_target;
