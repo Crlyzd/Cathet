@@ -36,7 +36,7 @@ export class HomeViewComponent {
   private pullDownDetector?: OverscrollPullDownDetector;
   private batchActions: HomeBatchActions;
 
-  private activeFolder = "All";
+  private activeFolder: string;
   private searchQuery = "";
   private selectedNoteIds = new Set<string>();
   private isSelectionMode = false;
@@ -46,6 +46,7 @@ export class HomeViewComponent {
     this.options = options;
     this.notesService = options.notesService;
     this.isEmbedded = !!options.isEmbedded;
+    this.activeFolder = this.isEmbedded ? "All" : this.notesService.getLastActiveFolder();
 
     const parent = options.containerElement || document.getElementById(options.containerId || "app") || document.body;
     this.element = document.createElement("div");
@@ -57,14 +58,16 @@ export class HomeViewComponent {
       notesService: this.notesService,
       getSelectedIds: () => Array.from(this.selectedNoteIds),
       isPrivateMode: () => this.isPrivateMode,
-      onRefresh: () => this.renderGrid(),
+      onRefresh: (syncTabs) => (syncTabs ? this.syncFromRegistry() : this.renderGrid()),
       onExitSelection: () => this.exitSelectionMode(),
-      onFolderCreated: (name) => { this.activeFolder = name; this.refresh(); },
+      onFolderCreated: (name) => { this.setActiveFolder(name); this.refresh(); },
     });
 
     this.initSubcomponents();
     this.refresh();
   }
+
+  private setActiveFolder(folder: string): void { this.activeFolder = folder; if (!this.isEmbedded) this.notesService.setLastActiveFolder(folder); }
 
   private initSubcomponents(): void {
     const themeService = ThemeService.getInstance();
@@ -85,10 +88,11 @@ export class HomeViewComponent {
     );
 
     this.categoryTabs = new HomeCategoryTabsComponent(this.element, {
-      onSelectFolder: (f) => { this.activeFolder = f; this.renderGrid(); },
+      onSelectFolder: (f) => { this.setActiveFolder(f); this.renderGrid(); },
       onRequestNewFolder: () => this.batchActions.promptNewFolder(),
-      onDeleteFolder: (f) => this.batchActions.handleDeleteFolder(f, (del) => { if (this.activeFolder === del) this.activeFolder = "All"; this.refresh(); }),
-      onRenameFolder: (f) => this.batchActions.handleRenameFolder(f, (oldN, newN) => { if (this.activeFolder === oldN) this.activeFolder = newN; this.refresh(); }),
+      onDeleteFolder: (f) => this.batchActions.handleDeleteFolder(f, (del) => { if (this.activeFolder === del) this.setActiveFolder("All"); this.refresh(); }),
+      onRenameFolder: (f) => this.batchActions.handleRenameFolder(f, (oldN, newN) => { if (this.activeFolder === oldN) this.setActiveFolder(newN); this.refresh(); }),
+      onReorderFolders: (order) => this.batchActions.handleReorderFolders(order),
       onEditModeChange: (editing) => { if (editing) window.history.pushState({ screen: "folder_edit" }, ""); else if (window.history.state?.screen === "folder_edit") window.history.back(); },
     });
 
@@ -101,6 +105,7 @@ export class HomeViewComponent {
     if (!this.isEmbedded) {
       this.selectionBar = new HomeSelectionBarComponent(this.element, {
         onRename: () => this.batchActions.handleRename(),
+        onDuplicate: () => this.batchActions.handleDuplicate(),
         onHide: () => this.batchActions.handleHide(),
         onPin: () => this.batchActions.handlePin(),
         onMove: () => this.batchActions.handleMove(),
@@ -137,7 +142,7 @@ export class HomeViewComponent {
 
   syncFromRegistry(): void {
     const reg = this.notesService.getRegistry();
-    if (this.activeFolder !== "All" && !reg.folders.includes(this.activeFolder)) this.activeFolder = "All";
+    if (this.activeFolder !== "All" && !reg.folders.includes(this.activeFolder)) this.setActiveFolder("All");
     this.categoryTabs.setFolders(reg.folders, this.activeFolder);
     this.renderGrid();
   }
@@ -220,15 +225,9 @@ export class HomeViewComponent {
     this.syncSelectionUI();
   }
 
-  setVisible(visible: boolean, shouldRefresh = true): void {
-    this.element.style.display = visible ? "flex" : "none";
-    if (visible && shouldRefresh) this.refresh();
-  }
+  setVisible(visible: boolean, shouldRefresh = true): void { this.element.style.display = visible ? "flex" : "none"; if (visible && shouldRefresh) this.refresh(); }
 
-  showAndRefresh(): void {
-    this.syncFromRegistry();
-    this.element.style.display = "flex";
-  }
+  showAndRefresh(): void { this.syncFromRegistry(); this.element.style.display = "flex"; }
 
   animateEnter(): void {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;

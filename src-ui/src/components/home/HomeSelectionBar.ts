@@ -2,6 +2,7 @@ import { t } from "../../services/i18nService";
 
 export interface HomeSelectionBarCallbacks {
   onRename: () => void;
+  onDuplicate: () => void;
   onHide: () => void;
   onPin: () => void;
   onMove: () => void;
@@ -31,6 +32,13 @@ export class HomeSelectionBarComponent {
             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
           </svg>
           <span class="home-sel-label">${t("common.rename")}</span>
+        </button>
+        <button class="home-sel-btn" id="home-sel-duplicate" title="${t("common.duplicate")}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span class="home-sel-label">${t("common.duplicate")}</span>
         </button>
         <button class="home-sel-btn" id="home-sel-pin" title="${t("common.pin")}">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -67,6 +75,7 @@ export class HomeSelectionBarComponent {
 
   private bindEvents(): void {
     this.element.querySelector("#home-sel-rename")?.addEventListener("click", () => this.callbacks.onRename());
+    this.element.querySelector("#home-sel-duplicate")?.addEventListener("click", () => this.callbacks.onDuplicate());
     this.element.querySelector("#home-sel-pin")?.addEventListener("click", () => this.callbacks.onPin());
     this.element.querySelector("#home-sel-move")?.addEventListener("click", () => this.callbacks.onMove());
     this.element.querySelector("#home-sel-hide")?.addEventListener("click", () => this.callbacks.onHide());

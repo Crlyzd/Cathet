@@ -1,11 +1,13 @@
 import { t } from "../../services/i18nService";
 import { bindLongPress } from "../../utils/touchGesture";
+import { TabDragReorder } from "./TabDragReorder";
 
 export interface HomeCategoryTabsCallbacks {
   onSelectFolder: (folder: string) => void;
   onRequestNewFolder: () => void;
   onDeleteFolder?: (folder: string) => void;
   onRenameFolder?: (folder: string) => void;
+  onReorderFolders?: (order: string[]) => void;
   onEditModeChange?: (isEditing: boolean) => void;
 }
 
@@ -17,12 +19,20 @@ export class HomeCategoryTabsComponent {
   private isEditMode = false;
   private unbindCleanups: (() => void)[] = [];
   private outsideDownHandler: ((e: PointerEvent) => void) | null = null;
+  private dragReorder: TabDragReorder;
 
   constructor(container: HTMLElement, callbacks: HomeCategoryTabsCallbacks) {
     this.callbacks = callbacks;
     this.element = document.createElement("div");
     this.element.className = "home-category-tabs";
     container.appendChild(this.element);
+    this.dragReorder = new TabDragReorder(this.element, {
+      isEnabled: () => this.isEditMode,
+      onReorder: (order) => {
+        this.folders = order;
+        this.callbacks.onReorderFolders?.(order);
+      },
+    });
     this.render();
   }
 
@@ -120,6 +130,8 @@ export class HomeCategoryTabsComponent {
     scrollWrapper.appendChild(addChip);
 
     this.element.appendChild(scrollWrapper);
+    const activeChip = scrollWrapper.querySelector<HTMLElement>(".home-tab-chip.active");
+    activeChip?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
   private createAllChip(isActive: boolean): HTMLElement {
@@ -214,6 +226,7 @@ export class HomeCategoryTabsComponent {
   }
 
   destroy(): void {
+    this.dragReorder.destroy();
     this.unbindOutsideDismiss();
     this.unbindCleanups.forEach((fn) => fn());
     this.unbindCleanups = [];

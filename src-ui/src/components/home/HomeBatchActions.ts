@@ -6,7 +6,7 @@ export interface HomeBatchActionsOptions {
   notesService: NotesService;
   getSelectedIds: () => string[];
   isPrivateMode: () => boolean;
-  onRefresh: () => void | Promise<void>;
+  onRefresh: (syncTabs?: boolean) => void | Promise<void>;
   onExitSelection: () => void;
   onFolderCreated?: (folderName: string) => void;
 }
@@ -36,6 +36,14 @@ export class HomeBatchActions {
     });
   }
 
+  async handleDuplicate(): Promise<void> {
+    const ids = this.opts.getSelectedIds();
+    if (ids.length === 0) return;
+    await this.opts.notesService.duplicateNotes(ids);
+    this.opts.onExitSelection();
+    await this.opts.onRefresh();
+  }
+
   async handleHide(): Promise<void> {
     const ids = this.opts.getSelectedIds();
     await this.opts.notesService.setHidden(ids, !this.opts.isPrivateMode());
@@ -54,13 +62,18 @@ export class HomeBatchActions {
 
   handleMove(): void {
     const ids = this.opts.getSelectedIds();
+    const reg = this.opts.notesService.getRegistry();
+    const folders = ids.map((id) => reg.notes[id]?.folder || "All");
+    const currentFolder = folders.length > 0 && folders.every((f) => f === folders[0]) ? folders[0] : undefined;
     new FolderModalComponent({
       mode: "move",
-      existingFolders: this.opts.notesService.getRegistry().folders,
+      existingFolders: reg.folders,
+      noteCount: ids.length,
+      currentFolder,
       onConfirm: async (dest) => {
         await this.opts.notesService.moveNotes(ids, dest);
         this.opts.onExitSelection();
-        this.opts.onRefresh();
+        await this.opts.onRefresh(true);
       },
     });
   }
@@ -118,6 +131,12 @@ export class HomeBatchActions {
         }
       },
     });
+  }
+
+  async handleReorderFolders(order: string[]): Promise<void> {
+    if (!(await this.opts.notesService.reorderFolders(order))) {
+      await this.opts.onRefresh(true);
+    }
   }
 }
 

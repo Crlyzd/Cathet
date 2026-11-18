@@ -306,6 +306,18 @@
   animation: folderChipWiggle 130ms ease-in-out infinite alternate;
 }
 
+.home-category-tabs.is-editing-folders .home-tabs-scroll {
+  touch-action: none;
+}
+
+.home-tab-chip.is-dragging {
+  animation: none;
+  z-index: 10;
+  opacity: 0.92;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  cursor: grabbing;
+}
+
 .home-tab-delete-badge {
   position: absolute;
   top: -5px;
@@ -641,7 +653,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 10px)) 20px;
+  padding: 10px 8px calc(12px + env(safe-area-inset-bottom, 10px)) 8px;
   background: #14161c;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
@@ -659,8 +671,9 @@
   display: flex;
   align-items: center;
   justify-content: space-around;
+  gap: 2px;
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
   transition: opacity 0.2s ease;
 }
 
@@ -670,18 +683,19 @@
 }
 
 .home-sel-btn {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 6px 12px;
-  min-width: 58px;
+  gap: 5px;
+  padding: 6px 2px;
   min-height: 48px;
   background: transparent;
   border: none;
   color: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   border-radius: 12px;
@@ -703,8 +717,12 @@
 }
 
 .home-sel-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Folder Modal */
@@ -744,6 +762,7 @@
   font-weight: 600;
 }
 
+.folder-modal-subtitle,
 .folder-modal-desc {
   margin: 0;
   font-size: 13px;
@@ -751,6 +770,11 @@
   line-height: 1.45;
 }
 
+.folder-modal-subtitle {
+  margin-top: -6px;
+}
+
+[data-theme="light"] .folder-modal-subtitle,
 [data-theme="light"] .folder-modal-desc {
   color: #4b5563;
 }
@@ -779,15 +803,78 @@
 }
 
 .folder-modal-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border: none;
+  border-radius: 10px;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
   font-size: 14px;
+  transition: background-color 0.14s ease, opacity 0.14s ease;
+}
+
+.folder-modal-item:active:not(.is-current) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.folder-modal-item.is-current {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.folder-modal-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.folder-modal-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.78;
+}
+
+.folder-modal-item-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.folder-modal-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-modal-current-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.75);
+  flex-shrink: 0;
 }
 
 [data-theme="light"] .folder-modal-item {
   background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .folder-modal-item:active:not(.is-current) {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .folder-modal-current-badge {
+  background: rgba(15, 23, 42, 0.08);
+  color: #4b5563;
 }
 
 .folder-modal-actions {
