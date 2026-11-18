@@ -11,6 +11,12 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-18: Omitting Plain Human-Language "What You Can Expect" Summary in `/architect`
+- **Context**: Generated `implementation_plan.md` and chat summaries in `/architect` mode using technical symbol/CSS/pixel explanations without a plain-language summary of the user-facing result.
+- **User Correction**: *"urgh, make an edit to the /architect to ALWAYS wrote what I can expect if the plan is implemented, in HUMAN language"*
+- **Root Cause**: `.agents/skills/architect/SKILL.md` only asked for technical sections and concise findings without requiring a dedicated user-facing, jargon-free explanation of expected behavior.
+- **Guardrail**: In `/architect` mode, ALWAYS include a **"What You Can Expect"** section written in plain, everyday human language (no file paths, symbol names, CSS selectors, or pixel math) in both `implementation_plan.md` and the chat response.
+
 ### [Mistake] 2026-11-16: Secondary Windows `.ico` Resource ID `101` Overwriting `.exe` Main Icon (`index 0`)
 - **Context**: Added `doc_icon.rc` with `101 ICON "icons/doc-icon.ico"` alongside `tauri_build::build()`.
 - **User Correction**: Compiled `cathet-v5.5.3-x64.exe` and `cathet-v5.5.3-arm64.exe` displayed the document icon instead of Cathet's main `M` icon.
@@ -80,6 +86,14 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-18: Update Bug-Report URL & Fix Desktop Dual-Pane Search Bar Placement
+- **Summary**: Replaced the "Report an Issue or Bug" URL with `https://forms.gle/zL9sPX8hokLEAm8Z9` in both Desktop (`src-ui/src/components/settings/AboutPane.ts`, `#link-bug`) and Android (`src-ui/src/components/settings/MobileAboutCard.ts`, `#btn-about-bug`). Fixed Desktop `DesktopSearchBar` vertical collisions in Dual-Pane mode by adding `#workspace-shell.is-dual-pane .desktop-search-bar` (`+ 36px` below `.dualpane-header`) and `#workspace-shell.is-dual-pane.format-bar-open.format-bar-top .desktop-search-bar` (`+ 74px` below `.floating-format-bar.pos-top`), plus narrow-window `max-width` / `min-width: 0` bounds and smooth `top` transitions in `src-ui/styles/formatbar.css` and `src-ui/styles/topbar.css`. Added `onPreviewChange` callback in `src-ui/src/components/dualpane/DualPaneView.ts` wired to `syncFormatBarState()` in `src-ui/src/main.ts` so clicking a pane header's `Preview` button keeps format bar visibility and search bar inset synchronized.
+- **Affected Files**: `src-ui/src/components/settings/AboutPane.ts (153)`, `src-ui/src/components/settings/MobileAboutCard.ts (81)`, `src-ui/src/components/dualpane/DualPaneView.ts (232)`, `src-ui/src/main.ts (675)`, `src-ui/styles/formatbar.css`, `src-ui/styles/topbar.css`, `history.md`
+
+### 2026-11-18: Require Human-Language "What You Can Expect" Section in `/architect` Skill
+- **Summary**: Updated `.agents/skills/architect/SKILL.md` (Core Rules #3–#4 and `## Output Format`) so every `/architect` plan artifact (`implementation_plan.md`) and chat response always includes a **"What You Can Expect"** section written in plain, jargon-free human language describing user-visible behavior.
+- **Affected Files**: `.agents/skills/architect/SKILL.md (59)`, `history.md`
 
 ### 2026-11-17: Fix Android Private Notes State Corruption & Back Navigation Trap
 - **Summary**: Fixed the re-entrancy bug in `HomeViewComponent.enterPrivateNotesMode()` (`src-ui/src/components/home/HomeView.ts`) where calling `this.exitSelectionMode(false)` after setting `this.isPrivateMode = true` triggered `if (!this.isSelectionMode && this.isPrivateMode) this.exitPrivateNotesMode(false)`, resetting `isPrivateMode` back to `false`. That caused Private Notes to render public Home notes, disabled the `<` back button (`if (!this.isPrivateMode) return`), and broke Android swipe-back (`popstate` saw `isSelectionModeActive() === false`, trapping the user until a second swipe exited the app). Extracted `clearSelectionState()` and `getFilteredNotes()`, cleared `searchQuery` + `header.clearSearch()` on entering Private Notes, and kept `HomeView.ts` under 250 lines.
