@@ -15,6 +15,7 @@ export class TabDragReorder {
   private startX = 0;
   private startY = 0;
   private anchorX = 0;
+  private currentTx = 0;
   private hasMoved = false;
   private initialOrder: string[] = [];
 
@@ -51,6 +52,7 @@ export class TabDragReorder {
     this.startX = e.clientX;
     this.startY = e.clientY;
     this.anchorX = e.clientX;
+    this.currentTx = 0;
     this.hasMoved = false;
     this.initialOrder = this.getOrder();
   };
@@ -69,16 +71,37 @@ export class TabDragReorder {
       try { this.getScrollEl()?.setPointerCapture(e.pointerId); } catch {}
     }
 
-    this.draggedEl.style.transform = `translate3d(${e.clientX - this.anchorX}px, 0, 0) scale(1.06)`;
-    this.swapWithNeighbor();
+    this.applyTransform(e.clientX);
+    if (this.swapWithNeighbor()) {
+      this.applyTransform(e.clientX);
+    }
   };
 
-  private swapWithNeighbor(): void {
+  private applyTransform(clientX: number): void {
+    if (!this.draggedEl) return;
+    let tx = clientX - this.anchorX;
+    const allChip = this.container.querySelector<HTMLElement>('.home-tab-chip[data-folder="All"]');
+    const addChip = this.container.querySelector<HTMLElement>(".home-tab-add");
+    if (allChip && addChip) {
+      const dragRect = this.draggedEl.getBoundingClientRect();
+      const baseLeft = dragRect.left - this.currentTx;
+      const baseRight = dragRect.right - this.currentTx;
+      const minTx = (allChip.getBoundingClientRect().right + 8) - baseLeft;
+      const maxTx = (addChip.getBoundingClientRect().left - 8) - baseRight;
+      if (minTx <= maxTx) {
+        tx = Math.max(minTx, Math.min(maxTx, tx));
+      }
+    }
+    this.currentTx = tx;
+    this.draggedEl.style.transform = `translate3d(${tx}px, 0, 0) scale(1.06)`;
+  }
+
+  private swapWithNeighbor(): boolean {
     const scrollEl = this.getScrollEl();
-    if (!scrollEl || !this.draggedEl) return;
+    if (!scrollEl || !this.draggedEl) return false;
     const chips = this.getCustomChips();
     const idx = chips.indexOf(this.draggedEl);
-    if (idx === -1) return;
+    if (idx === -1) return false;
 
     const dragRect = this.draggedEl.getBoundingClientRect();
     const dragCenter = dragRect.left + dragRect.width / 2;
@@ -91,7 +114,7 @@ export class TabDragReorder {
         scrollEl.insertBefore(this.draggedEl, prev);
         this.anchorX += this.draggedEl.getBoundingClientRect().left - beforeLeft;
         try { if ("vibrate" in navigator) navigator.vibrate(12); } catch {}
-        return;
+        return true;
       }
     }
     if (idx < chips.length - 1) {
@@ -102,8 +125,10 @@ export class TabDragReorder {
         scrollEl.insertBefore(next, this.draggedEl);
         this.anchorX += this.draggedEl.getBoundingClientRect().left - beforeLeft;
         try { if ("vibrate" in navigator) navigator.vibrate(12); } catch {}
+        return true;
       }
     }
+    return false;
   }
 
   private onUp = (e: PointerEvent): void => {
@@ -127,6 +152,7 @@ export class TabDragReorder {
     }
     this.pointerId = null;
     this.draggedEl = null;
+    this.currentTx = 0;
     this.hasMoved = false;
   }
 
