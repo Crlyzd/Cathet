@@ -142,7 +142,7 @@ export class AboutPaneComponent {
     });
 
     this.container.querySelector("#link-bug")?.addEventListener("click", () => {
-      openUrl("https://docs.google.com/forms/d/e/1FAIpQLSf9RoZ7ANybXnsOQMyCAFXxSB85rJxr2z767aPOk_gECioiMg/viewform");
+      openUrl("https://forms.gle/zL9sPX8hokLEAm8Z9").catch(console.error);
     });
   }
 

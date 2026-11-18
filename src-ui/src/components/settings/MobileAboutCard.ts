@@ -68,7 +68,7 @@ export function bindMobileAboutEvents(
   openLink("btn-about-website", "https://kaleksanan.my.id");
   openLink("btn-about-saweria", "https://saweria.co/crlyzd");
   openLink("btn-about-kofi", "https://ko-fi.com/curlyzed");
-  openLink("btn-about-bug", "https://github.com/Crlyzd/Cathet/issues/new");
+  openLink("btn-about-bug", "https://forms.gle/zL9sPX8hokLEAm8Z9");
 
   container.querySelector("#btn-mobile-update")?.addEventListener("click", onUpdateClick);
 
