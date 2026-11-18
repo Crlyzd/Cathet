@@ -229,6 +229,7 @@
 
 /* Editor Host in Dual Pane */
 .dualpane-editor-host {
+  position: relative;
   flex: 1;
   min-height: 0;
   min-width: 0;

@@ -494,6 +494,7 @@ class CathetApp {
           this.dualPaneView = null;
           host.innerHTML = "";
           host.appendChild(this.editor.getWrapperEl());
+          this.editor.attachOverlayHost(host);
           syncTouchZoomHost(this.editor);
           this.windowService.setMinSize(200, 300);
           this.isClosingDualPane = false;
@@ -504,6 +505,7 @@ class CathetApp {
       } else {
         host.innerHTML = "";
         host.appendChild(this.editor.getWrapperEl());
+        this.editor.attachOverlayHost(host);
         syncTouchZoomHost(this.editor);
         this.windowService.setMinSize(200, 300);
         if (!this.homeCoord?.isHomeActive()) {
@@ -524,15 +526,18 @@ class CathetApp {
       const hostEl = this.dualPaneView.getHostLeft();
       hostEl.innerHTML = "";
       hostEl.appendChild(this.editor.getWrapperEl());
+      this.editor.attachOverlayHost(hostEl);
       syncTouchZoomHost(this.editor);
     } else {
       this.dualPaneView.clearEmbeddedHome("right");
       this.dualPaneView.getHeaderRight().setBackVisible(false);
       if (this.dualPaneView.getEditorRight()) {
         const hostEl = this.dualPaneView.getHostRight();
+        const rightEd = this.dualPaneView.getEditorRight()!;
         hostEl.innerHTML = "";
-        hostEl.appendChild(this.dualPaneView.getEditorRight()!.getWrapperEl());
-        syncTouchZoomHost(this.dualPaneView.getEditorRight()!);
+        hostEl.appendChild(rightEd.getWrapperEl());
+        rightEd.attachOverlayHost(hostEl);
+        syncTouchZoomHost(rightEd);
       } else {
         this.dualPaneView.showEmptyRightPane();
       }
@@ -584,6 +589,7 @@ class CathetApp {
         if (!hostLeft.contains(this.editor.getWrapperEl())) {
           hostLeft.innerHTML = "";
           hostLeft.appendChild(this.editor.getWrapperEl());
+          this.editor.attachOverlayHost(hostLeft);
           syncTouchZoomHost(this.editor);
         }
         this.dualPaneView.setLeftTitle(title);

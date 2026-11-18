@@ -101,6 +101,7 @@ export class DualPaneView {
     setTimeout(onEnter, 360);
 
     this.leftHostEl.appendChild(this.editorLeft.getWrapperEl());
+    this.editorLeft.attachOverlayHost(this.leftHostEl);
     syncTouchZoomHost(this.editorLeft);
     this.showEmptyRightPane();
 
@@ -218,6 +219,7 @@ export class DualPaneView {
     this.clearEmbeddedHome("left");
     this.clearEmbeddedHome("right");
     this.editorLeft.setTouchZoomOptions(undefined);
+    this.editorLeft.attachOverlayHost();
     this.scrollSync.detach();
     if (this.emptyDropzone) this.emptyDropzone.destroy();
     if (this.editorRight) {

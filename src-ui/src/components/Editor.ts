@@ -10,12 +10,14 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { attachTouchZoom, TouchZoomOptions } from "../utils/touchZoomHandler";
 import { PlatformService } from "../services/platformService";
 import { EditorHistory } from "../utils/editorHistory";
+import { PreviewOverlayController } from "./preview/PreviewOverlayController";
 
 export class EditorComponent {
   private container: HTMLElement;
   private wrapperEl!: HTMLElement;
   private editorEl!: HTMLElement;
   private history!: EditorHistory;
+  private previewOverlay!: PreviewOverlayController;
   private zoomLevel: number = 100;
   private isMarkdownPreview: boolean = false;
   private rawContent: string = "";
@@ -42,6 +44,7 @@ export class EditorComponent {
     this.wrapperEl = this.container.querySelector(".editor-wrapper")!;
     this.editorEl = this.container.querySelector(".editor-content")!;
     this.history = new EditorHistory(this.editorEl, () => this.isMarkdownPreview, (text) => { this.rawContent = text; });
+    this.previewOverlay = new PreviewOverlayController(this.container, this.wrapperEl, this.editorEl);
     this.bindEvents();
   }
 
@@ -92,6 +95,7 @@ export class EditorComponent {
 
   getWrapperEl(): HTMLElement { return this.wrapperEl; }
   getEditorEl(): HTMLElement { return this.editorEl; }
+  attachOverlayHost(host?: HTMLElement): void { this.previewOverlay.attachToHost(host || this.container); }
   getZoomLevel(): number { return this.zoomLevel; }
   setZoomLevel(percent: number): void {
     this.zoomLevel = Math.max(50, Math.min(300, Math.round(percent)));
@@ -101,13 +105,14 @@ export class EditorComponent {
   destroy(): void {
     window.removeEventListener("wheel", this.wheelHandler);
     this.history.destroy();
-    if (this.touchZoomCleanup) {
-      this.touchZoomCleanup();
-      this.touchZoomCleanup = null;
-    }
+    this.previewOverlay.destroy();
+    if (this.touchZoomCleanup) { this.touchZoomCleanup(); this.touchZoomCleanup = null; }
   }
   setFontFamily(family: string): void { this.editorEl.style.fontFamily = family; }
-  setDocumentPath(path: string | null): void { this.documentPath = path; }
+  setDocumentPath(path: string | null): void {
+    this.documentPath = path;
+    this.previewOverlay.syncState(this.isMarkdownPreview, this.documentPath);
+  }
   getIsMarkdownPreview(): boolean { return this.isMarkdownPreview; }
 
   setContent(content: string): void {
@@ -133,6 +138,7 @@ export class EditorComponent {
       }
     }
     this.history.reset(content);
+    this.previewOverlay.syncState(this.isMarkdownPreview, this.documentPath);
     this.editorEl.blur();
     (document.activeElement as HTMLElement)?.blur();
     window.getSelection()?.removeAllRanges();
@@ -153,6 +159,7 @@ export class EditorComponent {
     this.editorEl.classList.remove("markdown-preview");
     this.editorEl.setAttribute("contenteditable", "true");
     this.history.reset("");
+    this.previewOverlay.syncState(false, null);
   }
 
   toggleMarkdownPreview(): boolean {
@@ -180,6 +187,7 @@ export class EditorComponent {
     }
 
     restoreScrollRatio(this.wrapperEl, scrollRatio);
+    this.previewOverlay.syncState(this.isMarkdownPreview, this.documentPath);
     return this.isMarkdownPreview;
   }
 
