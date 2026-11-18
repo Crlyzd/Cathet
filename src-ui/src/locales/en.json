@@ -10,6 +10,7 @@
     "close": "Close",
     "search": "Search",
     "rename": "Rename",
+    "duplicate": "Duplicate",
     "pin": "Pin",
     "unpin": "Unpin",
     "move": "Move to",
@@ -101,7 +102,13 @@
     "deleteFolderTitle": "Delete folder \"{name}\"?",
     "deleteFolderMsg": "This folder contains {count} note(s). What would you like to do with them?",
     "deleteFolderKeepNotes": "Keep notes (Move to All)",
-    "deleteFolderAndNotes": "Delete folder & notes"
+    "deleteFolderAndNotes": "Delete folder & notes",
+    "moveSubtitle": "Choose a folder tab for {count} note(s)",
+    "noFolderRoot": "All (No folder)",
+    "currentBadge": "Current",
+    "newFolderAndMove": "New Folder & Move",
+    "newFolderMoveHint": "Creates a new folder tab and moves {count} selected note(s) into it.",
+    "createAndMove": "Create & Move"
   },
   "dualpane": {
     "openFile": "Open File",

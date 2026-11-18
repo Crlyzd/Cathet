@@ -10,6 +10,7 @@
     "close": "Tutup",
     "search": "Padosi",
     "rename": "Gantos Asma",
+    "duplicate": "Rangkep",
     "pin": "Caketaken",
     "unpin": "Uculaken Caket",
     "move": "Pindhah dhateng",
@@ -101,7 +102,13 @@
     "deleteFolderTitle": "Ilangaken papan \"{name}\"?",
     "deleteFolderMsg": "Papan punika gadhah {count} cathetan. Kados pundi kersanipun?",
     "deleteFolderKeepNotes": "Simpen cathetan (Pindhah dhateng Sedaya)",
-    "deleteFolderAndNotes": "Ilangaken papan & cathetan"
+    "deleteFolderAndNotes": "Ilangaken papan & cathetan",
+    "moveSubtitle": "Pilih tab papan kanggé {count} cathetan",
+    "noFolderRoot": "Sedaya (Tanpa papan)",
+    "currentBadge": "Sapunika",
+    "newFolderAndMove": "Papan Enggal & Pindhah",
+    "newFolderMoveHint": "Damel tab papan énggal saha mindhah {count} cathetan pinilih dhateng ngriku.",
+    "createAndMove": "Damel & Pindhah"
   },
   "dualpane": {
     "openFile": "Bikak Berkas",

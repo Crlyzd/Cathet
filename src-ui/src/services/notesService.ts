@@ -16,8 +16,26 @@ export interface NotesRegistry {
   notes: Record<string, NoteItem>;
 }
 
+const ACTIVE_FOLDER_KEY = "cathet:home_active_folder";
+
 export class NotesService {
   private registry: NotesRegistry = { folders: [], notes: {} };
+
+  getLastActiveFolder(): string {
+    try {
+      const saved = localStorage.getItem(ACTIVE_FOLDER_KEY)?.trim() || "";
+      if (!saved || saved.toLowerCase() === "hidden") return "All";
+      return saved;
+    } catch {
+      return "All";
+    }
+  }
+
+  setLastActiveFolder(folder: string): void {
+    const clean = (folder || "All").trim();
+    if (!clean || clean.toLowerCase() === "hidden") return;
+    try { localStorage.setItem(ACTIVE_FOLDER_KEY, clean); } catch { /* ignore storage quota */ }
+  }
 
   async fetchNotes(): Promise<NotesRegistry> {
     try {
@@ -80,6 +98,17 @@ export class NotesService {
     }
   }
 
+  async duplicateNotes(ids: string[]): Promise<NoteItem[]> {
+    try {
+      const created = await invoke<NoteItem[]>("duplicate_notes", { ids });
+      for (const rec of created) this.registry.notes[rec.id] = rec;
+      return created;
+    } catch (err) {
+      console.error("Failed to duplicate notes:", err);
+      return [];
+    }
+  }
+
   async moveNotes(ids: string[], targetFolder: string): Promise<boolean> {
     try {
       await invoke("move_notes", { ids, targetFolder });
@@ -124,7 +153,6 @@ export class NotesService {
       await invoke("create_folder", { folderName: clean });
       if (!this.registry.folders.includes(clean)) {
         this.registry.folders.push(clean);
-        this.registry.folders.sort();
       }
       return true;
     } catch (err) {
@@ -154,6 +182,20 @@ export class NotesService {
     } catch (err) {
       console.error("Failed to rename folder:", err);
       return null;
+    }
+  }
+
+  async reorderFolders(order: string[]): Promise<boolean> {
+    const clean = order.filter((f) => f && f.toLowerCase() !== "hidden" && f.toLowerCase() !== "all");
+    const next = [...clean, ...this.registry.folders.filter((f) => !clean.includes(f))];
+    this.registry.folders = next;
+    try {
+      this.registry.folders = await invoke<string[]>("reorder_folders", { order: next });
+      return true;
+    } catch (err) {
+      console.error("Failed to reorder folders:", err);
+      await this.fetchNotes();
+      return false;
     }
   }
 

@@ -10,6 +10,7 @@
     "close": "Tutup",
     "search": "Cari",
     "rename": "Ganti Nama",
+    "duplicate": "Duplikat",
     "pin": "Sematkan",
     "unpin": "Lepas Sematan",
     "move": "Pindahkan ke",
@@ -101,7 +102,13 @@
     "deleteFolderTitle": "Hapus folder \"{name}\"?",
     "deleteFolderMsg": "Folder ini berisi {count} catatan. Apa yang ingin Anda lakukan?",
     "deleteFolderKeepNotes": "Simpan catatan (Pindah ke Semua)",
-    "deleteFolderAndNotes": "Hapus folder & catatan"
+    "deleteFolderAndNotes": "Hapus folder & catatan",
+    "moveSubtitle": "Pilih tab folder untuk {count} catatan",
+    "noFolderRoot": "Semua (Tanpa folder)",
+    "currentBadge": "Saat ini",
+    "newFolderAndMove": "Folder Baru & Pindah",
+    "newFolderMoveHint": "Membuat tab folder baru dan memindahkan {count} catatan terpilih ke dalamnya.",
+    "createAndMove": "Buat & Pindah"
   },
   "dualpane": {
     "openFile": "Buka Berkas",

@@ -10,6 +10,7 @@
     "close": "Tutup",
     "search": "Goleki",
     "rename": "Ganti Jeneng",
+    "duplicate": "Duplikat",
     "pin": "Pancek",
     "unpin": "Copot Pancek",
     "move": "Pindhah nang",
@@ -101,7 +102,13 @@
     "deleteFolderTitle": "Busek folder \"{name}\"?",
     "deleteFolderMsg": "Folder iki isine {count} cathetan. Ape dikapakno?",
     "deleteFolderKeepNotes": "Simpen cathetan (Pindhah neng Kabeh)",
-    "deleteFolderAndNotes": "Busek folder & cathetan"
+    "deleteFolderAndNotes": "Busek folder & cathetan",
+    "moveSubtitle": "Pilih tab folder nggo {count} cathetan",
+    "noFolderRoot": "Kabeh (Tanpa folder)",
+    "currentBadge": "Saiki",
+    "newFolderAndMove": "Folder Anyar & Pindhah",
+    "newFolderMoveHint": "Gae tab folder anyar lan mindhah {count} cathetan sing kepilih neng njerone.",
+    "createAndMove": "Gae & Pindhah"
   },
   "dualpane": {
     "openFile": "Bukak Berkas",
