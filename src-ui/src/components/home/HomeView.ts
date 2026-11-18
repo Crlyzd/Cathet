@@ -18,6 +18,7 @@ export interface HomeViewOptions {
   notesService: NotesService;
   isEmbedded?: boolean;
   onOpenNote: (note: NoteItem, originRect?: DOMRect) => void;
+  onOpenDualNotes?: (leftNote: NoteItem, rightNote: NoteItem, originRect?: DOMRect) => void;
   onNewNote: (folder: string, originRect?: DOMRect) => void;
   onOpenFile: (folder: string, originRect?: DOMRect) => void;
 }
@@ -59,7 +60,8 @@ export class HomeViewComponent {
       getSelectedIds: () => Array.from(this.selectedNoteIds),
       isPrivateMode: () => this.isPrivateMode,
       onRefresh: (syncTabs) => (syncTabs ? this.syncFromRegistry() : this.renderGrid()),
-      onExitSelection: () => this.exitSelectionMode(),
+      onExitSelection: (sync = true) => this.exitSelectionMode(sync),
+      onOpenDualNotes: (l, r, rect) => this.options.onOpenDualNotes?.(l, r, rect),
       onFolderCreated: (name) => { this.setActiveFolder(name); this.refresh(); },
     });
 
@@ -105,6 +107,7 @@ export class HomeViewComponent {
     if (!this.isEmbedded) {
       this.selectionBar = new HomeSelectionBarComponent(this.element, {
         onRename: () => this.batchActions.handleRename(),
+        onDualPane: () => this.batchActions.handleOpenDualPane(),
         onDuplicate: () => this.batchActions.handleDuplicate(),
         onHide: () => this.batchActions.handleHide(),
         onPin: () => this.batchActions.handlePin(),
@@ -166,8 +169,7 @@ export class HomeViewComponent {
   private syncSelectionBars(totalCount: number): void {
     this.header.setSelectionMode(this.isSelectionMode, this.selectedNoteIds.size, totalCount);
     this.selectionBar?.setVisible(this.isSelectionMode);
-    this.selectionBar?.setEnabled(this.selectedNoteIds.size > 0);
-    this.selectionBar?.setSingleSelected(this.selectedNoteIds.size === 1);
+    this.selectionBar?.setSelectionCount(this.selectedNoteIds.size);
   }
 
   isSelectionActive(): boolean { return this.isSelectionMode || this.categoryTabs.isEditModeActive() || this.isPrivateMode; }

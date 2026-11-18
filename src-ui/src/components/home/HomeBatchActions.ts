@@ -1,4 +1,4 @@
-import { NotesService } from "../../services/notesService";
+import { NoteItem, NotesService } from "../../services/notesService";
 import { FolderModalComponent } from "./FolderModal";
 import { RenameModalComponent } from "./RenameModal";
 
@@ -7,7 +7,8 @@ export interface HomeBatchActionsOptions {
   getSelectedIds: () => string[];
   isPrivateMode: () => boolean;
   onRefresh: (syncTabs?: boolean) => void | Promise<void>;
-  onExitSelection: () => void;
+  onExitSelection: (syncHistory?: boolean) => void;
+  onOpenDualNotes?: (leftNote: NoteItem, rightNote: NoteItem, originRect?: DOMRect) => void;
   onFolderCreated?: (folderName: string) => void;
 }
 
@@ -42,6 +43,20 @@ export class HomeBatchActions {
     await this.opts.notesService.duplicateNotes(ids);
     this.opts.onExitSelection();
     await this.opts.onRefresh();
+  }
+
+  handleOpenDualPane(): void {
+    const ids = this.opts.getSelectedIds();
+    if (ids.length !== 2) return;
+    const notes = this.opts.notesService.getRegistry().notes;
+    const leftNote = notes[ids[0]];
+    const rightNote = notes[ids[1]];
+    if (!leftNote || !rightNote) return;
+    const originRect = document
+      .querySelector<HTMLElement>(`.home-note-card[data-id="${CSS.escape(leftNote.id)}"]`)
+      ?.getBoundingClientRect();
+    this.opts.onExitSelection(false);
+    this.opts.onOpenDualNotes?.(leftNote, rightNote, originRect);
   }
 
   async handleHide(): Promise<void> {

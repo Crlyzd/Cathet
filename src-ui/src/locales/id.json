@@ -108,7 +108,8 @@
     "currentBadge": "Saat ini",
     "newFolderAndMove": "Folder Baru & Pindah",
     "newFolderMoveHint": "Membuat tab folder baru dan memindahkan {count} catatan terpilih ke dalamnya.",
-    "createAndMove": "Buat & Pindah"
+    "createAndMove": "Buat & Pindah",
+    "openInDualPane": "Buka di Panel Ganda"
   },
   "dualpane": {
     "openFile": "Buka Berkas",

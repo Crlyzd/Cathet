@@ -108,7 +108,8 @@
     "currentBadge": "Saiki",
     "newFolderAndMove": "Folder Anyar & Pindhah",
     "newFolderMoveHint": "Gae tab folder anyar terus mindhah {count} cathetan sing kepilih nang njerone.",
-    "createAndMove": "Gae & Pindhah"
+    "createAndMove": "Gae & Pindhah",
+    "openInDualPane": "Bukak ndek Papan Loro"
   },
   "dualpane": {
     "openFile": "Bukak Berkas",

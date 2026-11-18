@@ -2,6 +2,7 @@ import { t } from "../../services/i18nService";
 
 export interface HomeSelectionBarCallbacks {
   onRename: () => void;
+  onDualPane: () => void;
   onDuplicate: () => void;
   onHide: () => void;
   onPin: () => void;
@@ -32,6 +33,13 @@ export class HomeSelectionBarComponent {
             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
           </svg>
           <span class="home-sel-label">${t("common.rename")}</span>
+        </button>
+        <button class="home-sel-btn" id="home-sel-dual-pane" title="${t("home.openInDualPane")}" style="display: none;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="12" y1="3" x2="12" y2="21"></line>
+          </svg>
+          <span class="home-sel-label">${t("menu.dualPane")}</span>
         </button>
         <button class="home-sel-btn" id="home-sel-duplicate" title="${t("common.duplicate")}">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -75,6 +83,7 @@ export class HomeSelectionBarComponent {
 
   private bindEvents(): void {
     this.element.querySelector("#home-sel-rename")?.addEventListener("click", () => this.callbacks.onRename());
+    this.element.querySelector("#home-sel-dual-pane")?.addEventListener("click", () => this.callbacks.onDualPane());
     this.element.querySelector("#home-sel-duplicate")?.addEventListener("click", () => this.callbacks.onDuplicate());
     this.element.querySelector("#home-sel-pin")?.addEventListener("click", () => this.callbacks.onPin());
     this.element.querySelector("#home-sel-move")?.addEventListener("click", () => this.callbacks.onMove());
@@ -82,19 +91,19 @@ export class HomeSelectionBarComponent {
     this.element.querySelector("#home-sel-delete")?.addEventListener("click", () => this.callbacks.onDelete());
   }
 
-  setEnabled(enabled: boolean): void {
+  setSelectionCount(count: number): void {
     const pill = this.element.querySelector(".home-selection-pill");
-    pill?.classList.toggle("disabled", !enabled);
-  }
-
-  setSingleSelected(single: boolean): void {
-    const renameBtn = this.element.querySelector("#home-sel-rename");
-    renameBtn?.classList.toggle("disabled", !single);
-  }
-
-  setRenameEnabled(enabled: boolean): void {
-    const btn = this.element.querySelector<HTMLButtonElement>("#home-sel-rename");
-    if (btn) btn.disabled = !enabled;
+    pill?.classList.toggle("disabled", count === 0);
+    const renameBtn = this.element.querySelector<HTMLButtonElement>("#home-sel-rename");
+    if (renameBtn) {
+      renameBtn.classList.toggle("disabled", count !== 1);
+      renameBtn.disabled = count !== 1;
+    }
+    const dualBtn = this.element.querySelector<HTMLButtonElement>("#home-sel-dual-pane");
+    if (dualBtn) {
+      dualBtn.style.display = count === 2 ? "flex" : "none";
+      dualBtn.disabled = count !== 2;
+    }
   }
 
   setHiddenMode(isPrivate: boolean): void {

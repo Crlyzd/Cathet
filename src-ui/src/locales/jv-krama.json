@@ -108,7 +108,8 @@
     "currentBadge": "Sapunika",
     "newFolderAndMove": "Papan Enggal & Pindhah",
     "newFolderMoveHint": "Damel tab papan énggal saha mindhah {count} cathetan pinilih dhateng ngriku.",
-    "createAndMove": "Damel & Pindhah"
+    "createAndMove": "Damel & Pindhah",
+    "openInDualPane": "Bikak ing Panel Kalih"
   },
   "dualpane": {
     "openFile": "Bikak Berkas",

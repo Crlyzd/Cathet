@@ -108,7 +108,8 @@
     "currentBadge": "Current",
     "newFolderAndMove": "New Folder & Move",
     "newFolderMoveHint": "Creates a new folder tab and moves {count} selected note(s) into it.",
-    "createAndMove": "Create & Move"
+    "createAndMove": "Create & Move",
+    "openInDualPane": "Open in Dual Pane"
   },
   "dualpane": {
     "openFile": "Open File",
