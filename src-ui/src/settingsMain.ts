@@ -50,6 +50,8 @@ class SettingsApp {
         locale: this.i18n.getLocale(),
         isAlwaysOnTop: this.isAlwaysOnTop,
         alwaysPreview: this.previewService.getAlwaysPreview(),
+        previewMinimap: this.previewService.getPreviewMinimap(),
+        previewBookmarks: this.previewService.getPreviewBookmarks(),
         snapScroll: this.dualPaneService.getSnapScroll(),
         formatBarPosition: this.formatBarService.getPosition(),
         fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
@@ -67,6 +69,8 @@ class SettingsApp {
         onLanguageChange: (locale) => this.handleLanguageChange(locale),
         onAlwaysOnTopChange: (enabled) => this.handleAlwaysOnTopChange(enabled),
         onAlwaysPreviewChange: (enabled) => this.handleAlwaysPreviewChange(enabled),
+        onPreviewMinimapChange: (enabled) => this.handlePreviewMinimapChange(enabled),
+        onPreviewBookmarksChange: (enabled) => this.handlePreviewBookmarksChange(enabled),
         onSnapScrollChange: (enabled) => this.handleSnapScrollChange(enabled),
         onFormatBarPositionChange: (pos) => this.handleFormatBarPositionChange(pos),
         onWindowsBackdropChange: async (mode) => {
@@ -129,6 +133,8 @@ class SettingsApp {
   private async handleLanguageChange(loc: string): Promise<void> { this.i18n.setLocale(loc); this.tabsComponent.updateState({ locale: loc }); }
   private async handleAlwaysOnTopChange(en: boolean): Promise<void> { this.tabsComponent.updateState({ isAlwaysOnTop: (this.isAlwaysOnTop = en) }); await invoke("set_always_on_top", { enabled: en }).catch(console.error); await emit("cathet:ontop-change", en); }
   private async handleAlwaysPreviewChange(en: boolean): Promise<void> { this.previewService.setAlwaysPreview(en); this.tabsComponent.updateState({ alwaysPreview: en }); await emit("cathet:always-preview-change", en); }
+  private async handlePreviewMinimapChange(en: boolean): Promise<void> { this.previewService.setPreviewMinimap(en); this.tabsComponent.updateState({ previewMinimap: en }); await emit("cathet:preview-minimap-change", en); }
+  private async handlePreviewBookmarksChange(en: boolean): Promise<void> { this.previewService.setPreviewBookmarks(en); this.tabsComponent.updateState({ previewBookmarks: en }); await emit("cathet:preview-bookmarks-change", en); }
   private async handleSnapScrollChange(en: boolean): Promise<void> { this.dualPaneService.setSnapScroll(en); this.tabsComponent.updateState({ snapScroll: en }); await emit("cathet:snap-scroll-change", en); }
   private async handleFormatBarPositionChange(pos: FormatBarPosition): Promise<void> { this.formatBarService.setPosition(pos); this.tabsComponent.updateState({ formatBarPosition: pos }); await emit("cathet:format-bar-pos-change", pos); }
 

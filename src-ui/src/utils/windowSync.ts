@@ -50,6 +50,16 @@ export function registerWindowSyncListeners(ctx: WindowSyncContext): void {
     ctx.previewService.setAlwaysPreview(e.payload);
   });
 
+  listen<boolean>("cathet:preview-minimap-change", (e) => {
+    ctx.previewService.setPreviewMinimap(e.payload);
+    window.dispatchEvent(new CustomEvent("cathet:preview-minimap-change", { detail: e.payload }));
+  });
+
+  listen<boolean>("cathet:preview-bookmarks-change", (e) => {
+    ctx.previewService.setPreviewBookmarks(e.payload);
+    window.dispatchEvent(new CustomEvent("cathet:preview-bookmarks-change", { detail: e.payload }));
+  });
+
   listen<boolean>("cathet:snap-scroll-change", (e) => {
     ctx.onSnapScrollChanged?.(e.payload);
   });

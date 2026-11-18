@@ -75,6 +75,8 @@ export class SettingsModalComponent {
         fontId: currentFont.id,
         locale: this.i18n.getLocale(),
         alwaysPreview: this.previewService.getAlwaysPreview(),
+        previewMinimap: this.previewService.getPreviewMinimap(),
+        previewBookmarks: this.previewService.getPreviewBookmarks(),
         snapScroll: this.dualPaneService.getSnapScroll(),
         highRefreshRate: isHighRefresh,
         fonts: this.fontService.fonts.map((f) => ({ id: f.id, name: f.name })),
@@ -102,6 +104,16 @@ export class SettingsModalComponent {
           this.previewService.setAlwaysPreview(enabled);
           this.settingsView?.updateState({ alwaysPreview: enabled });
           await emit("cathet:always-preview-change", enabled);
+        },
+        onPreviewMinimapChange: async (enabled) => {
+          this.previewService.setPreviewMinimap(enabled);
+          this.settingsView?.updateState({ previewMinimap: enabled });
+          window.dispatchEvent(new CustomEvent("cathet:preview-minimap-change", { detail: enabled }));
+        },
+        onPreviewBookmarksChange: async (enabled) => {
+          this.previewService.setPreviewBookmarks(enabled);
+          this.settingsView?.updateState({ previewBookmarks: enabled });
+          window.dispatchEvent(new CustomEvent("cathet:preview-bookmarks-change", { detail: enabled }));
         },
         onSnapScrollChange: async (enabled) => {
           this.dualPaneService.setSnapScroll(enabled);
@@ -157,6 +169,8 @@ export class SettingsModalComponent {
       fontId: this.fontService.getCurrentFont().id,
       locale: this.i18n.getLocale(),
       alwaysPreview: this.previewService.getAlwaysPreview(),
+      previewMinimap: this.previewService.getPreviewMinimap(),
+      previewBookmarks: this.previewService.getPreviewBookmarks(),
       snapScroll: this.dualPaneService.getSnapScroll(),
       highRefreshRate: localStorage.getItem("cathet:high-refresh") !== "false",
       updateInfo: this.updateService.getUpdateInfo(),

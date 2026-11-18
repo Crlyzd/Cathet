@@ -21,6 +21,8 @@ export interface SettingsPaneCallbacks {
   onLanguageChange: (locale: string) => void;
   onAlwaysOnTopChange: (enabled: boolean) => void;
   onAlwaysPreviewChange: (enabled: boolean) => void;
+  onPreviewMinimapChange?: (enabled: boolean) => void;
+  onPreviewBookmarksChange?: (enabled: boolean) => void;
   onSnapScrollChange: (enabled: boolean) => void;
   onFormatBarPositionChange?: (pos: FormatBarPosition) => void;
   onLinuxBackdropChange?: (mode: "solid" | "blur") => void;
@@ -40,6 +42,8 @@ export interface SettingsPaneState {
   locale: string;
   isAlwaysOnTop: boolean;
   alwaysPreview: boolean;
+  previewMinimap?: boolean;
+  previewBookmarks?: boolean;
   snapScroll: boolean;
   formatBarPosition?: FormatBarPosition;
   linuxBackdrop?: "solid" | "blur";
@@ -219,6 +223,8 @@ export class SettingsPaneComponent {
     };
     bind("#ontop-checkbox", this.callbacks.onAlwaysOnTopChange);
     bind("#always-preview-checkbox", this.callbacks.onAlwaysPreviewChange);
+    bind("#preview-minimap-checkbox", (v) => this.callbacks.onPreviewMinimapChange?.(v));
+    bind("#preview-bookmarks-checkbox", (v) => this.callbacks.onPreviewBookmarksChange?.(v));
     bind("#snap-scroll-checkbox", this.callbacks.onSnapScrollChange);
 
     const bindBtn = (id: string, action: () => Promise<void>) => {

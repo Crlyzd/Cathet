@@ -25,6 +25,8 @@ export interface SettingsInitialState {
   locale: string;
   isAlwaysOnTop: boolean;
   alwaysPreview: boolean;
+  previewMinimap?: boolean;
+  previewBookmarks?: boolean;
   snapScroll: boolean;
   formatBarPosition?: FormatBarPosition;
   linuxBackdrop?: "solid" | "blur";

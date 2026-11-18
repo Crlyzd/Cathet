@@ -9,6 +9,8 @@ export interface MobileSettingsState {
   fontId: string;
   locale: string;
   alwaysPreview: boolean;
+  previewMinimap?: boolean;
+  previewBookmarks?: boolean;
   snapScroll: boolean;
   highRefreshRate: boolean;
   fonts: { id: string; name: string }[];
@@ -21,6 +23,8 @@ export interface MobileSettingsCallbacks {
   onFontChange: (fontId: string) => void;
   onLanguageChange: (locale: string) => void;
   onAlwaysPreviewChange: (enabled: boolean) => void;
+  onPreviewMinimapChange?: (enabled: boolean) => void;
+  onPreviewBookmarksChange?: (enabled: boolean) => void;
   onSnapScrollChange: (enabled: boolean) => void;
   onHighRefreshRateChange: (enabled: boolean) => void;
   onOpenTutorial: () => void;
@@ -56,10 +60,16 @@ export class MobileSettingsView {
         if (el && el.value !== next[k]) el.value = next[k];
       }
     }
-    for (const [k, sel] of [["alwaysPreview", "#chk-always-preview"], ["snapScroll", "#chk-snap-scroll"], ["highRefreshRate", "#chk-high-refresh"]] as const) {
-      if (next[k] !== prev[k]) {
+    for (const [k, sel] of [
+      ["alwaysPreview", "#chk-always-preview"],
+      ["previewMinimap", "#chk-preview-minimap"],
+      ["previewBookmarks", "#chk-preview-bookmarks"],
+      ["snapScroll", "#chk-snap-scroll"],
+      ["highRefreshRate", "#chk-high-refresh"],
+    ] as const) {
+      if (next[k] !== prev[k] && next[k] !== undefined) {
         const chk = this.container.querySelector(sel) as HTMLInputElement | null;
-        if (chk) chk.checked = next[k];
+        if (chk) chk.checked = Boolean(next[k]);
       }
     }
     if (
@@ -151,6 +161,28 @@ export class MobileSettingsView {
 
             <div class="mobile-settings-row">
               <div class="mobile-settings-row-left">
+                <span class="mobile-settings-row-title">${t("settings.previewMinimap") || "Preview Page Scroller"}</span>
+                <span class="mobile-settings-row-subtitle">${t("settings.previewMinimapSub") || "Floating glass fisheye scroller in preview"}</span>
+              </div>
+              <label class="switch-control">
+                <input type="checkbox" id="chk-preview-minimap" ${this.state.previewMinimap !== false ? "checked" : ""} />
+                <span class="switch-track"></span>
+              </label>
+            </div>
+
+            <div class="mobile-settings-row">
+              <div class="mobile-settings-row-left">
+                <span class="mobile-settings-row-title">${t("settings.previewBookmarks") || "Reading Bookmarks"}</span>
+                <span class="mobile-settings-row-subtitle">${t("settings.previewBookmarksSub") || "Quick-jump bookmark pill in preview"}</span>
+              </div>
+              <label class="switch-control">
+                <input type="checkbox" id="chk-preview-bookmarks" ${this.state.previewBookmarks !== false ? "checked" : ""} />
+                <span class="switch-track"></span>
+              </label>
+            </div>
+
+            <div class="mobile-settings-row">
+              <div class="mobile-settings-row-left">
                 <span class="mobile-settings-row-title">${t("settings.snapScroll")}</span>
                 <span class="mobile-settings-row-subtitle">${t("settings.snapScrollSub")}</span>
               </div>
@@ -216,6 +248,8 @@ export class MobileSettingsView {
       });
     };
     bind("#chk-always-preview", this.callbacks.onAlwaysPreviewChange);
+    bind("#chk-preview-minimap", (v) => this.callbacks.onPreviewMinimapChange?.(v));
+    bind("#chk-preview-bookmarks", (v) => this.callbacks.onPreviewBookmarksChange?.(v));
     bind("#chk-snap-scroll", this.callbacks.onSnapScrollChange);
     bind("#chk-high-refresh", this.callbacks.onHighRefreshRateChange);
 

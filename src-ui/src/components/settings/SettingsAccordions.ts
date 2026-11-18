@@ -12,7 +12,7 @@ const DEFAULT_OPEN_ACCORDIONS: AccordionId[] = ["appearance", "editor"];
 export interface AccordionRenderState {
   theme: "dark" | "light";
   fontId: string; locale: string;
-  isAlwaysOnTop: boolean; alwaysPreview: boolean; snapScroll: boolean;
+  isAlwaysOnTop: boolean; alwaysPreview: boolean; previewMinimap?: boolean; previewBookmarks?: boolean; snapScroll: boolean;
   formatBarPosition?: FormatBarPosition;
   linuxBackdrop?: "solid" | "blur"; windowsBackdrop?: WindowsBackdropType;
   backdropOpacity: number; isRegistered?: boolean;
@@ -171,6 +171,28 @@ export function renderEditorAccordion(state: AccordionRenderState): string {
           </div>
           <label class="switch-control">
             <input type="checkbox" id="always-preview-checkbox" ${state.alwaysPreview ? "checked" : ""} />
+            <span class="switch-track"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-meta">
+            <span class="setting-title">${t("settings.previewMinimap") || "Preview Page Scroller"}</span>
+            <span class="setting-subtext"><span class="subtext-content">${t("settings.previewMinimapSub") || "Floating glass fisheye scroller in preview"}</span></span>
+          </div>
+          <label class="switch-control">
+            <input type="checkbox" id="preview-minimap-checkbox" ${state.previewMinimap !== false ? "checked" : ""} />
+            <span class="switch-track"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-meta">
+            <span class="setting-title">${t("settings.previewBookmarks") || "Reading Bookmarks"}</span>
+            <span class="setting-subtext"><span class="subtext-content">${t("settings.previewBookmarksSub") || "Quick-jump bookmark pill in preview"}</span></span>
+          </div>
+          <label class="switch-control">
+            <input type="checkbox" id="preview-bookmarks-checkbox" ${state.previewBookmarks !== false ? "checked" : ""} />
             <span class="switch-track"></span>
           </label>
         </div>
