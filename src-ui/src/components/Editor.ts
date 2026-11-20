@@ -8,6 +8,7 @@ import { attachTaskCheckboxListener } from "../utils/taskListHandler";
 
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { attachTouchZoom, TouchZoomOptions } from "../utils/touchZoomHandler";
+import { attachMobileScrollIndicator } from "../utils/mobileScrollIndicator";
 import { PlatformService } from "../services/platformService";
 import { EditorHistory } from "../utils/editorHistory";
 import { PreviewOverlayController } from "./preview/PreviewOverlayController";
@@ -24,12 +25,9 @@ export class EditorComponent {
   private savedContent: string = "";
   private documentPath: string | null = null;
   private wheelHandler = (e: WheelEvent) => {
-    if (e.ctrlKey) {
-      e.preventDefault();
-      this.adjustZoom(e.deltaY < 0 ? 10 : -10);
-    }
+    if (e.ctrlKey) { e.preventDefault(); this.adjustZoom(e.deltaY < 0 ? 10 : -10); }
   };
-  private touchZoomCleanup: (() => void) | null = null;
+  private mobileCleanups: (() => void)[] = [];
   private touchZoomOptions?: TouchZoomOptions;
 
   constructor(container: string | HTMLElement) {
@@ -84,7 +82,10 @@ export class EditorComponent {
     }, true);
 
     if (PlatformService.getInstance().isAndroid()) {
-      this.touchZoomCleanup = attachTouchZoom(this.wrapperEl, this, () => this.touchZoomOptions, this.container);
+      this.mobileCleanups.push(
+        attachTouchZoom(this.wrapperEl, this, () => this.touchZoomOptions, this.container),
+        attachMobileScrollIndicator(this.wrapperEl, this)
+      );
     }
   }
 
@@ -106,7 +107,8 @@ export class EditorComponent {
     window.removeEventListener("wheel", this.wheelHandler);
     this.history.destroy();
     this.previewOverlay.destroy();
-    if (this.touchZoomCleanup) { this.touchZoomCleanup(); this.touchZoomCleanup = null; }
+    this.mobileCleanups.forEach((fn) => fn());
+    this.mobileCleanups = [];
   }
   setFontFamily(family: string): void { this.editorEl.style.fontFamily = family; }
   setDocumentPath(path: string | null): void {
@@ -208,20 +210,9 @@ export class EditorComponent {
 
   setWordWrap(enabled: boolean): void { this.editorEl.classList.toggle("no-wrap", !enabled); }
   isWordWrapEnabled(): boolean { return !this.editorEl.classList.contains("no-wrap"); }
-  toggleWordWrap(): boolean {
-    const newState = !this.isWordWrapEnabled();
-    this.setWordWrap(newState);
-    return newState;
-  }
-
-  getSelectedText(): string {
-    const selection = window.getSelection();
-    return selection ? selection.toString() : "";
-  }
-
-  hasSelection(): boolean {
-    return this.getSelectedText().length > 0;
-  }
+  toggleWordWrap(): boolean { const next = !this.isWordWrapEnabled(); this.setWordWrap(next); return next; }
+  getSelectedText(): string { return window.getSelection()?.toString() || ""; }
+  hasSelection(): boolean { return this.getSelectedText().length > 0; }
 
   syncCaretToPoint(x: number, y: number): void {
     if (this.isMarkdownPreview) return;

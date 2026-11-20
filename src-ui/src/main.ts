@@ -30,6 +30,7 @@ import { buildMainMenuItems } from "./utils/mainMenuItems";
 import { registerWindowSyncListeners } from "./utils/windowSync";
 import { setupKeyboardCommitListener } from "./utils/editorPasteHandler";
 import { syncTouchZoomHost } from "./utils/touchZoomHandler";
+import { syncMobileScrollHost } from "./utils/mobileScrollIndicator";
 import { handleBackStackPopState, pushBackLayer, removeBackLayer } from "./utils/backStack";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
@@ -441,6 +442,7 @@ class CathetApp {
               this.dualPaneView.getHeaderLeft().setBackVisible(false);
               hostEl.appendChild(this.editor.getWrapperEl());
               syncTouchZoomHost(this.editor);
+              syncMobileScrollHost(this.editor);
               if (!this.dualPaneView.hasEmbeddedHome()) this.mobileCoord?.setActionBarVisible(true);
               this.currentFilePath = `notes/${note.id}`;
               this.homeCoord?.setCurrentNoteId(note.id);
@@ -518,6 +520,7 @@ class CathetApp {
           host.appendChild(this.editor.getWrapperEl());
           this.editor.attachOverlayHost(host);
           syncTouchZoomHost(this.editor);
+          syncMobileScrollHost(this.editor);
           this.windowService.setMinSize(200, 300);
           this.isClosingDualPane = false;
           if (!this.homeCoord?.isHomeActive()) {
@@ -529,6 +532,7 @@ class CathetApp {
         host.appendChild(this.editor.getWrapperEl());
         this.editor.attachOverlayHost(host);
         syncTouchZoomHost(this.editor);
+        syncMobileScrollHost(this.editor);
         this.windowService.setMinSize(200, 300);
         if (!this.homeCoord?.isHomeActive()) {
           this.mobileCoord?.setActionBarVisible(true);
@@ -550,6 +554,7 @@ class CathetApp {
       hostEl.appendChild(this.editor.getWrapperEl());
       this.editor.attachOverlayHost(hostEl);
       syncTouchZoomHost(this.editor);
+      syncMobileScrollHost(this.editor);
     } else {
       this.dualPaneView.clearEmbeddedHome("right");
       this.dualPaneView.getHeaderRight().setBackVisible(false);
@@ -560,6 +565,7 @@ class CathetApp {
         hostEl.appendChild(rightEd.getWrapperEl());
         rightEd.attachOverlayHost(hostEl);
         syncTouchZoomHost(rightEd);
+        syncMobileScrollHost(rightEd);
       } else {
         this.dualPaneView.showEmptyRightPane();
       }
@@ -613,6 +619,7 @@ class CathetApp {
           hostLeft.appendChild(this.editor.getWrapperEl());
           this.editor.attachOverlayHost(hostLeft);
           syncTouchZoomHost(this.editor);
+          syncMobileScrollHost(this.editor);
         }
         this.dualPaneView.setLeftTitle(title);
         this.dualPaneView.setLeftPreviewActive(preview);

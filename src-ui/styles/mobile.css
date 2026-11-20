@@ -1207,3 +1207,39 @@ body.is-animating-transform *::-webkit-scrollbar {
   height: 0 !important;
   background: transparent !important;
 }
+
+/* 13. Zero-Reflow GPU Overlay Scrollbar Indicator (Android Single & Dual Pane) */
+body.is-mobile .mobile-scroll-track {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  right: 2px;
+  width: 3.5px;
+  pointer-events: none;
+  z-index: 25;
+  opacity: 0;
+  transition: opacity 250ms ease;
+  contain: layout style;
+}
+
+body.is-mobile .mobile-scroll-track.is-visible {
+  opacity: 1;
+  transition: opacity 100ms ease;
+}
+
+body.is-mobile .mobile-scroll-thumb {
+  width: 100%;
+  min-height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.30);
+  will-change: transform;
+}
+
+body.is-mobile[data-theme="light"] .mobile-scroll-thumb {
+  background: rgba(15, 23, 42, 0.26);
+}
+
+body.is-animating-transform .mobile-scroll-track {
+  opacity: 0 !important;
+  transition: none !important;
+}
