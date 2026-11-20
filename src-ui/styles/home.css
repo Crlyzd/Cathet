@@ -561,7 +561,14 @@
   justify-content: center;
   box-shadow: 0 4px 18px rgba(255, 255, 255, 0.22);
   cursor: pointer;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1.2);
+  will-change: transform;
+}
+
+.home-fab-btn:active,
+.home-fab-btn.touch-pressed {
+  transform: scale(0.9);
+  transition: transform 0.08s ease-out;
 }
 
 [data-theme="light"] .home-fab-btn {
@@ -1021,6 +1028,9 @@
 
   .home-note-card,
   .home-note-card:active,
+  .home-fab-btn,
+  .home-fab-btn:active,
+  .home-fab-btn.touch-pressed,
   .anim-editor-enter,
   .anim-editor-exit,
   .anim-home-enter {

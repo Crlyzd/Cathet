@@ -51,7 +51,17 @@ export class HomeFabComponent {
   }
 
   private bindEvents(): void {
-    const mainBtn = this.element.querySelector("#home-fab-main")!;
+    const mainBtn = this.element.querySelector("#home-fab-main") as HTMLElement;
+    const clearPressed = () => mainBtn.classList.remove("touch-pressed");
+
+    mainBtn.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      mainBtn.classList.add("touch-pressed");
+    });
+    mainBtn.addEventListener("pointerup", clearPressed);
+    mainBtn.addEventListener("pointercancel", clearPressed);
+    mainBtn.addEventListener("pointerleave", clearPressed);
+
     mainBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       this.toggle();
@@ -110,7 +120,10 @@ export class HomeFabComponent {
 
   setVisible(visible: boolean): void {
     this.element.style.display = visible ? "flex" : "none";
-    if (!visible) this.collapse();
+    if (!visible) {
+      this.element.querySelector("#home-fab-main")?.classList.remove("touch-pressed");
+      this.collapse();
+    }
   }
 
   destroy(): void {
