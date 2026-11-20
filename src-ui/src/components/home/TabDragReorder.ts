@@ -18,6 +18,7 @@ export class TabDragReorder {
   private currentTx = 0;
   private hasMoved = false;
   private initialOrder: string[] = [];
+  private siblingAnims = new WeakMap<HTMLElement, Animation>();
 
   constructor(container: HTMLElement, opts: TabDragReorderOptions) {
     this.container = container;
@@ -83,11 +84,10 @@ export class TabDragReorder {
     const allChip = this.container.querySelector<HTMLElement>('.home-tab-chip[data-folder="All"]');
     const addChip = this.container.querySelector<HTMLElement>(".home-tab-add");
     if (allChip && addChip) {
-      const dragRect = this.draggedEl.getBoundingClientRect();
-      const baseLeft = dragRect.left - this.currentTx;
-      const baseRight = dragRect.right - this.currentTx;
-      const minTx = (allChip.getBoundingClientRect().right + 8) - baseLeft;
-      const maxTx = (addChip.getBoundingClientRect().left - 8) - baseRight;
+      const baseLeft = this.draggedEl.offsetLeft;
+      const baseRight = baseLeft + this.draggedEl.offsetWidth;
+      const minTx = (allChip.offsetLeft + allChip.offsetWidth + 8) - baseLeft;
+      const maxTx = (addChip.offsetLeft - 8) - baseRight;
       if (minTx <= maxTx) {
         tx = Math.max(minTx, Math.min(maxTx, tx));
       }
@@ -103,32 +103,57 @@ export class TabDragReorder {
     const idx = chips.indexOf(this.draggedEl);
     if (idx === -1) return false;
 
-    const dragRect = this.draggedEl.getBoundingClientRect();
-    const dragCenter = dragRect.left + dragRect.width / 2;
+    const dragLeft = this.draggedEl.offsetLeft + this.currentTx;
+    const dragRight = dragLeft + this.draggedEl.offsetWidth;
 
     if (idx > 0) {
       const prev = chips[idx - 1];
-      const prevRect = prev.getBoundingClientRect();
-      if (dragCenter < prevRect.left + prevRect.width / 2) {
-        const beforeLeft = this.draggedEl.getBoundingClientRect().left;
+      if (dragLeft < prev.offsetLeft + prev.offsetWidth / 2) {
+        const beforeLeft = this.draggedEl.offsetLeft;
+        const prevBeforeLeft = prev.offsetLeft;
         scrollEl.insertBefore(this.draggedEl, prev);
-        this.anchorX += this.draggedEl.getBoundingClientRect().left - beforeLeft;
+        this.anchorX += this.draggedEl.offsetLeft - beforeLeft;
+        this.animateSiblingSwap(prev, prevBeforeLeft);
         try { if ("vibrate" in navigator) navigator.vibrate(12); } catch {}
         return true;
       }
     }
     if (idx < chips.length - 1) {
       const next = chips[idx + 1];
-      const nextRect = next.getBoundingClientRect();
-      if (dragCenter > nextRect.left + nextRect.width / 2) {
-        const beforeLeft = this.draggedEl.getBoundingClientRect().left;
+      if (dragRight > next.offsetLeft + next.offsetWidth / 2) {
+        const beforeLeft = this.draggedEl.offsetLeft;
+        const nextBeforeLeft = next.offsetLeft;
         scrollEl.insertBefore(next, this.draggedEl);
-        this.anchorX += this.draggedEl.getBoundingClientRect().left - beforeLeft;
+        this.anchorX += this.draggedEl.offsetLeft - beforeLeft;
+        this.animateSiblingSwap(next, nextBeforeLeft);
         try { if ("vibrate" in navigator) navigator.vibrate(12); } catch {}
         return true;
       }
     }
     return false;
+  }
+
+  private animateSiblingSwap(el: HTMLElement, beforeLeft: number): void {
+    this.siblingAnims.get(el)?.cancel();
+    const dx = beforeLeft - el.offsetLeft;
+    if (Math.abs(dx) < 1) return;
+    const keyframes = [
+      { transform: `translate3d(${dx}px, 0, 0)` },
+      { transform: "translate3d(0, 0, 0)" },
+    ];
+    try {
+      const anim = el.animate(keyframes, {
+        duration: 180,
+        easing: "cubic-bezier(0.2, 0, 0, 1)",
+        composite: "add",
+      });
+      this.siblingAnims.set(el, anim);
+    } catch {
+      try {
+        const anim = el.animate(keyframes, { duration: 180, easing: "cubic-bezier(0.2, 0, 0, 1)" });
+        this.siblingAnims.set(el, anim);
+      } catch {}
+    }
   }
 
   private onUp = (e: PointerEvent): void => {

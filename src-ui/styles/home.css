@@ -251,8 +251,8 @@
   min-height: 40px;
   padding: 8px 18px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #202226;
+  border: 1px solid #2b2d32;
   color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   font-weight: 500;
@@ -273,8 +273,8 @@
 }
 
 [data-theme="light"] .home-tab-chip {
-  background: rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.08);
+  background: #e8e9ec;
+  border-color: #e0e1e4;
   color: #4b5563;
 }
 
@@ -313,7 +313,6 @@
 .home-tab-chip.is-dragging {
   animation: none;
   z-index: 10;
-  opacity: 0.92;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
   cursor: grabbing;
 }
