@@ -1,35 +1,45 @@
 /**
- * PreviewMinimap.ts — Display-only frosted-glass fisheye page scroller for Markdown Preview.
- * Renders a 1/4-height curved cylindrical projection of the document that fades out when idle.
+ * PreviewMinimap.ts — Interactive optical zoom-lens page scroller for Markdown Preview.
+ * Renders a curved elliptical lens via minimapRenderer and supports cylinder-wheel drag scrubbing.
  */
 import { PreviewBookmark } from "../../services/bookmarkService";
+import {
+  CachedBlock,
+  ProjectedPoint,
+  captureMinimapBlocks,
+  renderMinimapFrame,
+} from "./minimapRenderer";
 
-interface CachedBlock {
-  kind: "heading" | "paragraph" | "media";
-  top: number;
-  height: number;
-}
-
-const MINI_SCALE = 0.24;
 const IDLE_HIDE_MS = 1800;
+const SCRUB_MULTIPLIER = 3.5;
 
 export class PreviewMinimap {
   private rootEl: HTMLElement;
   private canvas: HTMLCanvasElement;
   private blocks: CachedBlock[] = [];
   private bookmarks: PreviewBookmark[] = [];
+  private activeWrapper: HTMLElement | null = null;
   private enabled = true;
   private isPreview = false;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   private rafId = 0;
 
+  private scrubPointerId: number | null = null;
+  private scrubStartY = 0;
+  private scrubLastY = 0;
+  private isScrubbing = false;
+
   constructor(host: HTMLElement) {
     this.rootEl = document.createElement("div");
     this.rootEl.className = "preview-minimap";
+    const lensEl = document.createElement("div");
+    lensEl.className = "preview-minimap-lens";
     this.canvas = document.createElement("canvas");
     this.canvas.className = "preview-minimap-canvas";
-    this.rootEl.appendChild(this.canvas);
+    lensEl.appendChild(this.canvas);
+    this.rootEl.appendChild(lensEl);
     host.appendChild(this.rootEl);
+    this.bindScrubEvents();
   }
 
   getElement(): HTMLElement {
@@ -43,49 +53,91 @@ export class PreviewMinimap {
 
   setPreviewState(isPreview: boolean, wrapperEl: HTMLElement, editorEl: HTMLElement): void {
     this.isPreview = isPreview;
+    this.activeWrapper = wrapperEl;
     if (isPreview) this.captureBlocks(editorEl);
     this.updateVisibility(wrapperEl, editorEl);
   }
 
   setBookmarks(bookmarks: PreviewBookmark[], wrapperEl: HTMLElement): void {
     this.bookmarks = bookmarks;
+    this.activeWrapper = wrapperEl;
     if (this.isVisible(wrapperEl)) this.scheduleDraw(wrapperEl);
   }
 
   captureBlocks(editorEl: HTMLElement): void {
     if (!this.isPreview) return;
-    const nodes = editorEl.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6,p,pre,blockquote,ul,ol,table,img,hr");
-    this.blocks = Array.from(nodes).map((el) => {
-      const tag = el.tagName;
-      const kind: CachedBlock["kind"] = /^H[1-6]$/.test(tag)
-        ? "heading"
-        : tag === "P" || tag === "UL" || tag === "OL"
-          ? "paragraph"
-          : "media";
-      return { kind, top: el.offsetTop, height: el.offsetHeight };
-    });
+    this.blocks = captureMinimapBlocks(editorEl);
   }
 
   onScroll(wrapperEl: HTMLElement): void {
+    this.activeWrapper = wrapperEl;
     if (!this.isVisible(wrapperEl)) return;
     this.rootEl.classList.add("is-visible");
-    if (this.idleTimer) clearTimeout(this.idleTimer);
-    this.idleTimer = setTimeout(() => {
-      this.rootEl.classList.remove("is-visible");
-    }, IDLE_HIDE_MS);
+    if (!this.isScrubbing) this.armIdleHide();
     this.scheduleDraw(wrapperEl);
   }
 
   updateVisibility(wrapperEl: HTMLElement, editorEl: HTMLElement): void {
+    this.activeWrapper = wrapperEl;
     const show = this.isVisible(wrapperEl);
     this.rootEl.style.display = show ? "block" : "none";
     if (!show) {
+      this.endScrub();
       this.rootEl.classList.remove("is-visible");
       if (this.idleTimer) { clearTimeout(this.idleTimer); this.idleTimer = null; }
       return;
     }
     this.captureBlocks(editorEl);
     this.scheduleDraw(wrapperEl);
+  }
+
+  private armIdleHide(): void {
+    if (this.idleTimer) clearTimeout(this.idleTimer);
+    this.idleTimer = setTimeout(() => {
+      this.rootEl.classList.remove("is-visible");
+    }, IDLE_HIDE_MS);
+  }
+
+  private bindScrubEvents(): void {
+    this.rootEl.addEventListener("pointerdown", (e: PointerEvent) => {
+      if (!this.activeWrapper || !this.rootEl.classList.contains("is-visible")) return;
+      this.scrubPointerId = e.pointerId;
+      this.scrubStartY = e.clientY;
+      this.scrubLastY = e.clientY;
+      this.isScrubbing = false;
+      try { this.rootEl.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    });
+
+    this.rootEl.addEventListener("pointermove", (e: PointerEvent) => {
+      if (this.scrubPointerId !== e.pointerId || !this.activeWrapper) return;
+      if (!this.isScrubbing && Math.abs(e.clientY - this.scrubStartY) > 4) {
+        this.isScrubbing = true;
+        this.rootEl.classList.add("is-dragging");
+        if (this.idleTimer) { clearTimeout(this.idleTimer); this.idleTimer = null; }
+      }
+      if (!this.isScrubbing) return;
+      const dy = e.clientY - this.scrubLastY;
+      this.scrubLastY = e.clientY;
+      const maxScroll = Math.max(0, this.activeWrapper.scrollHeight - this.activeWrapper.clientHeight);
+      this.activeWrapper.scrollTop = Math.max(0, Math.min(maxScroll, this.activeWrapper.scrollTop + dy * SCRUB_MULTIPLIER));
+    });
+
+    const stop = (e: PointerEvent) => {
+      if (this.scrubPointerId !== e.pointerId) return;
+      this.endScrub();
+    };
+    this.rootEl.addEventListener("pointerup", stop);
+    this.rootEl.addEventListener("pointercancel", stop);
+  }
+
+  private endScrub(): void {
+    if (this.scrubPointerId !== null) {
+      try { this.rootEl.releasePointerCapture(this.scrubPointerId); } catch { /* ignore */ }
+    }
+    this.scrubPointerId = null;
+    this.isScrubbing = false;
+    this.rootEl.classList.remove("is-dragging");
+    if (this.rootEl.classList.contains("is-visible")) this.armIdleHide();
   }
 
   private isVisible(wrapperEl: HTMLElement): boolean {
@@ -100,14 +152,18 @@ export class PreviewMinimap {
     });
   }
 
-  private projectY(linearDy: number, halfH: number): { y: number; lens: number; widthScale: number; fade: number } | null {
+  private projectY = (linearDy: number, halfH: number): ProjectedPoint | null => {
     const norm = linearDy / (halfH * 1.15);
     if (Math.abs(norm) >= 1.25) return null;
     const clamped = Math.max(-1, Math.min(1, norm));
-    const y = halfH + Math.sin(clamped * Math.PI * 0.46) * halfH * 1.02;
-    const lens = Math.cos(clamped * Math.PI * 0.46);
-    return { y, lens, widthScale: 0.72 + 0.28 * lens, fade: Math.pow(Math.max(0, lens), 1.85) };
-  }
+    const lens = Math.cos(clamped * Math.PI * 0.48);
+    const focus = Math.exp(-Math.pow(norm / 0.36, 2));
+    const y = halfH + (Math.sin(clamped * Math.PI * 0.48) * 0.74 + Math.tanh(norm * 2.3) * 0.26) * halfH;
+    const normY = (y - halfH) / halfH;
+    const widthScale = Math.sqrt(Math.max(0.08, 1 - Math.pow(normY / 1.44, 2)));
+    const fade = Math.pow(Math.max(0, lens), 1.55);
+    return { y, lens, focus, widthScale, fade };
+  };
 
   private draw(wrapperEl: HTMLElement): void {
     const w = this.rootEl.clientWidth;
@@ -125,58 +181,11 @@ export class PreviewMinimap {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    const isLight = document.documentElement.getAttribute("data-theme") === "light";
-    const fg = isLight ? "#111827" : "#f1f5f9";
-    const muted = isLight ? "#64748b" : "#94a3b8";
-    const accent = isLight ? "#4f46e5" : "#818cf8";
-    const halfH = h / 2;
-    const activeDocCenterY = wrapperEl.scrollTop + wrapperEl.clientHeight / 2;
-    const maxScroll = Math.max(1, wrapperEl.scrollHeight - wrapperEl.clientHeight);
-
-    for (const b of this.blocks) {
-      if (b.kind === "paragraph") {
-        const lineCount = Math.max(1, Math.round(b.height / 14));
-        const step = b.height / lineCount;
-        for (let i = 0; i < lineCount; i++) {
-          const docY = b.top + i * step + step * 0.4;
-          const p = this.projectY((docY - activeDocCenterY) * MINI_SCALE, halfH);
-          if (!p || p.fade < 0.03) continue;
-          const baseW = (i === lineCount - 1 ? 0.54 : 0.82) * (w - 10);
-          const x = (w - (w - 10) * p.widthScale) / 2;
-          ctx.fillStyle = muted;
-          ctx.globalAlpha = 0.68 * p.fade;
-          ctx.fillRect(x, p.y, baseW * p.widthScale, 1.4 * (0.75 + 0.25 * p.lens));
-        }
-      } else {
-        const docY = b.top + b.height / 2;
-        const p = this.projectY((docY - activeDocCenterY) * MINI_SCALE, halfH);
-        if (!p || p.fade < 0.03) continue;
-        const bw = (w - 10) * p.widthScale;
-        const x = (w - bw) / 2;
-        const bh = b.kind === "heading"
-          ? 3.2 * (0.7 + 0.3 * p.lens)
-          : Math.max(4, Math.min(28, b.height * MINI_SCALE * (0.65 + 0.35 * p.lens)));
-        ctx.fillStyle = b.kind === "heading" ? fg : muted;
-        ctx.globalAlpha = (b.kind === "heading" ? 0.95 : 0.45) * p.fade;
-        ctx.fillRect(x, p.y - bh / 2, bw, bh);
-      }
-    }
-
-    for (const bm of this.bookmarks) {
-      const bmDocY = bm.scrollRatio * maxScroll + wrapperEl.clientHeight / 2;
-      const p = this.projectY((bmDocY - activeDocCenterY) * MINI_SCALE, halfH);
-      if (!p || p.fade < 0.05) continue;
-      const bw = (w - 4) * p.widthScale;
-      const x = (w - bw) / 2;
-      ctx.fillStyle = accent;
-      ctx.globalAlpha = 0.92 * p.fade;
-      ctx.fillRect(x, p.y - 1, bw, 2);
-      ctx.fillRect(x + bw - 6, p.y - 2.5, 6, 5);
-    }
-    ctx.globalAlpha = 1;
+    renderMinimapFrame(ctx, w, h, this.blocks, this.bookmarks, wrapperEl, this.projectY);
   }
 
   destroy(): void {
+    this.endScrub();
     if (this.idleTimer) clearTimeout(this.idleTimer);
     if (this.rafId) cancelAnimationFrame(this.rafId);
     this.rootEl.remove();
