@@ -1,6 +1,6 @@
 [package]
 name = "cathet"
-version = "5.5.6"
+version = "5.5.7"
 description = "Cathet — Lightweight text & markdown editor"
 authors = ["Crlyzd"]
 license = "GPL-3.0-or-later"
