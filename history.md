@@ -11,6 +11,12 @@ This document serves as the living project documentation and institutional memor
 
 ## Mistakes & Guardrails [Mistake]
 
+### [Mistake] 2026-11-20: Using `getBoundingClientRect()` for Drag-Reorder Hit-Testing During Active FLIP Animations
+- **Context**: In `TabDragReorder.ts`, added a `180ms` WAAPI FLIP `transform` animation to displaced sibling folder pills while still reading `getBoundingClientRect()` in `swapWithNeighbor()` on subsequent `pointermove` events.
+- **User Correction**: *"draging this a little to the left will make the folder behind it to bounce left and right"*
+- **Root Cause**: `getBoundingClientRect()` reflects the in-flight animated `transform` of the neighbor pill rather than its settled layout slot, so on the very next frame the neighbor's midpoint was still behind the dragged pill, causing it to immediately swap back and oscillate left and right.
+- **Guardrail**: In drag-and-drop / FLIP reorderers, always compute hit-test boundaries and clamping from un-transformed layout coordinates (`offsetLeft` / `offsetWidth`), never `getBoundingClientRect()`, and cancel any prior sibling WAAPI animation before starting a new one.
+
 ### [Mistake] 2026-11-18: Omitting Plain Human-Language "What You Can Expect" Summary in `/architect`
 - **Context**: Generated `implementation_plan.md` and chat summaries in `/architect` mode using technical symbol/CSS/pixel explanations without a plain-language summary of the user-facing result.
 - **User Correction**: *"urgh, make an edit to the /architect to ALWAYS wrote what I can expect if the plan is implemented, in HUMAN language"*
@@ -86,6 +92,10 @@ This document serves as the living project documentation and institutional memor
 ---
 
 ## Project Changes Log
+
+### 2026-11-20: Fix Folder Pill Drag-Reordering Across Asymmetric Widths & Make Pills Opaque
+- **Summary**: Fixed `TabDragReorder.swapWithNeighbor()` in `src-ui/src/components/home/TabDragReorder.ts` (189 lines) to compare the dragged pill's leading edge (`dragRect.left` / `dragRect.right`) against the neighbor's midpoint instead of `dragCenter`, eliminating the deadlock where a wider pill clamped at `All`/`+` could never push past a narrower neighbor, and added `animateSiblingSwap()` (`180ms` WAAPI FLIP slide with `composite: "add"`). Replaced translucent `rgba` inactive `.home-tab-chip` backgrounds/borders in `src-ui/styles/home.css` with their exact pre-blended solid hex colors (`#202226` / `#2b2d32` dark, `#e8e9ec` / `#e0e1e4` light) and removed `opacity: 0.92` on `.is-dragging` so overlapping pills never bleed through each other.
+- **Affected Files**: `src-ui/src/components/home/TabDragReorder.ts (189)`, `src-ui/styles/home.css`, `history.md`
 
 ### 2026-11-20: Add Touch Bounce Animation to Android Home `+` FAB
 - **Summary**: Added the homepage note-tile touch press and spring-overshoot bounce animation to `.home-fab-btn` (`#home-fab-main`) in `src-ui/styles/home.css` (`scale(0.9)` over `0.08s ease-out` on `:active`/`.touch-pressed` releasing via `0.16s cubic-bezier(0.2, 0.8, 0.2, 1.2)`, plus `prefers-reduced-motion` override) and bound immediate `pointerdown`/`pointerup`/`pointercancel`/`pointerleave` `.touch-pressed` toggling in `src-ui/src/components/home/HomeFab.ts` (133 lines).
