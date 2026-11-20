@@ -87,6 +87,10 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-20: Add Touch Bounce Animation to Android Home `+` FAB
+- **Summary**: Added the homepage note-tile touch press and spring-overshoot bounce animation to `.home-fab-btn` (`#home-fab-main`) in `src-ui/styles/home.css` (`scale(0.9)` over `0.08s ease-out` on `:active`/`.touch-pressed` releasing via `0.16s cubic-bezier(0.2, 0.8, 0.2, 1.2)`, plus `prefers-reduced-motion` override) and bound immediate `pointerdown`/`pointerup`/`pointercancel`/`pointerleave` `.touch-pressed` toggling in `src-ui/src/components/home/HomeFab.ts` (133 lines).
+- **Affected Files**: `src-ui/styles/home.css`, `src-ui/src/components/home/HomeFab.ts (133)`, `history.md`
+
 ### 2026-11-20: Add Subtle Contour Drop Shadow Behind Elliptical Scroll Preview Lens
 - **Summary**: Wrapped `.preview-minimap-lens` (holding `clip-path: ellipse(50% 72% at 50% 50%)`, vertical `mask-image`, opaque gradient, and `::after` dome) inside `.preview-minimap` in `src-ui/src/components/preview/PreviewMinimap.ts` (192 lines) and `src-ui/styles/previewOverlay.css` so `filter: drop-shadow(...)` casts a subtle, fade-matched shadow behind the curved lens in both Dark and Light themes without getting clipped by `clip-path`.
 - **Affected Files**: `src-ui/styles/previewOverlay.css`, `src-ui/src/components/preview/PreviewMinimap.ts (193)`, `history.md`
