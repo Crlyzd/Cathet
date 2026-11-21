@@ -93,6 +93,14 @@ This document serves as the living project documentation and institutional memor
 
 ## Project Changes Log
 
+### 2026-11-20: Targeted `README.md` Sync for v5.5.7 Features & Shortcuts
+- **Summary**: Updated `README.md` to add the `Ctrl + /` Floating Markdown Toolbar shortcut to the Desktop Shortcuts table, mention the Optical Zoom-Lens Preview Minimap & Reading Bookmarks, document Android Home folder tab drag-reordering, Duplicate, and 2-note Dual-Pane launch, and update the Screenshot Directory table count from `17` to `18` (`windows-floating-toolbar-markdown.webp`).
+- **Affected Files**: `README.md`, `history.md`
+
+### 2026-11-20: Sync `AGENTS.md` and `.agents/skills/*/SKILL.md` with Current Project State
+- **Summary**: Updated `AGENTS.md` (Rules 5, 7, and 10) and all four `.agents/skills/*/SKILL.md` files (`architect`, `code-reviewer`, `coding-specialist`, `orchestrator`) to remove stale `v5.5.0` version headers, include newly added modules (`components/preview/*`, `bookmarkService.ts`, `TabDragReorder.ts`, `MobileAboutCard.ts`, `backStack.ts`, `containerTransformLayers.ts`, `editorHistory.ts`, `mobileScrollIndicator.ts`, `association_linux.rs`, `note_folders.rs`, `ImeInsetHelper.kt`), and surface key invariants (`backStack.ts` LIFO stack, `ImeInsetHelper.kt` IME coordination, layout-coordinate FLIP hit-testing, zero-reflow Android overlay scrollbar, and Win32 `.rc` secondary icon IDs `> 32518`).
+- **Affected Files**: `AGENTS.md (100)`, `.agents/skills/architect/SKILL.md (59)`, `.agents/skills/code-reviewer/SKILL.md (55)`, `.agents/skills/coding-specialist/SKILL.md (61)`, `.agents/skills/orchestrator/SKILL.md (53)`, `history.md`
+
 ### 2026-11-20: Fix Folder Pill Drag-Reordering Across Asymmetric Widths & Make Pills Opaque
 - **Summary**: Fixed `TabDragReorder.swapWithNeighbor()` in `src-ui/src/components/home/TabDragReorder.ts` (189 lines) to compare the dragged pill's leading edge (`dragRect.left` / `dragRect.right`) against the neighbor's midpoint instead of `dragCenter`, eliminating the deadlock where a wider pill clamped at `All`/`+` could never push past a narrower neighbor, and added `animateSiblingSwap()` (`180ms` WAAPI FLIP slide with `composite: "add"`). Replaced translucent `rgba` inactive `.home-tab-chip` backgrounds/borders in `src-ui/styles/home.css` with their exact pre-blended solid hex colors (`#202226` / `#2b2d32` dark, `#e8e9ec` / `#e0e1e4` light) and removed `opacity: 0.92` on `.is-dragging` so overlapping pills never bleed through each other.
 - **Affected Files**: `src-ui/src/components/home/TabDragReorder.ts (189)`, `src-ui/styles/home.css`, `history.md`

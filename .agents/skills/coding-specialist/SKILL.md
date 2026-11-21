@@ -44,16 +44,18 @@ You are an expert Senior Software Engineer. Your task is to implement features, 
 
 ---
 
-## Cathet v5.5.0 Implementation Guidelines
+## Cathet Implementation Guidelines
 - **Rust Backend (`src-tauri/src/`)**:
-  - Commands are modularly split into `android_fs.rs`, `association.rs`, `biometric.rs`, `file.rs`, `linux_desktop.rs`, `memory.rs`, `migration.rs`, `notes.rs`, `updater.rs`, `updater_target.rs`, `vibrancy.rs`, and `window.rs`, with encoding helpers in `encoding.rs` and state in `state.rs`.
+  - Commands are modularly split into `android_fs.rs`, `association.rs`, `association_linux.rs`, `biometric.rs`, `file.rs`, `linux_desktop.rs`, `memory.rs`, `migration.rs`, `note_folders.rs`, `notes.rs`, `updater.rs`, `updater_target.rs`, `vibrancy.rs`, and `window.rs`, with encoding helpers in `encoding.rs` and state in `state.rs`.
   - Gate desktop-only file dialog extension filters with `#[cfg(not(target_os = "android"))]` so Android SAF (`DocumentsUI`) never greys out `.md` or code files.
-  - Windows uses `reqwest` with `native-tls` (SChannel); non-Windows/Android uses `rustls`.
+  - Windows uses `reqwest` with `native-tls` (SChannel); non-Windows/Android uses `rustls`. Any secondary `.ico` embedded via `.rc` must use a resource ID `> 32518` (e.g., `40001`).
 - **Android Native & Gradle (`src-tauri/gen/android/app/`)**:
   - Remember that `:app:rustBuild*` runs `tauri android android-studio-script` mid-build and overwrites `generated/RustWebView.kt`. Any modifications to `RustWebView.kt` (such as `onCreateInputConnection` for Gboard Commit Content API) MUST be applied in `applyRustWebViewPatch()` inside `src-tauri/gen/android/app/build.gradle.kts`, hooked to both `rustTasks.configureEach { doLast { ... } }` and `compile*Kotlin.configureEach { mustRunAfter(rustTasks); doFirst { ... } }`, and kept in `proguard-rules.pro`.
+  - `ImeInsetHelper.kt` manages edge-to-edge IME `bottomMargin` resizing and notifies `keyboardTracker.ts` via `__cathet_on_ime_inset` so `--keyboard-inset` is never double-offset.
 - **Frontend, i18n, Search & Mobile Motion (`src-ui/src/`)**:
   - **Platform Gating & i18n**: `MobileCoordinator` is instantiated on all platforms — always gate mobile-only paths with `isMobile()`. Verify all i18n keys against `src-ui/src/locales/en.json`.
   - **Search (`domSearch.ts`)**: Use `CSS.highlights` and direct `.editor-wrapper` scrolling; never use `window.find()` or synthetic Android selection/scroll locks.
-  - **Container Morph (`containerTransform.ts`, `homeCoordinator.ts`)**: Never create a synthetic ghost overlay or add opacity fades (`1 -> 0`) when expanding or collapsing tiles. Scale and clip the real `#workspace-shell` with `opacity: 1` solid throughout and `.is-animating-transform` scrollbar suppression.
+  - **Container Morph & Back-Stack (`containerTransform.ts`, `containerTransformLayers.ts`, `homeCoordinator.ts`, `backStack.ts`)**: Never create a synthetic ghost overlay or add opacity fades (`1 -> 0`) when expanding or collapsing tiles. Scale and clip the real `#workspace-shell` with `opacity: 1` solid throughout and `.is-animating-transform` scrollbar suppression. Register overlays/modals/pickers on `backStack.ts` (LIFO).
+  - **Scrollbars, Preview & FLIP Reorder (`mobileScrollIndicator.ts`, `components/preview/`, `TabDragReorder.ts`)**: Keep Android `::-webkit-scrollbar` hidden and drive scroll feedback via `mobileScrollIndicator.ts`. Compute drag-reorder FLIP hit-test boundaries from layout coordinates (`offsetLeft`/`offsetWidth`), never `getBoundingClientRect()`.
   - **Theme Transition (`themeTransition.ts`)**: Keep `document.startViewTransition` circular `clipPath: circle()` active on both Desktop and Android.
   - **CSS Flex Scrolling & Backdrop Isolation**: Always apply `min-height: 0` and `overflow: hidden` on intermediate flex containers so scrollable panes (`overflow-y: auto`) scroll properly. Never use top-level `:root,` selectors in component/mobile CSS (`home.css`, `mobile.css`); keep root rules in `main.css` and Linux overrides in `body.is-linux`.

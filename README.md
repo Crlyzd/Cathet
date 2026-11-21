@@ -67,6 +67,7 @@ Cathet isn't just a frosted-glass Notepad—under the hood it packs a **zero-dep
 - **Summonable Floating Toolbar (`Ctrl+/` or `⋯ → Format Toolbar`)**: Keep the glass canvas distraction-free until you need formatting tools. Dock it **Top**, **Bottom**, or **Left** in Settings—with non-occluding insets so it never covers text, dual-pane headers, or the sync badge—plus an `L`/`R` active-pane target indicator, 5-type Alert popover, and automatic hide in Preview mode.
 - **Extended GFM & Technical Writing**: Native support for **GitHub Alerts** (`[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`), **YAML Frontmatter** metadata pills, inline `$math$` & display `$$math$$` blocks, interactive nested & numbered task lists, clickable `[^1]` footnotes, fenced code language headers with one-click **Copy**, `~sub~` / `^sup^` / `==highlight==`, `<details>` accordions, reference links, and escaped table pipes (`\|`).
 - **Smart Clipboard & Image Pipeline**: Rich HTML-to-Markdown paste conversion (`sub`, `sup`, fenced code languages), in-memory WebP compression (>500 KB) folded into interactive `[ 📷 WEBP ~245 KB ▾ ]` pills, and Android Gboard `CommitContent` sticker/GIF support.
+- **Optical Zoom-Lens Preview Minimap & Reading Bookmarks**: Interactive elliptical scroll preview with cylinder-wheel scrubbing and persistent reading bookmarks in Preview mode.
 
 <!--
 📸 SCREENSHOT SPEC #18: MARKDOWN SUPERPOWERS & FLOATING TOOLBAR
@@ -431,6 +432,7 @@ You can be up and running in seconds with no complicated installation:
 | :--- | :---: | :--- |
 | **Toggle Markdown Preview** | `Ctrl + M` | Instant lossless toggle between raw plain text and rendered markdown |
 | **Toggle Dual-Pane Mode** | `Ctrl + D` | Split window horizontally with draggable frosted glass splitter |
+| **Toggle Floating Toolbar** | `Ctrl + /` | Summon or hide the dockable Markdown formatting bar |
 | **Find in Document** | `Ctrl + F` | High-speed DOM search with CSS custom highlights |
 | **Always on Top** | `Ctrl + T` | Pin Cathet floating above all other desktop windows |
 | **Open Settings** | `Ctrl + ,` | Launch native frosted glass personalization dialog |
@@ -457,7 +459,8 @@ You can be up and running in seconds with no complicated installation:
 | **Search Note Text** | Tap search icon in mobile ribbon (highlight matches without dismissing Gboard) |
 | **New Quick Note** | Tap floating circular `+` button |
 | **Multi-Select Mode** | Long-press any note card to activate top batch management bar |
-| **Batch Note Actions** | Select multiple cards to Pin, Hide, Move between folders, or Delete |
+| **Batch Note Actions** | Select cards to Rename, Duplicate, Pin, Hide, Move, Delete, or open 2 notes in Dual-Pane |
+| **Reorder Folder Tabs** | Enter folder Edit Mode and drag folder pills to reorder them |
 | **Mobile Dual-Pane** | Tap Dual-Pane icon in mobile action bar (vertical stacked split) |
 | **Scroll Sync Mode** | Tap splitter badge to cycle: Standard Offset Lock, Snap 1:1, or Paused |
 | **Mobile Settings** | Tap gear icon in slide-out drawer (120fps bottom sheet) |
@@ -470,7 +473,7 @@ You can be up and running in seconds with no complicated installation:
 For contributors or when refreshing screenshots, all image assets live in `docs/screenshots/`:
 
 <details>
-<summary><b>View All 17 Screenshot Specifications</b></summary>
+<summary><b>View All 18 Screenshot Specifications</b></summary>
 
 <br/>
 
@@ -493,6 +496,7 @@ For contributors or when refreshing screenshots, all image assets live in `docs/
 | 15 | `android-dualpane-vertical.webp` | Android | Dark | Mobile vertical stacked dual-pane with touch dock controls |
 | 16 | `android-settings-bottomsheet.webp`| Android | Dark | 120fps slide-up bottom sheet settings view |
 | 17 | `android-theme-circular-reveal.webp`| Android/PC | Trans | Expanding circular clip-path transition mask between themes |
+| 18 | `windows-floating-toolbar-markdown.webp` | Windows 11 | Dark | Dual-Pane mode with Floating Markdown Toolbar and Tier 2 GFM |
 
 </details>
 
